@@ -46,6 +46,7 @@ import Navigation from '@/app/components/Navigation'
 import AvatarUpload from '@/app/components/AvatarUpload'
 import GalleryManager from '@/app/components/GalleryManager'
 import TopArtists from '@/app/components/TopArtists'
+import PrivacySettings from '@/app/components/PrivacySettings'
 import { userAPI } from '@/lib/api'
 import axios from 'axios'
 
@@ -63,6 +64,9 @@ interface User {
   onboarding_complete: boolean
   profile_image_url?: string
   about_me?: string
+  discoverable_by_name: boolean
+  discoverable_by_music: boolean
+  city_visible: string
 }
 
 interface TimelineItem {
@@ -359,6 +363,14 @@ export default function ProfilePage() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Privacy Settings */}
+              <PrivacySettings
+                discoverableByName={user.discoverable_by_name}
+                discoverableByMusic={user.discoverable_by_music}
+                cityVisible={user.city_visible}
+                onUpdate={(updatedUser) => setUser(updatedUser)}
+              />
             </Stack>
           </Grid>
 

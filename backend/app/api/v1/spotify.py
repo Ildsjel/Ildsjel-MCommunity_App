@@ -354,6 +354,74 @@ async def get_listening_timeline(
     }
 
 
+@router.get("/timeline/{user_id}")
+async def get_user_listening_timeline(
+    user_id: str,
+    limit: int = 50,
+    offset: int = 0,
+    session = Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get another user's listening timeline (public)
+    
+    Returns chronological list of played tracks for any user
+    """
+    cypher_query = """
+    MATCH (u:User {id: $user_id})-[:PLAYED]->(p:Play)-[:OF_TRACK]->(t:Track)
+    MATCH (t)<-[:PERFORMED]-(a:Artist)
+    OPTIONAL MATCH (t)-[:ON_ALBUM]->(al:Album)
+    WITH p, t, a, al
+    ORDER BY p.played_at DESC
+    SKIP $offset
+    LIMIT $limit
+    RETURN p.id as play_id,
+           p.played_at as played_at,
+           p.duration_played_ms as duration_ms,
+           0 as progress_ms,
+           t.id as track_id,
+           t.name as track_name,
+           t.uri as track_uri,
+           a.id as artist_id,
+           a.name as artist_name,
+           al.id as album_id,
+           al.name as album_name,
+           al.image_url as album_image
+    """
+    
+    result = session.run(cypher_query, user_id=user_id, offset=offset, limit=limit)
+    
+    timeline = []
+    for record in result:
+        timeline.append({
+            "play_id": record["play_id"],
+            "played_at": record["played_at"].isoformat() if record["played_at"] else None,
+            "track": {
+                "id": record["track_id"],
+                "name": record["track_name"],
+                "uri": record["track_uri"],
+                "duration_ms": record["duration_ms"],
+                "progress_ms": record["progress_ms"]
+            },
+            "artist": {
+                "id": record["artist_id"],
+                "name": record["artist_name"]
+            },
+            "album": {
+                "id": record["album_id"],
+                "name": record["album_name"],
+                "image_url": record["album_image"]
+            } if record["album_id"] else None
+        })
+    
+    return {
+        "timeline": timeline,
+        "count": len(timeline),
+        "offset": offset,
+        "limit": limit
+    }
+
+
 @router.get("/stats")
 async def get_listening_stats(
     session = Depends(get_neo4j_session),

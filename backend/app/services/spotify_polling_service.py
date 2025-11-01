@@ -62,12 +62,13 @@ class SpotifyPollingService:
         print(f"🔄 Starting Spotify poll at {datetime.now(timezone.utc).isoformat()}")
         
         with neo4j_driver.get_driver().session() as session:
-            # Get all users with active Spotify connections
+            # Get all users with active Spotify connections (exclude test tokens)
             query = """
             MATCH (u:User)
             WHERE 'spotify' IN u.source_accounts
               AND u.spotify_access_token IS NOT NULL
               AND u.spotify_refresh_token IS NOT NULL
+              AND u.spotify_access_token <> 'test_token'
             RETURN u.id as user_id,
                    u.handle as handle,
                    u.spotify_access_token as access_token,

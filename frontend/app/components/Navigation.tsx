@@ -28,6 +28,7 @@ import {
   Explore as ExploreIcon,
   Event as EventIcon,
   Logout as LogoutIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material'
 import { useUser } from '@/app/context/UserContext'
 import UserAvatar from './UserAvatar'
@@ -66,6 +67,7 @@ export default function Navigation() {
   const navItems = isAuthenticated
     ? [
         { label: 'Home', icon: <HomeIcon />, path: '/' },
+        { label: 'Search', icon: <SearchIcon />, path: '/search' },
         { label: 'Profile', icon: <PersonIcon />, path: '/profile' },
         { label: 'Spotify', icon: <MusicNoteIcon />, path: '/spotify/connect' },
         { label: 'Discover', icon: <ExploreIcon />, path: '/discover' },

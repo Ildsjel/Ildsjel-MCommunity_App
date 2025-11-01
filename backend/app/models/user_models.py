@@ -63,6 +63,10 @@ class UserResponse(UserBase):
     email_verified: bool = False
     is_active: bool = True
     about_me: Optional[str] = None
+    # Privacy/Discoverability settings
+    discoverable_by_name: bool = True
+    discoverable_by_music: bool = True
+    city_visible: str = "city"  # "city", "region", "hidden"
     
     class Config:
         from_attributes = True
@@ -75,6 +79,13 @@ class UserUpdate(BaseModel):
     city: Optional[str] = None
     profile_image_url: Optional[str] = None
     about_me: Optional[str] = Field(None, max_length=1500)
+
+
+class PrivacySettings(BaseModel):
+    """Model for privacy/discoverability settings"""
+    discoverable_by_name: Optional[bool] = None
+    discoverable_by_music: Optional[bool] = None
+    city_visible: Optional[str] = Field(None, pattern="^(city|region|hidden)$")
 
 
 class TokenResponse(BaseModel):

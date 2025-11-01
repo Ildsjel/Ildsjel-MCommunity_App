@@ -93,7 +93,7 @@ export default function SpotifyConnectPage() {
   const handleCallback = async (code: string, state: string, token: string) => {
     try {
       await axios.post(
-        `${API_BASE}/api/v1/spotify/callback`,
+        `${API_BASE}/api/v1/spotify/auth/callback`,
         { code, state },
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -112,11 +112,11 @@ export default function SpotifyConnectPage() {
   const handleConnect = async () => {
     try {
       const token = localStorage.getItem('access_token')
-      const response = await axios.get(`${API_BASE}/api/v1/spotify/authorize`, {
+      const response = await axios.get(`${API_BASE}/api/v1/spotify/auth/url`, {
         headers: { Authorization: `Bearer ${token}` }
       })
 
-      window.location.href = response.data.authorization_url
+      window.location.href = response.data.auth_url
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to start authorization')
     }

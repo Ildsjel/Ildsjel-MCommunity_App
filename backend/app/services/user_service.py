@@ -172,7 +172,10 @@ class UserService:
             profile_image_url=user.get("profile_image_url"),
             email_verified=user.get("email_verified", False),
             is_active=user.get("is_active", False),
-            about_me=user.get("about_me")
+            about_me=user.get("about_me"),
+            discoverable_by_name=user.get("discoverable_by_name", True),
+            discoverable_by_music=user.get("discoverable_by_music", True),
+            city_visible=user.get("city_visible", "city")
         )
     
     def update_user_profile(self, user_id: str, updates: Dict) -> Optional[UserResponse]:
