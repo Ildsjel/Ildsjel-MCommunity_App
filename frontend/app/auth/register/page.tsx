@@ -31,7 +31,19 @@ export default function RegisterPage() {
       // Redirect to login
       router.push('/auth/login')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed')
+      // Handle different error formats
+      const detail = err.response?.data?.detail
+      
+      if (Array.isArray(detail)) {
+        // Pydantic validation errors (array of error objects)
+        const errorMessages = detail.map((error: any) => error.msg).join(', ')
+        setError(errorMessages)
+      } else if (typeof detail === 'string') {
+        // Simple string error
+        setError(detail)
+      } else {
+        setError('Registration failed')
+      }
     } finally {
       setLoading(false)
     }
@@ -105,6 +117,9 @@ export default function RegisterPage() {
                 className="w-full px-4 py-2 bg-grim-black border border-iron-gray rounded focus:border-occult-crimson focus:outline-none text-silver-text"
                 placeholder="••••••••"
               />
+              <p className="mt-1 text-xs text-stone-gray">
+                Min. 8 Zeichen, mit Groß-/Kleinbuchstaben, Zahlen und Sonderzeichen
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

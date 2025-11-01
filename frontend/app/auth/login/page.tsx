@@ -29,15 +29,24 @@ export default function LoginPage() {
       // Redirect to profile
       router.push('/profile')
     } catch (err: any) {
-      const errorDetail = err.response?.data?.detail || 'Login failed'
+      // Handle different error formats
+      const detail = err.response?.data?.detail
+      let errorMessage = 'Login failed'
+      
+      if (Array.isArray(detail)) {
+        // Pydantic validation errors (array of error objects)
+        errorMessage = detail.map((error: any) => error.msg).join(', ')
+      } else if (typeof detail === 'string') {
+        errorMessage = detail
+      }
       
       // Check if it's an email verification error
-      if (errorDetail.includes('verify your email')) {
+      if (errorMessage.includes('verify your email')) {
         setError('Bitte verifiziere zuerst deine E-Mail-Adresse. Überprüfe deinen Posteingang.')
-      } else if (errorDetail.includes('inactive')) {
+      } else if (errorMessage.includes('inactive')) {
         setError('Dein Account ist inaktiv. Bitte kontaktiere den Support.')
       } else {
-        setError(errorDetail)
+        setError(errorMessage)
       }
     } finally {
       setLoading(false)
