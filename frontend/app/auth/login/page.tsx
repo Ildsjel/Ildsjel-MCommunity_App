@@ -29,7 +29,16 @@ export default function LoginPage() {
       // Redirect to profile
       router.push('/profile')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed')
+      const errorDetail = err.response?.data?.detail || 'Login failed'
+      
+      // Check if it's an email verification error
+      if (errorDetail.includes('verify your email')) {
+        setError('Bitte verifiziere zuerst deine E-Mail-Adresse. Überprüfe deinen Posteingang.')
+      } else if (errorDetail.includes('inactive')) {
+        setError('Dein Account ist inaktiv. Bitte kontaktiere den Support.')
+      } else {
+        setError(errorDetail)
+      }
     } finally {
       setLoading(false)
     }
@@ -96,12 +105,19 @@ export default function LoginPage() {
             {loading ? 'Logging in...' : 'Login'}
           </button>
 
-          <p className="text-center text-sm text-stone-gray mt-4">
-            Don't have an account?{' '}
-            <Link href="/auth/register" className="text-occult-crimson hover:underline">
-              Sign Up
-            </Link>
-          </p>
+          <div className="text-center text-sm text-stone-gray mt-4 space-y-2">
+            <p>
+              Don't have an account?{' '}
+              <Link href="/auth/register" className="text-occult-crimson hover:underline">
+                Sign Up
+              </Link>
+            </p>
+            <p>
+              <Link href="/auth/reset-password" className="text-occult-crimson hover:underline">
+                Forgot Password?
+              </Link>
+            </p>
+          </div>
         </form>
 
         <Link href="/" className="block text-center text-sm text-stone-gray mt-6 hover:text-silver-text">

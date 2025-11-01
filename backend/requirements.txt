@@ -18,6 +18,12 @@ python-multipart==0.0.6
 httpx==0.26.0
 requests==2.31.0
 
+# Email
+aiosmtplib==3.0.1
+
+# Security & Rate Limiting
+slowapi==0.1.9
+
 # Environment & Config
 python-dotenv==1.0.0
 

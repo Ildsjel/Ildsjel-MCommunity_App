@@ -29,6 +29,22 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
+    # Email Verification
+    EMAIL_VERIFICATION_EXPIRE_HOURS: int = 24
+    PASSWORD_RESET_EXPIRE_HOURS: int = 1
+    
+    # SMTP Settings
+    SMTP_ENABLED: bool = False  # Set to True in production
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@grimr.app"
+    SMTP_USE_TLS: bool = True
+    
+    # Frontend URL
+    FRONTEND_URL: str = "http://localhost:3000"
+    
     # External APIs
     SPOTIFY_CLIENT_ID: str = ""
     SPOTIFY_CLIENT_SECRET: str = ""

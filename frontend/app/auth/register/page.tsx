@@ -25,12 +25,11 @@ export default function RegisterPage() {
     try {
       const response = await authAPI.register(formData)
       
-      // Store token
-      localStorage.setItem('access_token', response.access_token)
-      localStorage.setItem('user', JSON.stringify(response.user))
+      // Show success message - user needs to verify email
+      alert('Registrierung erfolgreich! Bitte überprüfe deine E-Mail, um deinen Account zu aktivieren.')
       
-      // Redirect to profile
-      router.push('/profile')
+      // Redirect to login
+      router.push('/auth/login')
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Registration failed')
     } finally {
