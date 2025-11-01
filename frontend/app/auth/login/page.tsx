@@ -3,6 +3,20 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import {
+  Container,
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  Link as MuiLink,
+  InputAdornment,
+  IconButton,
+} from '@mui/material'
+import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material'
 import { authAPI } from '@/lib/api'
 
 export default function LoginPage() {
@@ -13,6 +27,7 @@ export default function LoginPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,86 +69,131 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6">
-      <div className="w-full max-w-md">
+    <Container maxWidth="sm">
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          py: 4,
+        }}
+      >
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-ghost-white mb-2 font-serif">
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography variant="h2" gutterBottom>
             Welcome Back
-          </h1>
-          <p className="text-stone-gray">
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
             Login to your Grimr account
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-deep-charcoal p-8 rounded-lg border border-iron-gray">
-          {error && (
-            <div className="mb-4 p-3 bg-blood-red bg-opacity-20 border border-blood-red rounded text-sm">
-              {error}
-            </div>
-          )}
+        <Card>
+          <CardContent sx={{ p: 4 }}>
+            <Box component="form" onSubmit={handleSubmit}>
+              {error && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                  {error}
+                </Alert>
+              )}
 
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
-                Email
-              </label>
-              <input
+              <TextField
+                fullWidth
+                label="Email"
                 type="email"
-                id="email"
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2 bg-grim-black border border-iron-gray rounded focus:border-occult-crimson focus:outline-none text-silver-text"
                 placeholder="you@example.com"
+                sx={{ mb: 3 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email />
+                    </InputAdornment>
+                  ),
+                }}
               />
-            </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
+              <TextField
+                fullWidth
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-4 py-2 bg-grim-black border border-iron-gray rounded focus:border-occult-crimson focus:outline-none text-silver-text"
                 placeholder="••••••••"
+                sx={{ mb: 3 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-6 px-6 py-3 bg-occult-crimson hover:bg-opacity-80 disabled:bg-opacity-50 text-ghost-white font-semibold rounded transition-all"
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={loading}
+                sx={{ mb: 2 }}
+              >
+                {loading ? 'Logging in...' : 'Login'}
+              </Button>
+
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Don't have an account?{' '}
+                  <MuiLink
+                    component={Link}
+                    href="/auth/register"
+                    color="primary"
+                    underline="hover"
+                  >
+                    Sign Up
+                  </MuiLink>
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  <MuiLink
+                    component={Link}
+                    href="/auth/reset-password"
+                    color="primary"
+                    underline="hover"
+                  >
+                    Forgot Password?
+                  </MuiLink>
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <MuiLink
+            component={Link}
+            href="/"
+            color="text.secondary"
+            underline="hover"
           >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-
-          <div className="text-center text-sm text-stone-gray mt-4 space-y-2">
-            <p>
-              Don't have an account?{' '}
-              <Link href="/auth/register" className="text-occult-crimson hover:underline">
-                Sign Up
-              </Link>
-            </p>
-            <p>
-              <Link href="/auth/reset-password" className="text-occult-crimson hover:underline">
-                Forgot Password?
-              </Link>
-            </p>
-          </div>
-        </form>
-
-        <Link href="/" className="block text-center text-sm text-stone-gray mt-6 hover:text-silver-text">
-          ← Back to Home
-        </Link>
-      </div>
-    </main>
+            ← Back to Home
+          </MuiLink>
+        </Box>
+      </Box>
+    </Container>
   )
 }
-

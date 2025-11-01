@@ -3,6 +3,30 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import {
+  Container,
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  Link as MuiLink,
+  Grid,
+  InputAdornment,
+  IconButton,
+  Snackbar,
+} from '@mui/material'
+import {
+  Visibility,
+  VisibilityOff,
+  Email,
+  Lock,
+  Person,
+  LocationOn,
+  Public,
+} from '@mui/icons-material'
 import { authAPI } from '@/lib/api'
 
 export default function RegisterPage() {
@@ -16,6 +40,8 @@ export default function RegisterPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [successOpen, setSuccessOpen] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,13 +49,15 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      const response = await authAPI.register(formData)
+      await authAPI.register(formData)
       
-      // Show success message - user needs to verify email
-      alert('Registrierung erfolgreich! Bitte überprüfe deine E-Mail, um deinen Account zu aktivieren.')
+      // Show success message
+      setSuccessOpen(true)
       
-      // Redirect to login
-      router.push('/auth/login')
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        router.push('/auth/login')
+      }, 2000)
     } catch (err: any) {
       // Handle different error formats
       const detail = err.response?.data?.detail
@@ -50,130 +78,182 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6">
-      <div className="w-full max-w-md">
+    <Container maxWidth="sm">
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          py: 4,
+        }}
+      >
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-ghost-white mb-2 font-serif">
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography variant="h2" gutterBottom>
             Join Grimr
-          </h1>
-          <p className="text-stone-gray">
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
             Create your Metal-ID and connect with the community
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-deep-charcoal p-8 rounded-lg border border-iron-gray">
-          {error && (
-            <div className="mb-4 p-3 bg-blood-red bg-opacity-20 border border-blood-red rounded text-sm">
-              {error}
-            </div>
-          )}
+        <Card>
+          <CardContent sx={{ p: 4 }}>
+            <Box component="form" onSubmit={handleSubmit}>
+              {error && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                  {error}
+                </Alert>
+              )}
 
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="handle" className="block text-sm font-medium mb-2">
-                Handle *
-              </label>
-              <input
-                type="text"
-                id="handle"
+              <TextField
+                fullWidth
+                label="Handle"
                 required
-                minLength={3}
-                maxLength={30}
                 value={formData.handle}
                 onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
-                className="w-full px-4 py-2 bg-grim-black border border-iron-gray rounded focus:border-occult-crimson focus:outline-none text-silver-text"
                 placeholder="metalhead666"
+                sx={{ mb: 3 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Person />
+                    </InputAdornment>
+                  ),
+                }}
+                helperText="Your unique username"
               />
-            </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
-                Email *
-              </label>
-              <input
+              <TextField
+                fullWidth
+                label="Email"
                 type="email"
-                id="email"
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2 bg-grim-black border border-iron-gray rounded focus:border-occult-crimson focus:outline-none text-silver-text"
                 placeholder="you@example.com"
+                sx={{ mb: 3 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email />
+                    </InputAdornment>
+                  ),
+                }}
               />
-            </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Password *
-              </label>
-              <input
-                type="password"
-                id="password"
+              <TextField
+                fullWidth
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
                 required
-                minLength={8}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-4 py-2 bg-grim-black border border-iron-gray rounded focus:border-occult-crimson focus:outline-none text-silver-text"
                 placeholder="••••••••"
+                sx={{ mb: 3 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                helperText="Min. 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special char"
               />
-              <p className="mt-1 text-xs text-stone-gray">
-                Min. 8 Zeichen, mit Groß-/Kleinbuchstaben, Zahlen und Sonderzeichen
-              </p>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="country" className="block text-sm font-medium mb-2">
-                  Country
-                </label>
-                <input
-                  type="text"
-                  id="country"
-                  value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  className="w-full px-4 py-2 bg-grim-black border border-iron-gray rounded focus:border-occult-crimson focus:outline-none text-silver-text"
-                  placeholder="Germany"
-                />
-              </div>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Country"
+                    value={formData.country}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    placeholder="Germany"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Public />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="City"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="Berlin"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LocationOn />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+              </Grid>
 
-              <div>
-                <label htmlFor="city" className="block text-sm font-medium mb-2">
-                  City
-                </label>
-                <input
-                  type="text"
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="w-full px-4 py-2 bg-grim-black border border-iron-gray rounded focus:border-occult-crimson focus:outline-none text-silver-text"
-                  placeholder="Berlin"
-                />
-              </div>
-            </div>
-          </div>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={loading}
+                sx={{ mb: 2 }}
+              >
+                {loading ? 'Creating Account...' : 'Create Account'}
+              </Button>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-6 px-6 py-3 bg-occult-crimson hover:bg-opacity-80 disabled:bg-opacity-50 text-ghost-white font-semibold rounded transition-all"
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Already have an account?{' '}
+                  <MuiLink
+                    component={Link}
+                    href="/auth/login"
+                    color="primary"
+                    underline="hover"
+                  >
+                    Login
+                  </MuiLink>
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <MuiLink
+            component={Link}
+            href="/"
+            color="text.secondary"
+            underline="hover"
           >
-            {loading ? 'Creating Account...' : 'Sign Up'}
-          </button>
+            ← Back to Home
+          </MuiLink>
+        </Box>
+      </Box>
 
-          <p className="text-center text-sm text-stone-gray mt-4">
-            Already have an account?{' '}
-            <Link href="/auth/login" className="text-occult-crimson hover:underline">
-              Login
-            </Link>
-          </p>
-        </form>
-
-        <Link href="/" className="block text-center text-sm text-stone-gray mt-6 hover:text-silver-text">
-          ← Back to Home
-        </Link>
-      </div>
-    </main>
+      <Snackbar
+        open={successOpen}
+        autoHideDuration={6000}
+        onClose={() => setSuccessOpen(false)}
+        message="Registrierung erfolgreich! Bitte überprüfe deine E-Mail."
+      />
+    </Container>
   )
 }
-

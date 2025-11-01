@@ -226,7 +226,15 @@ async def trigger_backfill(
         )
     
     # Check if token expired
-    if tokens["expires_at"] < datetime.utcnow():
+    from datetime import timezone
+    now = datetime.now(timezone.utc)
+    expires_at = tokens["expires_at"]
+    
+    # Make expires_at timezone-aware if it isn't
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if expires_at < now:
         # Refresh token
         client = SpotifyClient()
         try:
@@ -242,14 +250,108 @@ async def trigger_backfill(
     else:
         access_token = tokens["access_token"]
     
-    # Trigger backfill in background
-    background_tasks.add_task(
-        _run_backfill,
+    # Run backfill synchronously (immediate execution)
+    result = await _run_backfill_sync(
         user_id=current_user["id"],
         access_token=access_token
     )
     
-    return {"message": "Backfill started"}
+    return result
+
+
+@router.get("/debug/recently-played")
+async def debug_recently_played(
+    session = Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Debug endpoint to see raw Spotify recently played data
+    """
+    repository = SpotifyRepository(session)
+    tokens = repository.get_spotify_tokens(current_user["id"])
+    
+    if not tokens:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Spotify not connected"
+        )
+    
+    client = SpotifyClient(access_token=tokens["access_token"])
+    try:
+        recently_played = await client.get_recently_played(limit=10)
+        return {
+            "items_count": len(recently_played.get("items", [])),
+            "raw_response": recently_played
+        }
+    finally:
+        await client.close()
+
+
+@router.get("/timeline")
+async def get_listening_timeline(
+    limit: int = 50,
+    offset: int = 0,
+    session = Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get user's listening timeline (recent scrobbles)
+    
+    Returns chronological list of played tracks
+    """
+    query = """
+    MATCH (u:User {id: $user_id})-[:PLAYED]->(p:Play)-[:OF_TRACK]->(t:Track)
+    MATCH (t)<-[:PERFORMED]-(a:Artist)
+    OPTIONAL MATCH (t)-[:ON_ALBUM]->(al:Album)
+    WITH p, t, a, al
+    ORDER BY p.played_at DESC
+    SKIP $offset
+    LIMIT $limit
+    RETURN p.id as play_id,
+           p.played_at as played_at,
+           p.duration_ms as duration_ms,
+           p.progress_ms as progress_ms,
+           t.id as track_id,
+           t.name as track_name,
+           t.spotify_uri as track_uri,
+           a.id as artist_id,
+           a.name as artist_name,
+           al.id as album_id,
+           al.name as album_name,
+           al.image_url as album_image
+    """
+    
+    result = session.run(query, user_id=current_user["id"], offset=offset, limit=limit)
+    
+    timeline = []
+    for record in result:
+        timeline.append({
+            "play_id": record["play_id"],
+            "played_at": record["played_at"].isoformat() if record["played_at"] else None,
+            "track": {
+                "id": record["track_id"],
+                "name": record["track_name"],
+                "uri": record["track_uri"],
+                "duration_ms": record["duration_ms"],
+                "progress_ms": record["progress_ms"]
+            },
+            "artist": {
+                "id": record["artist_id"],
+                "name": record["artist_name"]
+            },
+            "album": {
+                "id": record["album_id"],
+                "name": record["album_name"],
+                "image_url": record["album_image"]
+            } if record["album_id"] else None
+        })
+    
+    return {
+        "timeline": timeline,
+        "count": len(timeline),
+        "offset": offset,
+        "limit": limit
+    }
 
 
 @router.get("/stats")
@@ -296,32 +398,37 @@ async def _initial_backfill(user_id: str, access_token: str):
     await _run_backfill(user_id, access_token)
 
 
-async def _run_backfill(user_id: str, access_token: str):
-    """Run backfill of recently played tracks"""
+async def _run_backfill_sync(user_id: str, access_token: str):
+    """Run backfill of recently played tracks (synchronous version)"""
     from app.db.neo4j_driver import neo4j_driver
     
     client = SpotifyClient(access_token=access_token)
     
     try:
         # Get session
-        with neo4j_driver.driver.session() as session:
+        with neo4j_driver.get_driver().session() as session:
             repository = SpotifyRepository(session)
             scrobble_service = SpotifyScrobbleService(session)
             
             # Get last play timestamp to avoid duplicates
             last_play_ts = repository.get_last_play_timestamp(user_id)
             
-            # Fetch recently played
+            print(f"🔍 Last play timestamp: {last_play_ts}")
+            
+            # Fetch recently played (without filter for now to get all data)
             recently_played = await client.get_recently_played(
                 limit=50,
-                after=last_play_ts
+                after=None  # Temporarily disabled to fetch all recent plays
             )
             
             items = recently_played.get("items", [])
             
             if not items:
                 print(f"✅ No new plays for user {user_id}")
-                return
+                return {
+                    "message": "No new plays found",
+                    "processed": 0
+                }
             
             # Process plays
             stats = await scrobble_service.process_recently_played(
@@ -331,25 +438,46 @@ async def _run_backfill(user_id: str, access_token: str):
             
             print(f"✅ Backfill complete for user {user_id}: {stats}")
             
+            return {
+                "message": "Backfill completed successfully",
+                "processed": stats.get("processed", 0),
+                "skipped": stats.get("skipped", 0),
+                "stats": stats
+            }
+            
     except Exception as e:
         print(f"❌ Backfill failed for user {user_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Backfill failed: {str(e)}"
+        )
     finally:
         await client.close()
+
+
+async def _run_backfill(user_id: str, access_token: str):
+    """Run backfill of recently played tracks (background version)"""
+    try:
+        await _run_backfill_sync(user_id, access_token)
+    except Exception as e:
+        print(f"❌ Background backfill failed: {e}")
 
 
 async def _delete_spotify_data(user_id: str):
     """
     DSGVO Art. 17: Delete all Spotify data for user
-    
+
     This runs in background and completes within 24h
     """
     from app.db.neo4j_driver import neo4j_driver
     from datetime import datetime
-    
+
     print(f"🗑️  Starting DSGVO deletion for user {user_id}")
-    
+
     try:
-        with neo4j_driver.driver.session() as session:
+        with neo4j_driver.get_driver().session() as session:
             # 1. Delete all Spotify plays
             query_plays = """
             MATCH (u:User {id: $user_id})-[:PLAYED]->(p:Play {source: "spotify"})
@@ -429,7 +557,7 @@ async def _delete_spotify_data(user_id: str):
     except Exception as e:
         print(f"❌ DSGVO deletion failed for user {user_id}: {e}")
         # Log error for manual intervention
-        with neo4j_driver.driver.session() as session:
+        with neo4j_driver.get_driver().session() as session:
             query_error = """
             MATCH (u:User {id: $user_id})
             SET u.spotify_deletion_error = $error,

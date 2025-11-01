@@ -1,272 +1,368 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import {
+  Container,
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Alert,
+  CircularProgress,
+  Grid,
+  Chip,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from '@mui/material'
+import {
+  MusicNote,
+  CheckCircle,
+  Sync,
+  LinkOff,
+  Warning,
+  FiberManualRecord,
+} from '@mui/icons-material'
+import Navigation from '@/app/components/Navigation'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+interface SpotifyStatus {
+  is_connected: boolean
+  spotify_user_id?: string
+  total_plays?: number
+  last_sync?: string
+}
+
 export default function SpotifyConnectPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<SpotifyStatus | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [status, setStatus] = useState<any>(null)
+  const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false)
 
-  // Handle OAuth callback
   useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      router.push('/auth/login')
+      return
+    }
+
+    // Check for OAuth callback
     const code = searchParams.get('code')
     const state = searchParams.get('state')
-    
-    if (code && state) {
-      handleCallback(code, state)
-    } else {
-      checkStatus()
+    const errorParam = searchParams.get('error')
+
+    if (errorParam) {
+      setError(`Spotify authorization failed: ${errorParam}`)
+      setLoading(false)
+      return
     }
-  }, [searchParams])
 
-  const checkStatus = async () => {
+    if (code && state) {
+      handleCallback(code, state, token)
+    } else {
+      fetchStatus(token)
+    }
+  }, [searchParams, router])
+
+  const fetchStatus = async (token: string) => {
     try {
-      const token = localStorage.getItem('access_token')
-      if (!token) {
-        router.push('/auth/login')
-        return
-      }
-
       const response = await axios.get(`${API_BASE}/api/v1/spotify/status`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      
       setStatus(response.data)
     } catch (err: any) {
-      console.error('Failed to check status:', err)
-    }
-  }
-
-  const handleCallback = async (code: string, state: string) => {
-    setLoading(true)
-    setError('')
-
-    try {
-      const token = localStorage.getItem('access_token')
-      if (!token) {
-        router.push('/auth/login')
-        return
-      }
-
-      await axios.post(
-        `${API_BASE}/api/v1/spotify/auth/callback`,
-        { code, state },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-
-      alert('Spotify erfolgreich verbunden! 🎵')
-      router.push('/profile')
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Verbindung fehlgeschlagen')
+      setError('Failed to load Spotify status')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleConnect = async () => {
-    setLoading(true)
-    setError('')
-
+  const handleCallback = async (code: string, state: string, token: string) => {
     try {
-      const token = localStorage.getItem('access_token')
-      if (!token) {
-        router.push('/auth/login')
-        return
-      }
+      await axios.post(
+        `${API_BASE}/api/v1/spotify/callback`,
+        { code, state },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
 
-      const response = await axios.get(`${API_BASE}/api/v1/spotify/auth/url`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-
-      // Redirect to Spotify authorization
-      window.location.href = response.data.auth_url
+      // Refresh status
+      await fetchStatus(token)
+      
+      // Clean URL
+      window.history.replaceState({}, '', '/spotify/connect')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Fehler beim Verbinden')
+      setError(err.response?.data?.detail || 'Failed to connect Spotify')
       setLoading(false)
     }
   }
 
-  const handleDisconnect = async () => {
-    // DSGVO-konforme Lösch-Bestätigung
-    const confirmMessage = `⚠️ Spotify-Verbindung trennen?\n\nFolgende Daten werden innerhalb von 24h gelöscht:\n• Alle Spotify-Scrobbles (${status?.total_plays || 0})\n• Top Artists & Genres\n• Hörstatistiken\n\nDeine Metal-ID wird neu berechnet.\n\nDiese Aktion kann nicht rückgängig gemacht werden.`
-    
-    if (!confirm(confirmMessage)) return
-
+  const handleConnect = async () => {
     try {
       const token = localStorage.getItem('access_token')
-      const response = await axios.post(
+      const response = await axios.get(`${API_BASE}/api/v1/spotify/authorize`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      window.location.href = response.data.authorization_url
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to start authorization')
+    }
+  }
+
+  const handleDisconnect = async () => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) return
+      
+      await axios.post(
         `${API_BASE}/api/v1/spotify/disconnect`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
-      alert(`✅ ${response.data.message}\n\nGelöscht: ${response.data.deleted_immediately.join(', ')}\nGeplant: ${response.data.scheduled_for_deletion.join(', ')}`)
-      setStatus({ ...status, is_connected: false })
+      setDisconnectDialogOpen(false)
+      
+      // Refresh status
+      await fetchStatus(token)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Fehler beim Trennen')
-    }
-  }
-
-  const handleBackfill = async () => {
-    try {
-      const token = localStorage.getItem('access_token')
-      await axios.post(
-        `${API_BASE}/api/v1/spotify/sync/backfill`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-
-      alert('Synchronisierung gestartet! Dies kann einige Minuten dauern.')
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Fehler beim Synchronisieren')
+      setError(err.response?.data?.detail || 'Failed to disconnect')
     }
   }
 
   if (loading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-6">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-occult-crimson"></div>
-        <p className="mt-4 text-stone-gray">Verbinde mit Spotify...</p>
-      </main>
+      <>
+        <Navigation />
+        <Container>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+            <CircularProgress />
+          </Box>
+        </Container>
+      </>
     )
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6">
-      <div className="w-full max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-ghost-white mb-2 font-serif">
-            Spotify Verbinden
-          </h1>
-          <p className="text-stone-gray">
-            Verbinde deinen Spotify Account für automatisches Scrobbling
-          </p>
-        </div>
+    <>
+      <Navigation />
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography variant="h3" gutterBottom>
+            Spotify Integration
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Connect your Spotify account to track your listening history
+          </Typography>
+        </Box>
 
-        {/* Error */}
         {error && (
-          <div className="mb-4 p-4 bg-blood-red bg-opacity-20 border border-blood-red rounded">
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
             {error}
-          </div>
+          </Alert>
         )}
 
         {/* Status Card */}
-        <div className="bg-deep-charcoal p-8 rounded-lg border border-iron-gray">
-          {status?.is_connected ? (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <span className="text-whisper-green text-2xl mr-3">●</span>
-                  <div>
-                    <h2 className="text-xl font-bold text-ghost-white">Verbunden</h2>
-                    <p className="text-sm text-stone-gray">Spotify ist aktiv</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleDisconnect}
-                  className="px-4 py-2 border border-blood-red text-blood-red hover:bg-blood-red hover:text-ghost-white rounded transition-all"
+        <Card>
+          <CardContent sx={{ p: 4 }}>
+            {status?.is_connected ? (
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <CheckCircle color="success" sx={{ fontSize: 40 }} />
+                    <Box>
+                      <Typography variant="h5" gutterBottom>
+                        Verbunden
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Spotify ist aktiv
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<LinkOff />}
+                    onClick={() => setDisconnectDialogOpen(true)}
+                  >
+                    Trennen
+                  </Button>
+                </Box>
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 3 }}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Scrobbles
+                      </Typography>
+                      <Typography variant="h4" color="primary">
+                        {status.total_plays || 0}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Auto-Sync
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <FiberManualRecord
+                          color="success"
+                          sx={{
+                            fontSize: 12,
+                            animation: 'pulse 2s infinite',
+                            '@keyframes pulse': {
+                              '0%, 100%': { opacity: 1 },
+                              '50%': { opacity: 0.5 },
+                            },
+                          }}
+                        />
+                        <Typography variant="body1" color="success.main">
+                          Alle 5 Min
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Box>
+
+                <Alert severity="success" icon={<CheckCircle />}>
+                  <Typography variant="body2" fontWeight="bold" gutterBottom>
+                    Automatische Synchronisierung aktiv
+                  </Typography>
+                  <Typography variant="body2">
+                    Deine Spotify-Hörgewohnheiten werden automatisch alle 5 Minuten synchronisiert. 
+                    Du musst nichts weiter tun – spiele einfach Musik und wir tracken sie für dich!
+                  </Typography>
+                </Alert>
+              </Box>
+            ) : (
+              <Box sx={{ textAlign: 'center' }}>
+                <MusicNote sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h5" gutterBottom>
+                  Nicht verbunden
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Verbinde deinen Spotify-Account, um deine Hörgewohnheiten zu tracken
+                </Typography>
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<MusicNote />}
+                  onClick={handleConnect}
                 >
-                  Trennen
-                </button>
-              </div>
+                  Mit Spotify verbinden
+                </Button>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="p-4 bg-grim-black rounded">
-                  <p className="text-sm text-stone-gray mb-1">Scrobbles</p>
-                  <p className="text-2xl font-bold text-occult-crimson">
-                    {status.total_plays || 0}
-                  </p>
-                </div>
-                <div className="p-4 bg-grim-black rounded">
-                  <p className="text-sm text-stone-gray mb-1">Status</p>
-                  <p className="text-sm text-whisper-green">Aktiv</p>
-                </div>
-              </div>
+        {/* Info Card */}
+        <Card sx={{ mt: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Was wird getrackt?
+            </Typography>
+            <List dense>
+              <ListItem>
+                <ListItemIcon>
+                  <CheckCircle color="success" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Recently Played Tracks"
+                  secondary="Songs, die du auf Spotify hörst"
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <CheckCircle color="success" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Artists & Albums"
+                  secondary="Deine Lieblingskünstler und Alben"
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <CheckCircle color="success" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Listening Stats"
+                  secondary="Statistiken über deine Hörgewohnheiten"
+                />
+              </ListItem>
+            </List>
+          </CardContent>
+        </Card>
 
-              <button
-                onClick={handleBackfill}
-                className="w-full px-6 py-3 bg-occult-crimson hover:bg-opacity-80 text-ghost-white font-semibold rounded transition-all"
-              >
-                Jetzt synchronisieren
-              </button>
+        {/* Privacy Note */}
+        <Alert severity="info" sx={{ mt: 3 }}>
+          <Typography variant="body2" fontWeight="bold" gutterBottom>
+            Datenschutz & DSGVO
+          </Typography>
+          <Typography variant="body2">
+            Wir speichern nur die nötigsten Daten und du kannst deine Verbindung jederzeit trennen. 
+            Nach dem Trennen werden alle Spotify-Daten innerhalb von 24h gelöscht.
+          </Typography>
+        </Alert>
 
-              <p className="text-xs text-stone-gray mt-4 text-center">
-                Automatische Synchronisierung läuft im Hintergrund
-              </p>
-            </div>
-          ) : (
-            <div className="text-center">
-              <div className="mb-6">
-                <span className="text-6xl">🎵</span>
-              </div>
-              <h2 className="text-xl font-bold text-ghost-white mb-2">
-                Noch nicht verbunden
-              </h2>
-              <p className="text-stone-gray mb-6">
-                Verbinde deinen Spotify Account, um deine Hörgewohnheiten zu tracken
-                und deine Metal-ID zu generieren.
-              </p>
+        <Box sx={{ textAlign: 'center', mt: 3 }}>
+          <Button
+            component={Link}
+            href="/profile"
+            variant="text"
+          >
+            ← Zurück zum Profil
+          </Button>
+        </Box>
+      </Container>
 
-              <div className="bg-grim-black p-4 rounded mb-6 text-left">
-                <h3 className="text-sm font-bold text-occult-crimson mb-2">
-                  🎵 Was wird getrackt?
-                </h3>
-                <ul className="text-sm text-stone-gray space-y-1 mb-3">
-                  <li>• Aktuell abgespielte Songs</li>
-                  <li>• Kürzlich gehörte Tracks</li>
-                  <li>• Top Artists & Genres</li>
-                  <li>• Hörstatistiken</li>
-                </ul>
-                
-                <h3 className="text-sm font-bold text-whisper-green mb-2">
-                  ✓ Deine Daten werden verwendet für:
-                </h3>
-                <ul className="text-sm text-stone-gray space-y-1 mb-3">
-                  <li>• Generierung deiner Metal-ID</li>
-                  <li>• Matching mit anderen Metalheads</li>
-                  <li>• Hörstatistiken & Empfehlungen</li>
-                </ul>
-                
-                <h3 className="text-sm font-bold text-blood-red mb-2">
-                  ✗ Deine Daten werden NICHT:
-                </h3>
-                <ul className="text-sm text-stone-gray space-y-1">
-                  <li>• An Dritte verkauft oder weitergegeben</li>
-                  <li>• Für Werbung verwendet</li>
-                  <li>• Für KI-Training genutzt</li>
-                </ul>
-                
-                <p className="text-xs text-stone-gray mt-3 italic">
-                  Du kannst die Verbindung jederzeit trennen. Alle Daten werden dann innerhalb von 24h gelöscht (DSGVO Art. 17).
-                </p>
-              </div>
-
-              <button
-                onClick={handleConnect}
-                className="w-full px-6 py-3 bg-occult-crimson hover:bg-opacity-80 text-ghost-white font-semibold rounded transition-all"
-              >
-                Mit Spotify verbinden
-              </button>
-            </div>
-          )}
-        </div>
-
-        <Link
-          href="/profile"
-          className="block text-center text-sm text-stone-gray mt-6 hover:text-silver-text"
-        >
-          ← Zurück zum Profil
-        </Link>
-      </div>
-    </main>
+      {/* Disconnect Dialog */}
+      <Dialog
+        open={disconnectDialogOpen}
+        onClose={() => setDisconnectDialogOpen(false)}
+      >
+        <DialogTitle>
+          <Warning color="warning" sx={{ mr: 1, verticalAlign: 'middle' }} />
+          Spotify-Verbindung trennen?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Folgende Daten werden innerhalb von 24h gelöscht:
+          </DialogContentText>
+          <List dense>
+            <ListItem>• Alle Spotify-Scrobbles ({status?.total_plays || 0}+)</ListItem>
+            <ListItem>• Top Artists & Genres</ListItem>
+            <ListItem>• Hörstatistiken</ListItem>
+          </List>
+          <DialogContentText sx={{ mt: 2 }}>
+            Deine Metal-ID wird neu berechnet.
+          </DialogContentText>
+          <Alert severity="error" sx={{ mt: 2 }}>
+            Diese Aktion kann nicht rückgängig gemacht werden.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDisconnectDialogOpen(false)}>
+            Abbrechen
+          </Button>
+          <Button onClick={handleDisconnect} color="error" variant="contained">
+            Trennen
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   )
 }
-

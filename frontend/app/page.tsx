@@ -1,74 +1,180 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Card,
+  CardContent,
+  Chip,
+} from '@mui/material'
+import {
+  MusicNote,
+  People,
+  Event,
+  TrendingUp,
+} from '@mui/icons-material'
+import Navigation from '@/app/components/Navigation'
 
 export default function Home() {
+  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    setIsAuthenticated(!!token)
+  }, [])
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-center font-mono text-sm">
-        {/* Logo/Title */}
-        <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold text-ghost-white mb-4 font-serif">
-            Grimr
-          </h1>
-          <p className="text-xl text-stone-gray">
-            Metalheads Connect
-          </p>
-          <p className="text-sm text-stone-gray mt-2">
-            Letterboxd meets Bandcamp for Metal
-          </p>
-        </div>
+    <>
+      <Navigation />
+      <Box
+        sx={{
+          minHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          py: 8,
+        }}
+      >
+        <Container maxWidth="lg">
+          {/* Hero Section */}
+          <Box sx={{ textAlign: 'center', mb: 8 }}>
+            <Typography
+              variant="h1"
+              sx={{
+                fontSize: { xs: '3rem', md: '5rem' },
+                fontWeight: 700,
+                mb: 2,
+              }}
+            >
+              Grimr
+            </Typography>
+            <Typography variant="h5" color="text.secondary" gutterBottom>
+              Metalheads Connect
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+              Letterboxd meets Bandcamp for Metal
+            </Typography>
 
-        {/* CTA Buttons */}
-        <div className="flex gap-4 justify-center mb-12">
-          <Link
-            href="/auth/register"
-            className="px-8 py-3 bg-occult-crimson hover:bg-opacity-80 text-ghost-white font-semibold rounded transition-all"
-          >
-            Sign Up
-          </Link>
-          <Link
-            href="/auth/login"
-            className="px-8 py-3 border-2 border-iron-gray hover:border-occult-crimson text-silver-text font-semibold rounded transition-all"
-          >
-            Login
-          </Link>
-        </div>
+            {!isAuthenticated && (
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 4 }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  component={Link}
+                  href="/auth/register"
+                  sx={{ px: 4 }}
+                >
+                  Sign Up
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  component={Link}
+                  href="/auth/login"
+                  sx={{ px: 4 }}
+                >
+                  Login
+                </Button>
+              </Box>
+            )}
+          </Box>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
-          <div className="p-6 bg-deep-charcoal rounded-lg border border-iron-gray">
-            <h3 className="text-xl font-bold text-occult-crimson mb-2">
-              Metal-ID
-            </h3>
-            <p className="text-stone-gray">
-              Connect your Spotify, Last.fm, Discogs & Bandcamp. Auto-generate your Metal identity.
-            </p>
-          </div>
+          {/* Features Grid */}
+          <Grid container spacing={3} sx={{ mb: 8 }}>
+            <Grid item xs={12} sm={6} md={4}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
+                <CardContent sx={{ textAlign: 'center', p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                  <MusicNote sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                  <Typography variant="h5" gutterBottom fontWeight="bold">
+                    Metal-ID
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+                    Connect your Spotify, Last.fm, Discogs & Bandcamp. Auto-generate your Metal identity.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
 
-          <div className="p-6 bg-deep-charcoal rounded-lg border border-iron-gray">
-            <h3 className="text-xl font-bold text-occult-crimson mb-2">
-              Find Your Tribe
-            </h3>
-            <p className="text-stone-gray">
-              Discover Metalheads with similar taste nearby. Compatibility matching based on your music DNA.
-            </p>
-          </div>
+            <Grid item xs={12} sm={6} md={4}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
+                <CardContent sx={{ textAlign: 'center', p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                  <People sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                  <Typography variant="h5" gutterBottom fontWeight="bold">
+                    Find Your Tribe
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+                    Discover Metalheads with similar taste nearby. Compatibility matching based on your music DNA.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
 
-          <div className="p-6 bg-deep-charcoal rounded-lg border border-iron-gray">
-            <h3 className="text-xl font-bold text-occult-crimson mb-2">
-              Events & Community
-            </h3>
-            <p className="text-stone-gray">
-              Find concerts, join event groups, share album reviews. Connect IRL.
-            </p>
-          </div>
-        </div>
+            <Grid item xs={12} sm={6} md={4}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
+                <CardContent sx={{ textAlign: 'center', p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                  <Event sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                  <Typography variant="h5" gutterBottom fontWeight="bold">
+                    Events & Community
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+                    Find concerts, join event groups, share album reviews. Connect IRL.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
 
-        {/* API Status */}
-        <div className="text-center mt-12 text-xs text-stone-gray">
-          <p>Backend API: <span className="text-whisper-green">●</span> Running on localhost:8000</p>
-        </div>
-      </div>
-    </main>
+          {/* Stats Section */}
+          <Card sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>
+            <CardContent sx={{ textAlign: 'center', py: 4 }}>
+              <Grid container spacing={4}>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="h3" color="primary" fontWeight="bold">
+                    1K+
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Active Metalheads
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="h3" color="primary" fontWeight="bold">
+                    50K+
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Scrobbled Tracks
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="h3" color="primary" fontWeight="bold">
+                    100+
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Upcoming Events
+                  </Typography>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+          {/* API Status */}
+          <Box sx={{ textAlign: 'center', mt: 6 }}>
+            <Chip
+              icon={<TrendingUp />}
+              label="Backend API: Running on localhost:8000"
+              color="success"
+              variant="outlined"
+              size="small"
+            />
+          </Box>
+        </Container>
+      </Box>
+    </>
   )
 }
-
