@@ -58,7 +58,13 @@ class UserRepository:
         
         record = result.single()
         if record:
-            return dict(record["u"])
+            user_data = dict(record["u"])
+            # Convert Neo4j DateTime to Python datetime
+            if "created_at" in user_data and user_data["created_at"]:
+                user_data["created_at"] = user_data["created_at"].to_native()
+            if "last_login_at" in user_data and user_data["last_login_at"]:
+                user_data["last_login_at"] = user_data["last_login_at"].to_native()
+            return user_data
         return None
     
     def get_user_by_email(self, email: str) -> Optional[Dict]:
@@ -80,7 +86,13 @@ class UserRepository:
         record = result.single()
         
         if record:
-            return dict(record["u"])
+            user_data = dict(record["u"])
+            # Convert Neo4j DateTime to Python datetime
+            if "created_at" in user_data and user_data["created_at"]:
+                user_data["created_at"] = user_data["created_at"].to_native()
+            if "last_login_at" in user_data and user_data["last_login_at"]:
+                user_data["last_login_at"] = user_data["last_login_at"].to_native()
+            return user_data
         return None
     
     def get_user_by_id(self, user_id: str) -> Optional[Dict]:
@@ -102,7 +114,13 @@ class UserRepository:
         record = result.single()
         
         if record:
-            return dict(record["u"])
+            user_data = dict(record["u"])
+            # Convert Neo4j DateTime to Python datetime
+            if "created_at" in user_data and user_data["created_at"]:
+                user_data["created_at"] = user_data["created_at"].to_native()
+            if "last_login_at" in user_data and user_data["last_login_at"]:
+                user_data["last_login_at"] = user_data["last_login_at"].to_native()
+            return user_data
         return None
     
     def update_user(self, user_id: str, updates: Dict) -> Optional[Dict]:
@@ -130,7 +148,13 @@ class UserRepository:
         record = result.single()
         
         if record:
-            return dict(record["u"])
+            user_data = dict(record["u"])
+            # Convert Neo4j DateTime to Python datetime
+            if "created_at" in user_data and user_data["created_at"]:
+                user_data["created_at"] = user_data["created_at"].to_native()
+            if "last_login_at" in user_data and user_data["last_login_at"]:
+                user_data["last_login_at"] = user_data["last_login_at"].to_native()
+            return user_data
         return None
     
     def add_source_account(self, user_id: str, source: str) -> bool:
