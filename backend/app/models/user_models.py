@@ -81,13 +81,6 @@ class UserUpdate(BaseModel):
     about_me: Optional[str] = Field(None, max_length=1500)
 
 
-class PrivacySettings(BaseModel):
-    """Model for privacy/discoverability settings"""
-    discoverable_by_name: Optional[bool] = None
-    discoverable_by_music: Optional[bool] = None
-    city_visible: Optional[str] = Field(None, pattern="^(city|region|hidden)$")
-
-
 class TokenResponse(BaseModel):
     """Model for JWT token response"""
     access_token: str

@@ -25,8 +25,6 @@ import {
   Home as HomeIcon,
   Person as PersonIcon,
   MusicNote as MusicNoteIcon,
-  Explore as ExploreIcon,
-  Event as EventIcon,
   Logout as LogoutIcon,
   Search as SearchIcon,
 } from '@mui/icons-material'
@@ -70,8 +68,6 @@ export default function Navigation() {
         { label: 'Search', icon: <SearchIcon />, path: '/search' },
         { label: 'Profile', icon: <PersonIcon />, path: '/profile' },
         { label: 'Spotify', icon: <MusicNoteIcon />, path: '/spotify/connect' },
-        { label: 'Discover', icon: <ExploreIcon />, path: '/discover' },
-        { label: 'Events', icon: <EventIcon />, path: '/events' },
       ]
     : [
         { label: 'Home', icon: <HomeIcon />, path: '/' },

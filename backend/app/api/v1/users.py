@@ -2,7 +2,7 @@
 User API Endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.models.user_models import UserResponse, UserUpdate, PrivacySettings
+from app.models.user_models import UserResponse, UserUpdate
 from app.services.user_service import UserService
 from app.db.neo4j_driver import get_neo4j_session
 from app.auth.security import get_current_user
@@ -94,48 +94,6 @@ async def update_current_user_profile(
     
     # Only update fields that are provided
     updates = user_update.model_dump(exclude_unset=True)
-    
-    if not updates:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No fields to update"
-        )
-    
-    updated_user = user_service.update_user_profile(current_user["sub"], updates)
-    
-    if not updated_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    
-    return updated_user
-
-
-@router.patch("/me/privacy", response_model=UserResponse)
-async def update_privacy_settings(
-    privacy_settings: PrivacySettings,
-    current_user: dict = Depends(get_current_user),
-    session = Depends(get_neo4j_session)
-):
-    """
-    Update privacy/discoverability settings
-    
-    Args:
-        privacy_settings: Privacy settings to update
-        current_user: Current user from JWT token
-        session: Neo4j database session
-    
-    Returns:
-        Updated user profile data
-    
-    Raises:
-        HTTPException: If update fails
-    """
-    user_service = UserService(session)
-    
-    # Only update fields that are provided
-    updates = privacy_settings.model_dump(exclude_unset=True)
     
     if not updates:
         raise HTTPException(

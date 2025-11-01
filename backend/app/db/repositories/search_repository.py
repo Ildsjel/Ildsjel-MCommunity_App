@@ -197,12 +197,14 @@ class SearchRepository:
             List of shared artist dicts with play counts
         """
         cypher_query = """
-        MATCH (u1:User {id: $requester_id})-[r1:LISTENS_TO]->(a:Artist)<-[r2:LISTENS_TO]-(u2:User {id: $target_id})
-        WITH a, r1.play_count as count1, r2.play_count as count2
+        MATCH (u1:User {id: $requester_id})-[r1:LISTENS_TO]->(a1:Artist)
+        MATCH (u2:User {id: $target_id})-[r2:LISTENS_TO]->(a2:Artist)
+        WHERE a1.name = a2.name
+        WITH a1, a2, r1.play_count as count1, r2.play_count as count2
         ORDER BY (count1 + count2) DESC
         LIMIT $limit
-        RETURN a.id as artist_id,
-               a.name as artist_name,
+        RETURN COALESCE(a1.id, a2.id) as artist_id,
+               a1.name as artist_name,
                count1 as play_count_requester,
                count2 as play_count_target
         """
@@ -268,9 +270,11 @@ class SearchRepository:
             Compatibility score 0-100, or None if insufficient data
         """
         cypher_query = """
-        // Get shared artists
-        MATCH (u1:User {id: $requester_id})-[r1:LISTENS_TO]->(a:Artist)<-[r2:LISTENS_TO]-(u2:User {id: $target_id})
-        WITH COUNT(a) as shared_artists,
+        // Get shared artists (by name to handle duplicate artist nodes)
+        MATCH (u1:User {id: $requester_id})-[r1:LISTENS_TO]->(a1:Artist)
+        MATCH (u2:User {id: $target_id})-[r2:LISTENS_TO]->(a2:Artist)
+        WHERE a1.name = a2.name
+        WITH COUNT(DISTINCT a1.name) as shared_artists,
              SUM(r1.play_count * r2.play_count) as weighted_overlap
         
         // Get total artists for each user
