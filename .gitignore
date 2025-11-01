@@ -1,3 +1,6 @@
+# prd
+prd.txt
+
 # macOS
 .DS_Store
 
@@ -9,6 +12,7 @@ logs/
 .env
 .env.*
 !.env.example
+!env.example
 
 # Build outputs
 build/
@@ -24,6 +28,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+.pnpm-debug.log
 
 # Python
 __pycache__/
@@ -31,11 +36,31 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+env/
+*.egg
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# Neo4j
+neo4j_data/
+neo4j_logs/
+
+# Docker
+docker-compose.override.yml
 
 # Editors/IDEs
 .vscode/
 .idea/
 *.swp
+*.swo
+.cursor/
 
 # Windows
 Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
