@@ -196,3 +196,46 @@ async def reset_password(
         )
     
     return {"message": "Password reset successfully. You can now log in."}
+
+
+@router.post("/dev/verify-user")
+async def dev_verify_user(
+    email: str,
+    session = Depends(get_neo4j_session)
+):
+    """
+    DEV MODE ONLY: Manually verify a user's email
+    
+    This endpoint should be removed or protected in production!
+    """
+    from app.config.settings import settings
+    
+    if settings.ENVIRONMENT != "dev":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is only available in development mode"
+        )
+    
+    query = """
+    MATCH (u:User {email: $email})
+    SET u.email_verified = true,
+        u.is_active = true,
+        u.verification_token = null,
+        u.verification_token_expires = null
+    RETURN u.handle as handle, u.email as email
+    """
+    
+    result = session.run(query, email=email)
+    record = result.single()
+    
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with email {email} not found"
+        )
+    
+    return {
+        "message": f"User {record['handle']} ({record['email']}) verified successfully",
+        "handle": record["handle"],
+        "email": record["email"]
+    }
