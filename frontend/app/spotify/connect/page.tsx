@@ -94,17 +94,20 @@ export default function SpotifyConnectPage() {
   }
 
   const handleDisconnect = async () => {
-    if (!confirm('Spotify-Verbindung wirklich trennen?')) return
+    // DSGVO-konforme Lösch-Bestätigung
+    const confirmMessage = `⚠️ Spotify-Verbindung trennen?\n\nFolgende Daten werden innerhalb von 24h gelöscht:\n• Alle Spotify-Scrobbles (${status?.total_plays || 0})\n• Top Artists & Genres\n• Hörstatistiken\n\nDeine Metal-ID wird neu berechnet.\n\nDiese Aktion kann nicht rückgängig gemacht werden.`
+    
+    if (!confirm(confirmMessage)) return
 
     try {
       const token = localStorage.getItem('access_token')
-      await axios.post(
+      const response = await axios.post(
         `${API_BASE}/api/v1/spotify/disconnect`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       )
 
-      alert('Spotify getrennt')
+      alert(`✅ ${response.data.message}\n\nGelöscht: ${response.data.deleted_immediately.join(', ')}\nGeplant: ${response.data.scheduled_for_deletion.join(', ')}`)
       setStatus({ ...status, is_connected: false })
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Fehler beim Trennen')
@@ -214,14 +217,36 @@ export default function SpotifyConnectPage() {
 
               <div className="bg-grim-black p-4 rounded mb-6 text-left">
                 <h3 className="text-sm font-bold text-occult-crimson mb-2">
-                  Was wird getrackt?
+                  🎵 Was wird getrackt?
                 </h3>
-                <ul className="text-sm text-stone-gray space-y-1">
+                <ul className="text-sm text-stone-gray space-y-1 mb-3">
                   <li>• Aktuell abgespielte Songs</li>
                   <li>• Kürzlich gehörte Tracks</li>
                   <li>• Top Artists & Genres</li>
                   <li>• Hörstatistiken</li>
                 </ul>
+                
+                <h3 className="text-sm font-bold text-whisper-green mb-2">
+                  ✓ Deine Daten werden verwendet für:
+                </h3>
+                <ul className="text-sm text-stone-gray space-y-1 mb-3">
+                  <li>• Generierung deiner Metal-ID</li>
+                  <li>• Matching mit anderen Metalheads</li>
+                  <li>• Hörstatistiken & Empfehlungen</li>
+                </ul>
+                
+                <h3 className="text-sm font-bold text-blood-red mb-2">
+                  ✗ Deine Daten werden NICHT:
+                </h3>
+                <ul className="text-sm text-stone-gray space-y-1">
+                  <li>• An Dritte verkauft oder weitergegeben</li>
+                  <li>• Für Werbung verwendet</li>
+                  <li>• Für KI-Training genutzt</li>
+                </ul>
+                
+                <p className="text-xs text-stone-gray mt-3 italic">
+                  Du kannst die Verbindung jederzeit trennen. Alle Daten werden dann innerhalb von 24h gelöscht (DSGVO Art. 17).
+                </p>
               </div>
 
               <button

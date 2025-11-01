@@ -157,29 +157,52 @@ async def get_spotify_status(
 
 @router.post("/disconnect")
 async def disconnect_spotify(
+    background_tasks: BackgroundTasks,
     session = Depends(get_neo4j_session),
     current_user: dict = Depends(get_current_user)
 ):
-    """Disconnect Spotify account"""
-    query = """
+    """
+    Disconnect Spotify account and delete all Spotify data (DSGVO Art. 17)
+    
+    This will:
+    1. Delete OAuth tokens immediately
+    2. Schedule deletion of all Spotify plays within 24h
+    3. Delete orphaned tracks/artists/albums
+    4. Log deletion for audit trail
+    """
+    # 1. Delete tokens immediately
+    query_tokens = """
     MATCH (u:User {id: $user_id})
     SET u.spotify_access_token = null,
         u.spotify_refresh_token = null,
         u.spotify_token_expires_at = null,
         u.spotify_scopes = null,
         u.spotify_user_id = null,
+        u.spotify_connected_at = null,
+        u.spotify_disconnected_at = datetime(),
         u.source_accounts = [x IN u.source_accounts WHERE x <> 'spotify']
     RETURN u
     """
     
-    result = session.run(query, user_id=current_user["id"])
+    result = session.run(query_tokens, user_id=current_user["id"])
     if not result.single():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
     
-    return {"message": "Spotify disconnected successfully"}
+    # 2. Schedule data deletion in background (DSGVO: within 24h)
+    background_tasks.add_task(
+        _delete_spotify_data,
+        user_id=current_user["id"]
+    )
+    
+    return {
+        "message": "Spotify disconnected. All data will be deleted within 24 hours.",
+        "deleted_immediately": ["tokens", "connection_status"],
+        "scheduled_for_deletion": ["plays", "tracks", "artists", "albums"],
+        "retention_period": "24 hours"
+    }
 
 
 @router.post("/sync/backfill")
@@ -312,4 +335,106 @@ async def _run_backfill(user_id: str, access_token: str):
         print(f"❌ Backfill failed for user {user_id}: {e}")
     finally:
         await client.close()
+
+
+async def _delete_spotify_data(user_id: str):
+    """
+    DSGVO Art. 17: Delete all Spotify data for user
+    
+    This runs in background and completes within 24h
+    """
+    from app.db.neo4j_driver import neo4j_driver
+    from datetime import datetime
+    
+    print(f"🗑️  Starting DSGVO deletion for user {user_id}")
+    
+    try:
+        with neo4j_driver.driver.session() as session:
+            # 1. Delete all Spotify plays
+            query_plays = """
+            MATCH (u:User {id: $user_id})-[:PLAYED]->(p:Play {source: "spotify"})
+            WITH p, count(p) as play_count
+            DETACH DELETE p
+            RETURN play_count
+            """
+            result = session.run(query_plays, user_id=user_id)
+            record = result.single()
+            plays_deleted = record["play_count"] if record else 0
+            
+            # 2. Delete orphaned tracks (no more plays)
+            query_orphaned_tracks = """
+            MATCH (t:Track)
+            WHERE NOT (t)<-[:OF_TRACK]-(:Play)
+            WITH t, count(t) as track_count
+            DETACH DELETE t
+            RETURN track_count
+            """
+            result = session.run(query_orphaned_tracks)
+            record = result.single()
+            tracks_deleted = record["track_count"] if record else 0
+            
+            # 3. Delete orphaned artists (no more tracks)
+            query_orphaned_artists = """
+            MATCH (a:Artist)
+            WHERE NOT (a)-[:PERFORMED]->(:Track)
+            WITH a, count(a) as artist_count
+            DETACH DELETE a
+            RETURN artist_count
+            """
+            result = session.run(query_orphaned_artists)
+            record = result.single()
+            artists_deleted = record["artist_count"] if record else 0
+            
+            # 4. Delete orphaned albums (no more tracks)
+            query_orphaned_albums = """
+            MATCH (al:Album)
+            WHERE NOT (al)<-[:ON_ALBUM]-(:Track)
+            WITH al, count(al) as album_count
+            DETACH DELETE al
+            RETURN album_count
+            """
+            result = session.run(query_orphaned_albums)
+            record = result.single()
+            albums_deleted = record["album_count"] if record else 0
+            
+            # 5. Log deletion for audit trail
+            query_log = """
+            MATCH (u:User {id: $user_id})
+            SET u.spotify_data_deleted_at = datetime(),
+                u.spotify_deletion_stats = {
+                    plays: $plays_deleted,
+                    tracks: $tracks_deleted,
+                    artists: $artists_deleted,
+                    albums: $albums_deleted,
+                    timestamp: $timestamp
+                }
+            RETURN u
+            """
+            session.run(
+                query_log,
+                user_id=user_id,
+                plays_deleted=plays_deleted,
+                tracks_deleted=tracks_deleted,
+                artists_deleted=artists_deleted,
+                albums_deleted=albums_deleted,
+                timestamp=datetime.utcnow().isoformat()
+            )
+            
+            print(f"✅ DSGVO deletion complete for user {user_id}:")
+            print(f"   - Plays deleted: {plays_deleted}")
+            print(f"   - Tracks deleted: {tracks_deleted}")
+            print(f"   - Artists deleted: {artists_deleted}")
+            print(f"   - Albums deleted: {albums_deleted}")
+            
+    except Exception as e:
+        print(f"❌ DSGVO deletion failed for user {user_id}: {e}")
+        # Log error for manual intervention
+        with neo4j_driver.driver.session() as session:
+            query_error = """
+            MATCH (u:User {id: $user_id})
+            SET u.spotify_deletion_error = $error,
+                u.spotify_deletion_error_at = datetime()
+            RETURN u
+            """
+            session.run(query_error, user_id=user_id, error=str(e))
 
