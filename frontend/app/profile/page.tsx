@@ -26,6 +26,8 @@ import {
   DialogActions,
   Divider,
   IconButton,
+  TextField,
+  Stack,
 } from '@mui/material'
 import {
   MusicNote,
@@ -36,8 +38,14 @@ import {
   LocationOn,
   CalendarToday,
   Link as LinkIcon,
+  Edit,
+  Save,
+  Close,
 } from '@mui/icons-material'
 import Navigation from '@/app/components/Navigation'
+import AvatarUpload from '@/app/components/AvatarUpload'
+import GalleryManager from '@/app/components/GalleryManager'
+import TopArtists from '@/app/components/TopArtists'
 import { userAPI } from '@/lib/api'
 import axios from 'axios'
 
@@ -54,6 +62,7 @@ interface User {
   is_pro: boolean
   onboarding_complete: boolean
   profile_image_url?: string
+  about_me?: string
 }
 
 interface TimelineItem {
@@ -85,6 +94,9 @@ export default function ProfilePage() {
   const [timelineLoading, setTimelineLoading] = useState(false)
   const [error, setError] = useState('')
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false)
+  const [editAboutMe, setEditAboutMe] = useState(false)
+  const [aboutMeText, setAboutMeText] = useState('')
+  const [aboutMeSaving, setAboutMeSaving] = useState(false)
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -97,6 +109,7 @@ export default function ProfilePage() {
 
         const userData = await userAPI.getMe()
         setUser(userData)
+        setAboutMeText(userData.about_me || '')
         
         // Fetch timeline if Spotify is connected
         if (userData.source_accounts.includes('spotify')) {
@@ -150,6 +163,25 @@ export default function ProfilePage() {
     }
   }
 
+  const handleSaveAboutMe = async () => {
+    setAboutMeSaving(true)
+    try {
+      const token = localStorage.getItem('access_token')
+      const response = await axios.patch(
+        `${API_BASE}/api/v1/users/me`,
+        { about_me: aboutMeText },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      
+      setUser(response.data)
+      setEditAboutMe(false)
+    } catch (err: any) {
+      alert(`❌ Fehler: ${err.response?.data?.detail || 'About Me konnte nicht gespeichert werden'}`)
+    } finally {
+      setAboutMeSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <>
@@ -179,211 +211,246 @@ export default function ProfilePage() {
   return (
     <>
       <Navigation />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth={false} sx={{ py: 4, px: 4 }}>
         <Grid container spacing={3}>
-          {/* Profile Card */}
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
-                  <Avatar
-                    sx={{
-                      width: 120,
-                      height: 120,
-                      bgcolor: 'primary.main',
-                      fontSize: '3rem',
-                      mb: 2,
-                    }}
-                  >
-                    {user.handle.charAt(0).toUpperCase()}
-                  </Avatar>
-                  <Typography variant="h4" gutterBottom>
-                    {user.handle}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {user.email}
-                  </Typography>
-                  {user.is_pro && (
-                    <Chip
-                      label="PRO"
-                      color="secondary"
-                      size="small"
-                      sx={{ mt: 1 }}
-                    />
-                  )}
-                </Box>
-
-                <Divider sx={{ my: 2 }} />
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {(user.city || user.country) && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LocationOn fontSize="small" color="action" />
-                      <Typography variant="body2">
-                        {user.city}{user.city && user.country && ', '}{user.country}
+          {/* Left Column: Profile Info + About Me + Connected Accounts */}
+          <Grid item xs={12} md={9}>
+            <Stack spacing={3}>
+              {/* Profile Header */}
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
+                    <AvatarUpload size={100} />
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="h3" gutterBottom>
+                        {user.handle}
                       </Typography>
+                      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <LocationOn fontSize="small" color="action" />
+                          <Typography variant="body2">
+                            {user.city || 'Unknown'}{user.country && `, ${user.country}`}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <CalendarToday fontSize="small" color="action" />
+                          <Typography variant="body2">
+                            Member since {new Date(user.created_at).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                        {user.is_pro && <Chip label="PRO" color="secondary" size="small" />}
+                      </Stack>
                     </Box>
-                  )}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CalendarToday fontSize="small" color="action" />
-                    <Typography variant="body2">
-                      Member since {new Date(user.created_at).toLocaleDateString()}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Divider sx={{ my: 2 }} />
-
-                {/* Connected Accounts */}
-                <Typography variant="h6" gutterBottom>
-                  Connected Accounts
-                </Typography>
-                {user.source_accounts.length > 0 ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {user.source_accounts.map((source) => (
-                      <Card key={source} variant="outlined" sx={{ bgcolor: 'success.main', bgcolor: 'rgba(74, 155, 142, 0.1)' }}>
-                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <MusicNote color="success" />
-                              <Box>
-                                <Typography variant="body2" fontWeight="bold" sx={{ textTransform: 'capitalize' }}>
-                                  {source}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Aktiv verbunden
-                                </Typography>
-                              </Box>
-                            </Box>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => setDisconnectDialogOpen(true)}
-                            >
-                              <LinkOff />
-                            </IconButton>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </Box>
-                ) : (
-                  <Alert severity="info" sx={{ mt: 1 }}>
-                    No music accounts connected yet.{' '}
-                    <Link href="/spotify/connect" style={{ color: 'inherit' }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<LinkIcon />}
+                      component={Link}
+                      href="/spotify/connect"
+                    >
                       Connect Spotify
-                    </Link>
-                  </Alert>
-                )}
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
 
-                {!user.onboarding_complete && (
-                  <Alert severity="warning" sx={{ mt: 2 }} icon={<Warning />}>
-                    <Typography variant="body2" fontWeight="bold" gutterBottom>
-                      Complete your Metal-ID
+              {/* About Me */}
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h5">
+                      About Me
                     </Typography>
-                    <Typography variant="caption">
-                      Connect your music accounts to generate your Metal-ID
-                    </Typography>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
+                    {!editAboutMe ? (
+                      <IconButton onClick={() => setEditAboutMe(true)} size="small">
+                        <Edit />
+                      </IconButton>
+                    ) : (
+                      <Box>
+                        <IconButton onClick={() => { setEditAboutMe(false); setAboutMeText(user.about_me || ''); }} size="small">
+                          <Close />
+                        </IconButton>
+                        <IconButton onClick={handleSaveAboutMe} size="small" color="primary" disabled={aboutMeSaving}>
+                          <Save />
+                        </IconButton>
+                      </Box>
+                    )}
+                  </Box>
 
-            {/* Quick Actions */}
-            <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Button
-                variant="outlined"
-                startIcon={<LinkIcon />}
-                component={Link}
-                href="/spotify/connect"
-                fullWidth
-              >
-                Connect Spotify
-              </Button>
-            </Box>
+                  {editAboutMe ? (
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={6}
+                      value={aboutMeText}
+                      onChange={(e) => setAboutMeText(e.target.value.slice(0, 1500))}
+                      placeholder="Enter information about you"
+                      helperText={`${aboutMeText.length}/1500 characters`}
+                      disabled={aboutMeSaving}
+                    />
+                  ) : (
+                    <Typography variant="body1" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', minHeight: 80 }}>
+                      {user.about_me || 'Click the edit button to add information about yourself'}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Gallery Preview - Direkt unter About Me */}
+              <GalleryManager 
+                userId={user.id} 
+                isOwnProfile={true} 
+                previewMode={true}
+                onViewAll={() => router.push('/gallery')}
+              />
+
+              {/* Connected Accounts */}
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Connected Accounts
+                  </Typography>
+                  {user.source_accounts.length > 0 ? (
+                    <Stack spacing={2}>
+                      {user.source_accounts.map((source) => (
+                        <Card key={source} variant="outlined" sx={{ bgcolor: 'rgba(74, 155, 142, 0.1)' }}>
+                          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <MusicNote color="success" />
+                                <Box>
+                                  <Typography variant="body1" fontWeight="bold" sx={{ textTransform: 'capitalize' }}>
+                                    {source}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Aktiv verbunden
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => setDisconnectDialogOpen(true)}
+                              >
+                                <LinkOff />
+                              </IconButton>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </Stack>
+                  ) : (
+                    <Alert severity="info">
+                      No music accounts connected yet.{' '}
+                      <Link href="/spotify/connect" style={{ color: 'inherit' }}>
+                        Connect Spotify
+                      </Link>
+                    </Alert>
+                  )}
+
+                  {!user.onboarding_complete && (
+                    <Alert severity="warning" sx={{ mt: 2 }} icon={<Warning />}>
+                      <Typography variant="body2" fontWeight="bold" gutterBottom>
+                        Complete your Metal-ID
+                      </Typography>
+                      <Typography variant="caption">
+                        Connect your music accounts to generate your Metal-ID
+                      </Typography>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            </Stack>
           </Grid>
 
-          {/* Timeline */}
-          <Grid item xs={12} md={8}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h5">
-                    Recently Played
-                  </Typography>
-                  {user.source_accounts.includes('spotify') && (
-                    <IconButton onClick={() => fetchTimeline()} disabled={timelineLoading}>
-                      <Refresh />
-                    </IconButton>
-                  )}
-                </Box>
+          {/* Right Column: Top Artists & Recently Played Timeline */}
+          <Grid item xs={12} md={3}>
+            <Stack spacing={3}>
+              {/* Top 10 Artists */}
+              <TopArtists userId={user.id} isOwnProfile={true} />
 
-                {!user.source_accounts.includes('spotify') ? (
-                  <Alert severity="info">
-                    Connect your Spotify account to see your listening history
-                  </Alert>
-                ) : timelineLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                    <CircularProgress />
+              {/* Recently Played Timeline */}
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">
+                      Recently Played
+                    </Typography>
+                    {user.source_accounts.includes('spotify') && (
+                      <IconButton onClick={() => fetchTimeline()} disabled={timelineLoading} size="small">
+                        <Refresh />
+                      </IconButton>
+                    )}
                   </Box>
-                ) : timeline.length === 0 ? (
-                  <Alert severity="info">
-                    No scrobbles yet. Play some music on Spotify!
-                  </Alert>
-                ) : (
-                  <List>
-                    {timeline.map((item, index) => (
-                      <Box key={item.play_id}>
-                        <ListItem alignItems="flex-start" sx={{ px: 0 }}>
-                          <ListItemAvatar>
-                            {item.album?.image_url ? (
-                              <Avatar
-                                variant="rounded"
-                                src={item.album.image_url}
-                                alt={item.album.name}
-                                sx={{ width: 56, height: 56 }}
-                              />
-                            ) : (
-                              <Avatar variant="rounded" sx={{ width: 56, height: 56 }}>
-                                <MusicNote />
-                              </Avatar>
-                            )}
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={
-                              <Typography variant="body1" fontWeight="bold">
-                                {item.track.name}
-                              </Typography>
-                            }
-                            secondary={
-                              <>
-                                <Typography variant="body2" color="text.secondary">
-                                  {item.artist.name}
-                                </Typography>
-                                {item.album && (
-                                  <Typography variant="caption" color="text.secondary">
-                                    {item.album.name}
-                                  </Typography>
-                                )}
-                                <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                                  {new Date(item.played_at).toLocaleString('de-DE', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </Typography>
-                              </>
-                            }
-                          />
-                        </ListItem>
-                        {index < timeline.length - 1 && <Divider />}
+
+                  <Box sx={{ maxHeight: '600px', overflow: 'auto' }}>
+                    {!user.source_accounts.includes('spotify') ? (
+                      <Alert severity="info">
+                        Connect your Spotify account to see your listening history
+                      </Alert>
+                    ) : timelineLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                        <CircularProgress />
                       </Box>
-                    ))}
-                  </List>
-                )}
-              </CardContent>
-            </Card>
+                    ) : timeline.length === 0 ? (
+                      <Alert severity="info">
+                        No scrobbles yet. Play some music on Spotify!
+                      </Alert>
+                    ) : (
+                      <List sx={{ py: 0 }}>
+                        {timeline.map((item, index) => (
+                          <Box key={item.play_id}>
+                            <ListItem alignItems="flex-start" sx={{ px: 0, py: 1.5 }}>
+                              <ListItemAvatar>
+                                {item.album?.image_url ? (
+                                  <Avatar
+                                    variant="rounded"
+                                    src={item.album.image_url}
+                                    alt={item.album.name}
+                                    sx={{ width: 56, height: 56 }}
+                                  />
+                                ) : (
+                                  <Avatar variant="rounded" sx={{ width: 56, height: 56 }}>
+                                    <MusicNote />
+                                  </Avatar>
+                                )}
+                              </ListItemAvatar>
+                              <ListItemText
+                                primary={
+                                  <Typography variant="body2" fontWeight="bold" noWrap>
+                                    {item.track.name}
+                                  </Typography>
+                                }
+                                secondary={
+                                  <>
+                                    <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                                      {item.artist.name}
+                                    </Typography>
+                                    {item.album && (
+                                      <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                                        {item.album.name}
+                                      </Typography>
+                                    )}
+                                    <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                                      {new Date(item.played_at).toLocaleString('de-DE', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </Typography>
+                                  </>
+                                }
+                              />
+                            </ListItem>
+                            {index < timeline.length - 1 && <Divider />}
+                          </Box>
+                        ))}
+                      </List>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Stack>
           </Grid>
         </Grid>
       </Container>

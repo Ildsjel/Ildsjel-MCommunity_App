@@ -171,7 +171,40 @@ class UserService:
             onboarding_complete=user.get("onboarding_complete", False),
             profile_image_url=user.get("profile_image_url"),
             email_verified=user.get("email_verified", False),
-            is_active=user.get("is_active", False)
+            is_active=user.get("is_active", False),
+            about_me=user.get("about_me")
+        )
+    
+    def update_user_profile(self, user_id: str, updates: Dict) -> Optional[UserResponse]:
+        """
+        Update user profile
+        
+        Args:
+            user_id: User's ID
+            updates: Dictionary of fields to update
+        
+        Returns:
+            Updated user profile or None
+        """
+        updated_user = self.repository.update_user(user_id, updates)
+        
+        if not updated_user:
+            return None
+        
+        return UserResponse(
+            id=updated_user["id"],
+            handle=updated_user["handle"],
+            email=updated_user["email"],
+            country=updated_user.get("country"),
+            city=updated_user.get("city"),
+            created_at=updated_user["created_at"],
+            source_accounts=updated_user.get("source_accounts", []),
+            is_pro=updated_user.get("is_pro", False),
+            onboarding_complete=updated_user.get("onboarding_complete", False),
+            profile_image_url=updated_user.get("profile_image_url"),
+            email_verified=updated_user.get("email_verified", False),
+            is_active=updated_user.get("is_active", False),
+            about_me=updated_user.get("about_me")
         )
     
     def verify_email(self, token: str) -> Optional[Dict]:

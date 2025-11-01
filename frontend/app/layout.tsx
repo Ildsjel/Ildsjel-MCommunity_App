@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from './ThemeProvider'
+import { UserProvider } from './context/UserContext'
 
 export const metadata: Metadata = {
   title: 'Grimr - Metalheads Connect',
@@ -16,7 +17,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ThemeProvider>
-          {children}
+          <UserProvider>
+            {children}
+          </UserProvider>
         </ThemeProvider>
       </body>
     </html>

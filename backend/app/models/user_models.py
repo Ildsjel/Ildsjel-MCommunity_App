@@ -62,6 +62,7 @@ class UserResponse(UserBase):
     profile_image_url: Optional[str] = None
     email_verified: bool = False
     is_active: bool = True
+    about_me: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -73,6 +74,7 @@ class UserUpdate(BaseModel):
     country: Optional[str] = None
     city: Optional[str] = None
     profile_image_url: Optional[str] = None
+    about_me: Optional[str] = Field(None, max_length=1500)
 
 
 class TokenResponse(BaseModel):

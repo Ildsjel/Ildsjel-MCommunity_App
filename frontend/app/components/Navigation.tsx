@@ -15,7 +15,6 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Avatar,
   Menu,
   MenuItem,
   useMediaQuery,
@@ -30,20 +29,20 @@ import {
   Event as EventIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material'
+import { useUser } from '@/app/context/UserContext'
+import UserAvatar from './UserAvatar'
 
 export default function Navigation() {
   const router = useRouter()
   const pathname = usePathname()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { user, setUser } = useUser()
   
   const [mobileOpen, setMobileOpen] = useState(false)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   
-  const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('access_token')
-  const user = typeof window !== 'undefined' && localStorage.getItem('user') 
-    ? JSON.parse(localStorage.getItem('user') || '{}') 
-    : null
+  const isAuthenticated = !!user
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -59,7 +58,7 @@ export default function Navigation() {
 
   const handleLogout = () => {
     localStorage.removeItem('access_token')
-    localStorage.removeItem('user')
+    setUser(null)
     handleProfileMenuClose()
     router.push('/')
   }
@@ -152,12 +151,14 @@ export default function Navigation() {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          {isAuthenticated && (
+          {isAuthenticated && user && (
             <>
               <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0 }}>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
-                  {user?.handle?.charAt(0).toUpperCase() || 'U'}
-                </Avatar>
+                <UserAvatar
+                  avatarUrl={user.profile_image_url}
+                  userName={user.handle}
+                  size={40}
+                />
               </IconButton>
               <Menu
                 anchorEl={anchorEl}

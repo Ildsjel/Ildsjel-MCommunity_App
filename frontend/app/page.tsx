@@ -14,18 +14,16 @@ import {
   Chip,
 } from '@mui/material'
 import {
-  MusicNote,
-  People,
-  Event,
   TrendingUp,
 } from '@mui/icons-material'
 import Navigation from '@/app/components/Navigation'
 
 export default function Home() {
-  const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const token = localStorage.getItem('access_token')
     setIsAuthenticated(!!token)
   }, [])
@@ -62,7 +60,7 @@ export default function Home() {
               Letterboxd meets Bandcamp for Metal
             </Typography>
 
-            {!isAuthenticated && (
+            {mounted && !isAuthenticated && (
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 4 }}>
                 <Button
                   variant="contained"
@@ -85,51 +83,6 @@ export default function Home() {
               </Box>
             )}
           </Box>
-
-          {/* Features Grid */}
-          <Grid container spacing={3} sx={{ mb: 8 }}>
-            <Grid item xs={12} sm={6} md={4}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
-                <CardContent sx={{ textAlign: 'center', p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  <MusicNote sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-                  <Typography variant="h5" gutterBottom fontWeight="bold">
-                    Metal-ID
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
-                    Connect your Spotify, Last.fm, Discogs & Bandcamp. Auto-generate your Metal identity.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
-                <CardContent sx={{ textAlign: 'center', p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  <People sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-                  <Typography variant="h5" gutterBottom fontWeight="bold">
-                    Find Your Tribe
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
-                    Discover Metalheads with similar taste nearby. Compatibility matching based on your music DNA.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
-                <CardContent sx={{ textAlign: 'center', p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Event sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-                  <Typography variant="h5" gutterBottom fontWeight="bold">
-                    Events & Community
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
-                    Find concerts, join event groups, share album reviews. Connect IRL.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
 
           {/* Stats Section */}
           <Card sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>

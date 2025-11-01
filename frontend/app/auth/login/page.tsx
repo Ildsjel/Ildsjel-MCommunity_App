@@ -18,9 +18,11 @@ import {
 } from '@mui/material'
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material'
 import { authAPI } from '@/lib/api'
+import { useUser } from '@/app/context/UserContext'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { setUser } = useUser()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -37,9 +39,9 @@ export default function LoginPage() {
     try {
       const response = await authAPI.login(formData)
       
-      // Store token
+      // Store token and update context
       localStorage.setItem('access_token', response.access_token)
-      localStorage.setItem('user', JSON.stringify(response.user))
+      setUser(response.user)
       
       // Redirect to profile
       router.push('/profile')
