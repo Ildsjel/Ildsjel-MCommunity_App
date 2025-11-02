@@ -215,10 +215,24 @@ export default function ProfilePage() {
   return (
     <>
       <Navigation />
-      <Container maxWidth={false} sx={{ py: 4, px: 4 }}>
-        <Grid container spacing={3}>
+      <Box sx={{ 
+        width: '100%',
+        maxWidth: '100vw',
+        py: 4, 
+        px: 4,
+        boxSizing: 'border-box'
+      }}>
+        <Box sx={{ 
+          display: 'flex',
+          gap: 3,
+          flexDirection: { xs: 'column', lg: 'row' },
+          width: '100%'
+        }}>
           {/* Left Column: Profile Info + About Me + Connected Accounts */}
-          <Grid item xs={12} md={9}>
+          <Box sx={{ 
+            flex: { xs: '1 1 100%', lg: '1 1 75%' },
+            minWidth: 0
+          }}>
             <Stack spacing={3}>
               {/* Profile Header */}
               <Card>
@@ -367,10 +381,13 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             </Stack>
-          </Grid>
+          </Box>
 
           {/* Right Column: Top Artists & Recently Played Timeline */}
-          <Grid item xs={12} md={3}>
+          <Box sx={{ 
+            flex: { xs: '1 1 100%', lg: '1 1 25%' },
+            minWidth: 0
+          }}>
             <Stack spacing={3}>
               {/* Top 10 Artists */}
               <TopArtists userId={user.id} isOwnProfile={true} />
@@ -458,9 +475,9 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             </Stack>
-          </Grid>
-        </Grid>
-      </Container>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Disconnect Dialog */}
       <Dialog
