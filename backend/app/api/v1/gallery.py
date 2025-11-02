@@ -36,7 +36,7 @@ async def upload_avatar(
         # Update user profile with new avatar URL
         with neo4j_driver.get_driver().session() as session:
             repo = UserRepository(session)
-            updated_user = repo.update_user(user_id, {"profile_image_url": image_url})
+            updated_user = repo.update_user(user_id, {"profile_image_url": image_url, "avatar_url": image_url})
             
             if not updated_user:
                 raise HTTPException(status_code=404, detail="User not found")
@@ -51,6 +51,36 @@ async def upload_avatar(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to upload avatar: {str(e)}")
+
+
+@router.delete("/users/me/avatar")
+async def delete_avatar(
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete user avatar"""
+    user_id = current_user["id"]
+    
+    try:
+        # Remove avatar URL from user profile
+        with neo4j_driver.get_driver().session() as session:
+            repo = UserRepository(session)
+            updated_user = repo.update_user(user_id, {"profile_image_url": None, "avatar_url": None})
+            
+            if not updated_user:
+                raise HTTPException(status_code=404, detail="User not found")
+        
+        # Note: We don't delete the physical file to preserve history
+        # The file will be overwritten on next upload
+        
+        return {
+            "success": True,
+            "message": "Avatar deleted successfully"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete avatar: {str(e)}")
 
 
 @router.post("/users/me/gallery", response_model=GalleryImage)

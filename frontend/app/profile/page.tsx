@@ -46,6 +46,7 @@ import Navigation from '@/app/components/Navigation'
 import AvatarUpload from '@/app/components/AvatarUpload'
 import GalleryManager from '@/app/components/GalleryManager'
 import TopArtists from '@/app/components/TopArtists'
+import SpotifyConnection from '@/app/components/SpotifyConnection'
 import { userAPI } from '@/lib/api'
 import axios from 'axios'
 
@@ -222,8 +223,19 @@ export default function ProfilePage() {
               {/* Profile Header */}
               <Card>
                 <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
-                    <AvatarUpload size={100} />
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3, mb: 2 }}>
+                    {/* Avatar and Spotify Logo */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                      <AvatarUpload size={100} />
+                      <SpotifyConnection 
+                        isConnected={user.source_accounts.includes('spotify')}
+                        onDisconnect={() => {
+                          // Refresh will be handled by the component
+                        }}
+                      />
+                    </Box>
+                    
+                    {/* User Info */}
                     <Box sx={{ flexGrow: 1 }}>
                       <Typography variant="h3" gutterBottom>
                         {user.handle}
@@ -244,14 +256,6 @@ export default function ProfilePage() {
                         {user.is_pro && <Chip label="PRO" color="secondary" size="small" />}
                       </Stack>
                     </Box>
-                    <Button
-                      variant="outlined"
-                      startIcon={<LinkIcon />}
-                      component={Link}
-                      href="/spotify/connect"
-                    >
-                      Connect Spotify
-                    </Button>
                   </Box>
                 </CardContent>
               </Card>

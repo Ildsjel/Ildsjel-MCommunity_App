@@ -4,7 +4,8 @@ import { Avatar, AvatarProps } from '@mui/material'
 
 interface UserAvatarProps extends Omit<AvatarProps, 'src' | 'children'> {
   avatarUrl?: string | null
-  userName: string
+  userName?: string
+  userId?: string
   size?: number
 }
 
@@ -15,6 +16,7 @@ interface UserAvatarProps extends Omit<AvatarProps, 'src' | 'children'> {
 export default function UserAvatar({ 
   avatarUrl, 
   userName, 
+  userId,
   size = 40,
   sx,
   ...props 
@@ -25,6 +27,17 @@ export default function UserAvatar({
   const fullAvatarUrl = avatarUrl && avatarUrl.startsWith('/') 
     ? `${API_BASE}${avatarUrl}` 
     : avatarUrl
+
+  // Fallback für Initialen
+  const getInitials = () => {
+    if (userName && userName.length > 0) {
+      return userName.charAt(0).toUpperCase()
+    }
+    if (userId && userId.length > 0) {
+      return userId.charAt(0).toUpperCase()
+    }
+    return '?'
+  }
 
   return (
     <Avatar
@@ -38,7 +51,7 @@ export default function UserAvatar({
       }}
       {...props}
     >
-      {!fullAvatarUrl && userName.charAt(0).toUpperCase()}
+      {!fullAvatarUrl && getInitials()}
     </Avatar>
   )
 }

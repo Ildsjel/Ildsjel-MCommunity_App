@@ -55,3 +55,67 @@ h1, h2, h3, h4, h5, h6 {
   outline-offset: 2px;
 }
 
+/* Quill Rich Text Editor Styles */
+.ql-editor {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ql-editor p {
+  margin-bottom: 0.5em;
+}
+
+.ql-editor strong {
+  font-weight: 700;
+}
+
+.ql-editor em {
+  font-style: italic;
+}
+
+.ql-editor u {
+  text-decoration: underline;
+}
+
+.ql-editor s {
+  text-decoration: line-through;
+}
+
+.ql-editor blockquote {
+  border-left: 4px solid #555;
+  padding-left: 16px;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+  color: #aaa;
+}
+
+.ql-editor code {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+}
+
+.ql-editor pre {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.ql-editor ul,
+.ql-editor ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.ql-editor a {
+  color: #8D021F;
+  text-decoration: underline;
+}
+
+.ql-editor a:hover {
+  color: #B8022A;
+}
+

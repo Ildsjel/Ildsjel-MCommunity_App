@@ -42,6 +42,22 @@ export const galleryAPI = {
   },
 
   /**
+   * Delete avatar
+   */
+  deleteAvatar: async (): Promise<{ success: boolean; message: string }> => {
+    const token = localStorage.getItem('access_token')
+    const response = await axios.delete(
+      `${API_BASE}/api/v1/users/me/avatar`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+    return response.data
+  },
+
+  /**
    * Upload gallery image
    */
   uploadGalleryImage: async (file: File, caption?: string): Promise<GalleryImage> => {

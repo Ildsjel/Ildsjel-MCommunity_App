@@ -45,8 +45,8 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
       try {
         const token = localStorage.getItem('access_token')
         const endpoint = isOwnProfile 
-          ? `${API_BASE}/api/v1/users/me/top-artists?limit=10`
-          : `${API_BASE}/api/v1/users/${userId}/top-artists?limit=10`
+          ? `${API_BASE}/api/v1/users/me/top-artists?limit=5`
+          : `${API_BASE}/api/v1/users/${userId}/top-artists?limit=5`
         
         const headers = isOwnProfile 
           ? { Authorization: `Bearer ${token}` }
@@ -108,7 +108,7 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <EmojiEvents color="primary" />
             <Typography variant="h6">
-              Top 10 Artists
+              Top 5 Artists
             </Typography>
           </Box>
           <Alert severity="info">
@@ -127,7 +127,7 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <EmojiEvents color="primary" />
           <Typography variant="h6">
-            Top 10 Artists
+            Top 5 Artists
           </Typography>
         </Box>
 

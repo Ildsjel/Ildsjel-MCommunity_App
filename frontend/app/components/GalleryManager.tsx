@@ -168,6 +168,8 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
           onEditCaption={handleCarouselEditCaption}
           onViewAll={onViewAll}
           maxImages={10}
+          imageOwnerId={userId}
+          showComments={true}
         />
         <input
           ref={fileInputRef}

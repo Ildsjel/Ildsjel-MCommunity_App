@@ -5,8 +5,10 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 interface User {
   id: string
   handle: string
+  username?: string
   email: string
   profile_image_url?: string
+  avatar_url?: string
   country?: string
   city?: string
   is_pro: boolean
@@ -49,7 +51,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const updateAvatar = (avatarUrl: string) => {
     if (user) {
-      const updatedUser = { ...user, profile_image_url: avatarUrl }
+      // If avatarUrl is empty string, set to undefined to show initials
+      const updatedUser = { 
+        ...user, 
+        profile_image_url: avatarUrl || undefined, 
+        avatar_url: avatarUrl || undefined 
+      }
       setUser(updatedUser)
       localStorage.setItem('user', JSON.stringify(updatedUser))
     }

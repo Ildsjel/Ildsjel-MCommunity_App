@@ -25,6 +25,7 @@ import {
   Edit,
 } from '@mui/icons-material'
 import { GalleryImage } from '@/lib/galleryApi'
+import ImageComments from './ImageComments'
 
 interface GalleryCarouselProps {
   images: GalleryImage[]
@@ -35,6 +36,8 @@ interface GalleryCarouselProps {
   onEditCaption?: (imageId: string, caption: string) => void
   onViewAll?: () => void
   maxImages?: number
+  imageOwnerId?: string
+  showComments?: boolean
 }
 
 export default function GalleryCarousel({
@@ -46,6 +49,8 @@ export default function GalleryCarousel({
   onEditCaption,
   onViewAll,
   maxImages = 10,
+  imageOwnerId,
+  showComments = true,
 }: GalleryCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [viewerOpen, setViewerOpen] = useState(false)
@@ -170,6 +175,8 @@ export default function GalleryCarousel({
                   maxWidth: '100%',
                   maxHeight: '100%',
                   objectFit: 'contain',
+                  display: 'block',
+                  margin: 'auto',
                 }}
               />
             </Box>
@@ -349,11 +356,25 @@ export default function GalleryCarousel({
           </Box>
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ textAlign: 'center', position: 'relative' }}>
+          {/* Image Container */}
+          <Box sx={{ 
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '70vh',
+            mb: 2
+          }}>
             <img
               src={`${API_BASE}${currentImage.image_url}`}
               alt={currentImage.caption || 'Gallery image'}
-              style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }}
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '70vh', 
+                objectFit: 'contain',
+                display: 'block',
+                margin: 'auto'
+              }}
             />
             
             {/* Navigation in Dialog */}
@@ -393,16 +414,29 @@ export default function GalleryCarousel({
                 </IconButton>
               </>
             )}
+          </Box>
 
+          {/* Caption and Metadata */}
+          <Box sx={{ textAlign: 'center' }}>
             {currentImage.caption && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 {currentImage.caption}
               </Typography>
             )}
-            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            <Typography variant="caption" display="block">
               {currentIndex + 1} / {images.length} • Hochgeladen am {new Date(currentImage.uploaded_at).toLocaleDateString('de-DE')}
             </Typography>
           </Box>
+
+          {/* Comments Section in Dialog */}
+          {showComments && (
+            <Box sx={{ mt: 4 }}>
+              <ImageComments 
+                imageId={currentImage.id} 
+                imageOwnerId={imageOwnerId}
+              />
+            </Box>
+          )}
         </DialogContent>
       </Dialog>
 
