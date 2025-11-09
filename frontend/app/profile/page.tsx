@@ -32,7 +32,6 @@ import {
 import {
   MusicNote,
   Refresh,
-  LinkOff,
   Warning,
   CheckCircle,
   LocationOn,
@@ -323,63 +322,6 @@ export default function ProfilePage() {
                 previewMode={true}
                 onViewAll={() => router.push('/gallery')}
               />
-
-              {/* Connected Accounts */}
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Connected Accounts
-                  </Typography>
-                  {user.source_accounts.length > 0 ? (
-                    <Stack spacing={2}>
-                      {user.source_accounts.map((source) => (
-                        <Card key={source} variant="outlined" sx={{ bgcolor: 'rgba(74, 155, 142, 0.1)' }}>
-                          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <MusicNote color="success" />
-                                <Box>
-                                  <Typography variant="body1" fontWeight="bold" sx={{ textTransform: 'capitalize' }}>
-                                    {source}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Aktiv verbunden
-                                  </Typography>
-                                </Box>
-                              </Box>
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => setDisconnectDialogOpen(true)}
-                              >
-                                <LinkOff />
-                              </IconButton>
-                            </Box>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Alert severity="info">
-                      No music accounts connected yet.{' '}
-                      <Link href="/spotify/connect" style={{ color: 'inherit' }}>
-                        Connect Spotify
-                      </Link>
-                    </Alert>
-                  )}
-
-                  {!user.onboarding_complete && (
-                    <Alert severity="warning" sx={{ mt: 2 }} icon={<Warning />}>
-                      <Typography variant="body2" fontWeight="bold" gutterBottom>
-                        Complete your Metal-ID
-                      </Typography>
-                      <Typography variant="caption">
-                        Connect your music accounts to generate your Metal-ID
-                      </Typography>
-                    </Alert>
-                  )}
-                </CardContent>
-              </Card>
             </Stack>
           </Box>
 
