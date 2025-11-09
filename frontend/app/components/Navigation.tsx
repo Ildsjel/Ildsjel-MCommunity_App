@@ -67,7 +67,6 @@ export default function Navigation() {
         { label: 'Home', icon: <HomeIcon />, path: '/' },
         { label: 'Search', icon: <SearchIcon />, path: '/search' },
         { label: 'Profile', icon: <PersonIcon />, path: '/profile' },
-        { label: 'Spotify', icon: <MusicNoteIcon />, path: '/spotify/connect' },
       ]
     : [
         { label: 'Home', icon: <HomeIcon />, path: '/' },
@@ -176,6 +175,12 @@ export default function Navigation() {
                     <PersonIcon fontSize="small" />
                   </ListItemIcon>
                   Profile
+                </MenuItem>
+                <MenuItem onClick={() => { router.push('/spotify/connect'); handleProfileMenuClose(); }}>
+                  <ListItemIcon>
+                    <MusicNoteIcon fontSize="small" />
+                  </ListItemIcon>
+                  Spotify Connection
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <ListItemIcon>
