@@ -279,12 +279,23 @@ class SpotifyScrobbleService:
         
         # Also create/update album and artists
         if album.get("id"):
+            # Extract album cover URL from Spotify images
+            # Spotify provides images in descending size order: [large, medium, small]
+            # We prefer medium size (640x640) for better balance of quality and performance
+            images = album.get("images", [])
+            image_url = None
+            if len(images) > 1:
+                image_url = images[1]["url"]  # Medium size (640x640)
+            elif len(images) > 0:
+                image_url = images[0]["url"]  # Fallback to largest if only one available
+            
             self.repository.create_or_update_album(
                 spotify_id=album["id"],
                 name=album["name"],
                 release_date=album.get("release_date"),
                 album_type=album.get("album_type"),
-                total_tracks=album.get("total_tracks")
+                total_tracks=album.get("total_tracks"),
+                image_url=image_url
             )
         
         for artist in artists:

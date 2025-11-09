@@ -234,7 +234,8 @@ class SpotifyRepository:
         name: str,
         release_date: Optional[str] = None,
         album_type: Optional[str] = None,
-        total_tracks: Optional[int] = None
+        total_tracks: Optional[int] = None,
+        image_url: Optional[str] = None
     ) -> str:
         """Create or update album node"""
         query = """
@@ -245,12 +246,14 @@ class SpotifyRepository:
             a.release_date = $release_date,
             a.album_type = $album_type,
             a.total_tracks = $total_tracks,
+            a.image_url = $image_url,
             a.created_at = datetime()
         ON MATCH SET
             a.name = $name,
             a.release_date = $release_date,
             a.album_type = $album_type,
             a.total_tracks = $total_tracks,
+            a.image_url = $image_url,
             a.updated_at = datetime()
         RETURN a.id as id
         """
@@ -263,7 +266,8 @@ class SpotifyRepository:
             name=name,
             release_date=release_date,
             album_type=album_type,
-            total_tracks=total_tracks
+            total_tracks=total_tracks,
+            image_url=image_url
         )
         
         record = result.single()
