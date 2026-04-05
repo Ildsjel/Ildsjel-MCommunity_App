@@ -17,6 +17,7 @@ import {
   InputAdornment,
   IconButton,
   Snackbar,
+  Divider,
 } from '@mui/material'
 import {
   Visibility,
@@ -50,24 +51,13 @@ export default function RegisterPage() {
 
     try {
       await authAPI.register(formData)
-      
-      // Show success message
       setSuccessOpen(true)
-      
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        router.push('/auth/login')
-      }, 2000)
+      setTimeout(() => router.push('/auth/login'), 2000)
     } catch (err: any) {
-      // Handle different error formats
       const detail = err.response?.data?.detail
-      
       if (Array.isArray(detail)) {
-        // Pydantic validation errors (array of error objects)
-        const errorMessages = detail.map((error: any) => error.msg).join(', ')
-        setError(errorMessages)
+        setError(detail.map((e: any) => e.msg).join(', '))
       } else if (typeof detail === 'string') {
-        // Simple string error
         setError(detail)
       } else {
         setError('Registration failed')
@@ -88,19 +78,35 @@ export default function RegisterPage() {
           py: 4,
         }}
       >
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography variant="h2" gutterBottom>
-            Join Grimr
+        {/* Grimr logo / brand */}
+        <Box sx={{ textAlign: 'center', mb: 5 }}>
+          <Typography
+            variant="h1"
+            className="grimr-glow"
+            component={Link}
+            href="/"
+            sx={{
+              fontSize: { xs: '3rem', md: '4rem' },
+              letterSpacing: '0.05em',
+              display: 'inline-block',
+              color: 'text.primary',
+              textDecoration: 'none',
+              mb: 2,
+            }}
+          >
+            Grimr
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="h5" sx={{ fontWeight: 400, fontStyle: 'italic', mb: 0.5 }}>
+            Join the Community
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
             Create your Metal-ID and connect with the community
           </Typography>
         </Box>
 
-        {/* Form */}
+        {/* Form card */}
         <Card>
-          <CardContent sx={{ p: 4 }}>
+          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
             <Box component="form" onSubmit={handleSubmit}>
               {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>
@@ -112,18 +118,19 @@ export default function RegisterPage() {
                 fullWidth
                 label="Handle"
                 required
+                autoComplete="username"
                 value={formData.handle}
                 onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
                 placeholder="metalhead666"
-                sx={{ mb: 3 }}
+                sx={{ mb: 2.5 }}
+                helperText="Your unique username on Grimr"
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Person />
+                      <Person sx={{ color: 'text.disabled', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
-                helperText="Your unique username"
               />
 
               <TextField
@@ -131,14 +138,15 @@ export default function RegisterPage() {
                 label="Email"
                 type="email"
                 required
+                autoComplete="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="you@example.com"
-                sx={{ mb: 3 }}
+                sx={{ mb: 2.5 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Email />
+                      <Email sx={{ color: 'text.disabled', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
@@ -149,14 +157,16 @@ export default function RegisterPage() {
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="new-password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="••••••••"
-                sx={{ mb: 3 }}
+                sx={{ mb: 2.5 }}
+                helperText="Min. 8 chars · 1 uppercase · 1 number · 1 special character"
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Lock />
+                      <Lock sx={{ color: 'text.disabled', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -164,27 +174,29 @@ export default function RegisterPage() {
                       <IconButton
                         onClick={() => setShowPassword(!showPassword)}
                         edge="end"
+                        size="small"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                        {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                       </IconButton>
                     </InputAdornment>
                   ),
                 }}
-                helperText="Min. 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special char"
               />
 
+              {/* Location — optional, grouped together */}
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
-                    label="Country"
+                    label="Country (optional)"
                     value={formData.country}
                     onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                     placeholder="Germany"
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Public />
+                          <Public sx={{ color: 'text.disabled', fontSize: 20 }} />
                         </InputAdornment>
                       ),
                     }}
@@ -193,14 +205,14 @@ export default function RegisterPage() {
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
-                    label="City"
+                    label="City (optional)"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     placeholder="Berlin"
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <LocationOn />
+                          <LocationOn sx={{ color: 'text.disabled', fontSize: 20 }} />
                         </InputAdornment>
                       ),
                     }}
@@ -216,33 +228,23 @@ export default function RegisterPage() {
                 disabled={loading}
                 sx={{ mb: 2 }}
               >
-                {loading ? 'Creating Account...' : 'Create Account'}
+                {loading ? 'Creating Account…' : 'Create Account'}
               </Button>
 
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Already have an account?{' '}
-                  <MuiLink
-                    component={Link}
-                    href="/auth/login"
-                    color="primary"
-                    underline="hover"
-                  >
-                    Login
-                  </MuiLink>
-                </Typography>
-              </Box>
+              <Divider sx={{ my: 2.5 }} />
+
+              <Typography variant="body2" color="text.secondary" align="center">
+                Already have an account?{' '}
+                <MuiLink component={Link} href="/auth/login" color="primary" underline="hover">
+                  Login
+                </MuiLink>
+              </Typography>
             </Box>
           </CardContent>
         </Card>
 
         <Box sx={{ textAlign: 'center', mt: 3 }}>
-          <MuiLink
-            component={Link}
-            href="/"
-            color="text.secondary"
-            underline="hover"
-          >
+          <MuiLink component={Link} href="/" color="text.secondary" underline="hover" variant="body2">
             ← Back to Home
           </MuiLink>
         </Box>
@@ -252,7 +254,7 @@ export default function RegisterPage() {
         open={successOpen}
         autoHideDuration={6000}
         onClose={() => setSuccessOpen(false)}
-        message="Registrierung erfolgreich! Bitte überprüfe deine E-Mail."
+        message="Account created! Please check your email to verify."
       />
     </Container>
   )

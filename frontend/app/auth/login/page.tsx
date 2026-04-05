@@ -15,6 +15,7 @@ import {
   Link as MuiLink,
   InputAdornment,
   IconButton,
+  Divider,
 } from '@mui/material'
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material'
 import { authAPI } from '@/lib/api'
@@ -23,10 +24,7 @@ import { useUser } from '@/app/context/UserContext'
 export default function LoginPage() {
   const router = useRouter()
   const { setUser } = useUser()
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  })
+  const [formData, setFormData] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -38,30 +36,21 @@ export default function LoginPage() {
 
     try {
       const response = await authAPI.login(formData)
-      
-      // Store token and update context
       localStorage.setItem('access_token', response.access_token)
       setUser(response.user)
-      
-      // Redirect to profile
       router.push('/profile')
     } catch (err: any) {
-      // Handle different error formats
       const detail = err.response?.data?.detail
       let errorMessage = 'Login failed'
-      
       if (Array.isArray(detail)) {
-        // Pydantic validation errors (array of error objects)
-        errorMessage = detail.map((error: any) => error.msg).join(', ')
+        errorMessage = detail.map((e: any) => e.msg).join(', ')
       } else if (typeof detail === 'string') {
         errorMessage = detail
       }
-      
-      // Check if it's an email verification error
       if (errorMessage.includes('verify your email')) {
-        setError('Bitte verifiziere zuerst deine E-Mail-Adresse. Überprüfe deinen Posteingang.')
+        setError('Please verify your email address first. Check your inbox.')
       } else if (errorMessage.includes('inactive')) {
-        setError('Dein Account ist inaktiv. Bitte kontaktiere den Support.')
+        setError('Your account is inactive. Please contact support.')
       } else {
         setError(errorMessage)
       }
@@ -81,19 +70,35 @@ export default function LoginPage() {
           py: 4,
         }}
       >
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography variant="h2" gutterBottom>
+        {/* Grimr logo / brand */}
+        <Box sx={{ textAlign: 'center', mb: 5 }}>
+          <Typography
+            variant="h1"
+            className="grimr-glow"
+            component={Link}
+            href="/"
+            sx={{
+              fontSize: { xs: '3rem', md: '4rem' },
+              letterSpacing: '0.05em',
+              display: 'inline-block',
+              color: 'text.primary',
+              textDecoration: 'none',
+              mb: 2,
+            }}
+          >
+            Grimr
+          </Typography>
+          <Typography variant="h5" sx={{ fontWeight: 400, fontStyle: 'italic', mb: 0.5 }}>
             Welcome Back
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body2" color="text.secondary">
             Login to your Grimr account
           </Typography>
         </Box>
 
-        {/* Form */}
+        {/* Form card */}
         <Card>
-          <CardContent sx={{ p: 4 }}>
+          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
             <Box component="form" onSubmit={handleSubmit}>
               {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>
@@ -106,14 +111,15 @@ export default function LoginPage() {
                 label="Email"
                 type="email"
                 required
+                autoComplete="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="you@example.com"
-                sx={{ mb: 3 }}
+                sx={{ mb: 2.5 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Email />
+                      <Email sx={{ color: 'text.disabled', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
@@ -124,6 +130,7 @@ export default function LoginPage() {
                 label="Password"
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="current-password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="••••••••"
@@ -131,7 +138,7 @@ export default function LoginPage() {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Lock />
+                      <Lock sx={{ color: 'text.disabled', fontSize: 20 }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -139,8 +146,10 @@ export default function LoginPage() {
                       <IconButton
                         onClick={() => setShowPassword(!showPassword)}
                         edge="end"
+                        size="small"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                        {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                       </IconButton>
                     </InputAdornment>
                   ),
@@ -155,43 +164,35 @@ export default function LoginPage() {
                 disabled={loading}
                 sx={{ mb: 2 }}
               >
-                {loading ? 'Logging in...' : 'Login'}
+                {loading ? 'Signing in…' : 'Login'}
               </Button>
 
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Don't have an account?{' '}
-                  <MuiLink
-                    component={Link}
-                    href="/auth/register"
-                    color="primary"
-                    underline="hover"
-                  >
-                    Sign Up
-                  </MuiLink>
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  <MuiLink
-                    component={Link}
-                    href="/auth/reset-password"
-                    color="primary"
-                    underline="hover"
-                  >
-                    Forgot Password?
-                  </MuiLink>
-                </Typography>
+              <Box sx={{ textAlign: 'right' }}>
+                <MuiLink
+                  component={Link}
+                  href="/auth/reset-password"
+                  color="text.secondary"
+                  underline="hover"
+                  variant="body2"
+                >
+                  Forgot Password?
+                </MuiLink>
               </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              <Typography variant="body2" color="text.secondary" align="center">
+                Don&apos;t have an account?{' '}
+                <MuiLink component={Link} href="/auth/register" color="primary" underline="hover">
+                  Sign Up
+                </MuiLink>
+              </Typography>
             </Box>
           </CardContent>
         </Card>
 
         <Box sx={{ textAlign: 'center', mt: 3 }}>
-          <MuiLink
-            component={Link}
-            href="/"
-            color="text.secondary"
-            underline="hover"
-          >
+          <MuiLink component={Link} href="/" color="text.secondary" underline="hover" variant="body2">
             ← Back to Home
           </MuiLink>
         </Box>

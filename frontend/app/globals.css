@@ -4,103 +4,138 @@
 
 /* Import Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-
-/* IM Fell DW Pica for headings - fallback to Georgia */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital,wght@0,400;0,700;1,400&display=swap');
 
+/* ── CSS Variables ─────────────────────────────────────────── */
 :root {
-  --foreground-rgb: 234, 234, 234;
-  --background-start-rgb: 10, 10, 10;
-  --background-end-rgb: 10, 10, 10;
+  --crimson: #8B0000;
+  --gold: #D4AF37;
+  --grim-black: #0A0A0A;
+  --deep-charcoal: #141414;
+  --ghost-white: #F0F0F0;
+  --silver: #A8A8A8;
 }
 
+/* ── Base ──────────────────────────────────────────────────── */
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: var(--ghost-white);
+  background-color: var(--grim-black);
   min-height: 100vh;
 }
 
-/* Custom scrollbar for dark theme */
+/* ── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #1C1C1E;
+  background: #111;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #333333;
-  border-radius: 5px;
+  background: #2a2a2a;
+  border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #555555;
+  background: #3a3a3a;
 }
 
-/* Heading styles with serif font */
+/* ── Typography ────────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'IM Fell DW Pica', Georgia, serif;
+  font-family: 'Playfair Display', 'IM Fell DW Pica', Georgia, serif;
   font-weight: 700;
 }
 
-/* Focus states for accessibility */
+/* ── Accessibility ─────────────────────────────────────────── */
 *:focus-visible {
-  outline: 2px solid #8D021F;
+  outline: 2px solid var(--crimson);
   outline-offset: 2px;
 }
 
-/* Quill Rich Text Editor Styles */
+/* ── Animations ────────────────────────────────────────────── */
+@keyframes grimrGlowPulse {
+  0%, 100% { text-shadow: 0 0 30px rgba(139,0,0,0.5), 0 0 60px rgba(139,0,0,0.25); }
+  50%       { text-shadow: 0 0 50px rgba(139,0,0,0.75), 0 0 100px rgba(139,0,0,0.35); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* ── Utility classes ───────────────────────────────────────── */
+
+/* Glowing Grimr logo text */
+.grimr-glow {
+  animation: grimrGlowPulse 4s ease-in-out infinite;
+  text-shadow: 0 0 40px rgba(139,0,0,0.55), 0 0 80px rgba(139,0,0,0.25);
+}
+
+/* Gold shimmer text */
+.gold-shimmer {
+  background: linear-gradient(90deg, var(--gold) 0%, #fff8e1 40%, var(--gold) 60%, #B8860B 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+/* Entrance animation */
+.fade-in-up {
+  animation: fadeInUp 0.6s ease both;
+}
+.fade-in-up-delay-1 { animation-delay: 0.1s; }
+.fade-in-up-delay-2 { animation-delay: 0.2s; }
+.fade-in-up-delay-3 { animation-delay: 0.35s; }
+.fade-in-up-delay-4 { animation-delay: 0.5s; }
+
+/* Glass card surface */
+.glass-card {
+  background: rgba(20, 20, 20, 0.80);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Thin gold top-border accent */
+.gold-accent-top {
+  border-top: 1px solid rgba(212,175,55,0.35) !important;
+}
+
+/* ── Quill Rich-Text Editor ────────────────────────────────── */
 .ql-editor {
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
-
-.ql-editor p {
-  margin-bottom: 0.5em;
-}
-
-.ql-editor strong {
-  font-weight: 700;
-}
-
-.ql-editor em {
-  font-style: italic;
-}
-
-.ql-editor u {
-  text-decoration: underline;
-}
-
-.ql-editor s {
-  text-decoration: line-through;
-}
+.ql-editor p    { margin-bottom: 0.5em; }
+.ql-editor strong { font-weight: 700; }
+.ql-editor em   { font-style: italic; }
+.ql-editor u    { text-decoration: underline; }
+.ql-editor s    { text-decoration: line-through; }
 
 .ql-editor blockquote {
-  border-left: 4px solid #555;
+  border-left: 3px solid rgba(212,175,55,0.5);
   padding-left: 16px;
-  margin-left: 0;
-  margin-right: 0;
+  margin: 0;
   font-style: italic;
-  color: #aaa;
+  color: var(--silver);
 }
 
 .ql-editor code {
-  background-color: rgba(255, 255, 255, 0.05);
-  padding: 2px 4px;
+  background-color: rgba(255,255,255,0.05);
+  padding: 2px 5px;
   border-radius: 3px;
   font-family: 'Courier New', monospace;
 }
 
 .ql-editor pre {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255,255,255,0.04);
   padding: 12px;
-  border-radius: 4px;
+  border-radius: 6px;
   overflow-x: auto;
 }
 
@@ -111,11 +146,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .ql-editor a {
-  color: #8D021F;
+  color: #B22222;
   text-decoration: underline;
 }
-
 .ql-editor a:hover {
-  color: #B8022A;
+  color: #D22222;
 }
-
