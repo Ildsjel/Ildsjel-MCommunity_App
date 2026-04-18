@@ -18,46 +18,45 @@ import {
   useTheme,
 } from '@mui/material'
 import {
-  Home as HomeIcon,
   Person as PersonIcon,
   MusicNote as MusicNoteIcon,
   Logout as LogoutIcon,
   Search as SearchIcon,
-  GraphicEq as SigilIcon,
 } from '@mui/icons-material'
 import { useUser } from '@/app/context/UserContext'
 import UserAvatar from './UserAvatar'
 
-// Bottom tab definition
 interface BottomTab {
   label: string
-  icon: React.ReactNode
+  glyph: string
   path: string
-  matchPaths?: string[] // extra paths that should highlight this tab
+  matchPaths?: string[]
 }
 
 const BOTTOM_TABS: BottomTab[] = [
-  { label: 'Home',     icon: <HomeIcon   />, path: '/' },
-  { label: 'Discover', icon: <SearchIcon />, path: '/search' },
-  { label: 'Metal-ID', icon: <SigilIcon  />, path: '/profile', matchPaths: ['/profile/'] },
-  { label: 'Me',       icon: <PersonIcon />, path: '/profile', matchPaths: ['/gallery'] },
+  { label: 'Feed',     glyph: '◉', path: '/feed',    matchPaths: ['/feed'] },
+  { label: 'Discover', glyph: '⌕', path: '/search',  matchPaths: ['/search'] },
+  { label: 'Sigil',    glyph: '☩', path: '/sigil',   matchPaths: ['/sigil'] },
+  { label: 'Gather',   glyph: '☍', path: '/events',  matchPaths: ['/events'] },
+  { label: 'Me',       glyph: '✶', path: '/profile', matchPaths: ['/profile', '/gallery'] },
 ]
 
 function getBottomTabValue(pathname: string, tabs: BottomTab[]): number {
-  // Find first tab whose path or matchPaths matches the current route
-  const idx = tabs.findIndex((t) => {
-    if (t.path === pathname) return true
-    if (t.matchPaths?.some((p) => pathname.startsWith(p))) return true
-    return false
-  })
-  return idx >= 0 ? idx : 0
+  // Exact match first
+  const exact = tabs.findIndex((t) => t.path === pathname)
+  if (exact >= 0) return exact
+  // Prefix match
+  const prefix = tabs.findIndex((t) =>
+    t.matchPaths?.some((p) => pathname.startsWith(p))
+  )
+  return prefix >= 0 ? prefix : -1
 }
 
 export default function Navigation() {
-  const router    = useRouter()
-  const pathname  = usePathname()
-  const theme     = useTheme()
-  const isMobile  = useMediaQuery(theme.breakpoints.down('md'))
+  const router   = useRouter()
+  const pathname = usePathname()
+  const theme    = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { user, setUser } = useUser()
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
@@ -73,38 +72,39 @@ export default function Navigation() {
     router.push('/')
   }
 
-  // ── Desktop nav items ──────────────────────────────────────
+  const bottomTabValue = getBottomTabValue(pathname ?? '/', BOTTOM_TABS)
+
+  // Desktop nav items
   const desktopNavItems = isAuthenticated
     ? [
-        { label: 'Home',    path: '/' },
-        { label: 'Search',  path: '/search' },
-        { label: 'Profile', path: '/profile' },
+        { label: 'Feed',     path: '/feed' },
+        { label: 'Discover', path: '/search' },
+        { label: 'Sigil',    path: '/sigil' },
+        { label: 'Gather',   path: '/events' },
       ]
     : []
-
-  const bottomTabValue = getBottomTabValue(pathname ?? '/', BOTTOM_TABS)
 
   return (
     <>
       {/* ── AppBar ─────────────────────────────────────────── */}
       <AppBar position="sticky" elevation={0}>
-        <Toolbar sx={{ minHeight: { xs: 56, sm: 56, md: 64 } }}>
+        <Toolbar sx={{ minHeight: { xs: 52, md: 56 } }}>
 
           {/* Logo */}
           <Typography
-            variant="h5"
             component="div"
-            onClick={() => router.push('/')}
+            onClick={() => router.push(isAuthenticated ? '/feed' : '/')}
             sx={{
-              fontFamily: '"Archivo Black", sans-serif',
-              fontWeight: 400,
-              cursor: 'pointer',
-              letterSpacing: '0.03em',
-              fontSize: { xs: '1.25rem', md: '1.4rem' },
-              flexGrow: { xs: 1, md: 0 },
-              mr: { md: 4 },
-              // subtle glow matching brand
-              textShadow: '0 0 20px rgba(139,0,0,0.4)',
+              fontFamily:    '"Archivo Black", sans-serif',
+              fontWeight:    400,
+              cursor:        'pointer',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              fontSize:      { xs: '1.1rem', md: '1.25rem' },
+              flexGrow:      { xs: 1, md: 0 },
+              mr:            { md: 4 },
+              color:         'text.primary',
+              textShadow:    '1px 1px 0 rgba(20,20,20,0.15)',
             }}
           >
             Grimr
@@ -112,7 +112,7 @@ export default function Navigation() {
 
           {/* Desktop inline nav */}
           {!isMobile && isAuthenticated && (
-            <Box sx={{ display: 'flex', gap: 0.5, flexGrow: 1 }}>
+            <Box sx={{ display: 'flex', gap: 0.5, flexGrow: 1, alignItems: 'center' }}>
               {desktopNavItems.map((item) => {
                 const active = pathname === item.path
                 return (
@@ -121,21 +121,23 @@ export default function Navigation() {
                     component="button"
                     onClick={() => router.push(item.path)}
                     sx={{
-                      background: 'none',
-                      border: 'none',
-                      color: active ? 'secondary.main' : 'text.secondary',
-                      fontFamily: '"Inter", sans-serif',
-                      fontWeight: 600,
-                      fontSize: '0.875rem',
-                      cursor: 'pointer',
-                      px: 1.5,
-                      py: 0.75,
-                      borderRadius: 2,
-                      borderBottom: active ? '2px solid' : '2px solid transparent',
-                      borderBottomColor: active ? 'secondary.main' : 'transparent',
-                      transition: 'color 0.15s, border-color 0.15s',
-                      '&:hover': { color: 'text.primary' },
-                      minHeight: '44px',
+                      background:     'none',
+                      border:         'none',
+                      color:          active ? 'primary.main' : 'text.secondary',
+                      fontFamily:     '"JetBrains Mono", monospace',
+                      fontWeight:     400,
+                      fontSize:       '0.625rem',
+                      letterSpacing:  '0.14em',
+                      textTransform:  'uppercase',
+                      cursor:         'pointer',
+                      px:             1.5,
+                      py:             0.75,
+                      borderRadius:   '3px',
+                      borderBottom:   active ? '1.5px solid' : '1.5px solid transparent',
+                      borderBottomColor: active ? 'primary.main' : 'transparent',
+                      transition:     'color 0.12s, border-color 0.12s',
+                      '&:hover':      { color: 'text.primary' },
+                      minHeight:      '36px',
                     }}
                   >
                     {item.label}
@@ -145,10 +147,33 @@ export default function Navigation() {
             </Box>
           )}
 
-          {/* Spacer (desktop without nav, or unauthenticated) */}
           {(isMobile || !isAuthenticated) && <Box sx={{ flexGrow: 1 }} />}
 
-          {/* Avatar menu — always visible */}
+          {/* Right side — login link or avatar */}
+          {!isAuthenticated && (
+            <Box
+              component="button"
+              onClick={() => router.push('/auth/login')}
+              sx={{
+                background:    'none',
+                border:        '1.5px solid',
+                borderColor:   'text.primary',
+                color:         'text.primary',
+                fontFamily:    '"JetBrains Mono", monospace',
+                fontSize:      '0.5625rem',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                cursor:        'pointer',
+                px:            1.5,
+                py:            0.5,
+                borderRadius:  '3px',
+                minHeight:     '32px',
+              }}
+            >
+              Sign In
+            </Box>
+          )}
+
           {isAuthenticated && user && (
             <>
               <IconButton
@@ -160,7 +185,7 @@ export default function Navigation() {
                 <UserAvatar
                   avatarUrl={user.profile_image_url}
                   userName={user.handle}
-                  size={isMobile ? 32 : 36}
+                  size={isMobile ? 30 : 34}
                 />
               </IconButton>
 
@@ -173,22 +198,33 @@ export default function Navigation() {
                 PaperProps={{
                   sx: {
                     mt: 1,
-                    minWidth: 180,
-                    bgcolor: 'background.paper',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    minWidth:      160,
+                    border:        '1.5px solid',
+                    borderColor:   'divider',
+                    boxShadow:     '2px 2px 0 rgba(20,20,20,0.2)',
+                    borderRadius:  '3px',
                   },
                 }}
               >
-                <MenuItem onClick={() => { router.push('/profile'); handleProfileMenuClose() }}>
+                <MenuItem
+                  onClick={() => { router.push('/profile'); handleProfileMenuClose() }}
+                  sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                >
                   <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
                   Profile
                 </MenuItem>
-                <MenuItem onClick={() => { router.push('/spotify/connect'); handleProfileMenuClose() }}>
+                <MenuItem
+                  onClick={() => { router.push('/spotify/connect'); handleProfileMenuClose() }}
+                  sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                >
                   <ListItemIcon><MusicNoteIcon fontSize="small" /></ListItemIcon>
                   Spotify
                 </MenuItem>
-                <MenuItem onClick={handleLogout} sx={{ color: 'error.light' }}>
-                  <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: 'error.light' }} /></ListItemIcon>
+                <MenuItem
+                  onClick={handleLogout}
+                  sx={{ color: 'primary.main', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                >
+                  <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: 'primary.main' }} /></ListItemIcon>
                   Logout
                 </MenuItem>
               </Menu>
@@ -198,21 +234,17 @@ export default function Navigation() {
       </AppBar>
 
       {/* ── Mobile Bottom Navigation ────────────────────────── */}
-      {/* Only show when authenticated on mobile */}
       {isMobile && isAuthenticated && (
         <Paper
           elevation={0}
           sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1200,
-            bgcolor: 'rgba(10,10,10,0.92)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            borderTop: '1px solid rgba(212,175,55,0.10)',
-            // iOS home indicator safe area
+            position:     'fixed',
+            bottom:       0,
+            left:         0,
+            right:        0,
+            zIndex:       1200,
+            bgcolor:      '#EBE6DC',
+            borderTop:    '1.5px solid #1A1A1A',
             paddingBottom: 'env(safe-area-inset-bottom)',
           }}
         >
@@ -224,17 +256,24 @@ export default function Navigation() {
             }}
             showLabels
           >
-            {BOTTOM_TABS.map((tab, i) => (
+            {BOTTOM_TABS.map((tab) => (
               <BottomNavigationAction
                 key={tab.label}
                 label={tab.label}
-                icon={tab.icon}
-                sx={{
-                  // Selected: gold + subtle glow
-                  '&.Mui-selected .MuiSvgIcon-root': {
-                    filter: 'drop-shadow(0 0 6px rgba(212,175,55,0.6))',
-                  },
-                }}
+                icon={
+                  <Box
+                    sx={{
+                      fontFamily:    '"Archivo Black", sans-serif',
+                      fontSize:      tab.label === 'Sigil' ? '1.35rem' : '1rem',
+                      lineHeight:    1,
+                      color:         'inherit',
+                      transition:    'transform 0.15s',
+                      '.Mui-selected &': { transform: tab.label === 'Sigil' ? 'scale(1.2)' : 'scale(1.05)' },
+                    }}
+                  >
+                    {tab.glyph}
+                  </Box>
+                }
               />
             ))}
           </BottomNavigation>

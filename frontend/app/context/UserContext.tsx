@@ -12,6 +12,10 @@ interface User {
   country?: string
   city?: string
   is_pro: boolean
+  created_at?: string
+  source_accounts?: string[]
+  about_me?: string
+  onboarding_complete?: boolean
 }
 
 interface UserContextType {

@@ -167,9 +167,9 @@ export default function UserProfilePage() {
     <>
       <Navigation />
       <Container maxWidth={false} sx={{ py: 4, px: 4 }}>
-        <Grid container spacing={3}>
+        <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
           {/* Left Column: Profile Info + About Me + Gallery */}
-          <Grid item xs={12} md={9}>
+          <Box sx={{ flex: '1 1 75%', minWidth: 0 }}>
             <Stack spacing={3}>
               {/* Profile Header */}
               <Card>
@@ -252,10 +252,10 @@ export default function UserProfilePage() {
                 </Card>
               )}
             </Stack>
-          </Grid>
+          </Box>
 
           {/* Right Column: Top Artists & Recently Played Timeline */}
-          <Grid item xs={12} md={3}>
+          <Box sx={{ flex: '1 1 25%', minWidth: 0 }}>
             <Stack spacing={3}>
               {/* Top 10 Artists */}
               <TopArtists userId={user.id} isOwnProfile={false} />
@@ -334,8 +334,8 @@ export default function UserProfilePage() {
                 </Card>
               )}
             </Stack>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Container>
     </>
   )

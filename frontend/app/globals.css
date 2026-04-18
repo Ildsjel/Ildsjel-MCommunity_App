@@ -2,21 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Google Fonts ──────────────────────────────────────────── */
-/* Design system: Archivo Black (display/heads) · EB Garamond (body/reviews)
-   JetBrains Mono (data) · Caveat (handwritten accents) */
+/* ── Fonts (via next/font in layout.tsx — this @import is fallback only) ── */
 @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&family=Caveat:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* ── CSS Variables ─────────────────────────────────────────── */
 :root {
-  /* Core palette */
-  --crimson:       #8B0000;
-  --crimson-light: #B22222;
-  --gold:          #D4AF37;
-  --grim-black:    #0A0A0A;
-  --paper:         #141414;
-  --ghost-white:   #F0F0F0;
-  --silver:        #A8A8A8;
+  /* Paper palette (light default) */
+  --paper:      #F3EFE7;
+  --paper-2:    #EBE6DC;
+  --canvas-bg:  #DCD6C8;
+  --ink:        #141414;
+  --ink-2:      #2A2A2A;
+  --muted:      #7A756D;
+  --line:       #1A1A1A;
+  --accent:     #9A1A1A;
+  --accent-2:   #C43A2A;
 
   /* Mobile layout */
   --bottom-nav-height: 56px;
@@ -27,81 +27,63 @@
 
 /* ── Base ──────────────────────────────────────────────────── */
 *, *::before, *::after {
-  -webkit-tap-highlight-color: transparent; /* kill the blue flash on iOS taps */
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
-  /* Prevent font-size bump on orientation change (iOS) */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
 body {
-  color: var(--ghost-white);
-  background-color: var(--grim-black);
-  min-height: 100vh;
-  min-height: 100dvh; /* dynamic viewport height for mobile browsers */
-  /* Extra bottom space so content isn't hidden behind bottom nav */
-  padding-bottom: var(--page-bottom-pad);
-  font-family: 'EB Garamond', Georgia, serif;
+  color:            var(--ink);
+  background-color: var(--canvas-bg);
+  min-height:       100vh;
+  min-height:       100dvh;
+  padding-bottom:   var(--page-bottom-pad);
+  font-family:      'EB Garamond', Georgia, serif;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(154,26,26,.04), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(20,20,20,.06), transparent 50%),
+    repeating-linear-gradient(0deg, transparent 0, transparent 23px, rgba(20,20,20,.06) 23px, rgba(20,20,20,.06) 24px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 23px, rgba(20,20,20,.06) 23px, rgba(20,20,20,.06) 24px);
 }
 
-/* Desktop: no bottom nav, no extra padding */
 @media (min-width: 900px) {
-  body {
-    padding-bottom: 0;
-  }
+  body { padding-bottom: 0; }
 }
 
 /* ── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #111; }
-::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
+::-webkit-scrollbar-track  { background: var(--canvas-bg); }
+::-webkit-scrollbar-thumb  { background: #B0AAA0; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #8A847C; }
 
 /* ── Typography ────────────────────────────────────────────── */
-h1, h2, h3, h4 {
-  font-family: 'Archivo Black', 'Impact', sans-serif;
-  font-weight: 400; /* Archivo Black is inherently bold */
-  letter-spacing: -0.01em;
+h1, h2, h3, h4, h5, h6 {
+  font-family:    'Archivo Black', sans-serif;
+  font-weight:    400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-h5, h6 {
-  font-family: 'Archivo Black', sans-serif;
-  font-weight: 400;
-}
-
-/* Data / scrobble counts → monospace */
-.mono, .data-value {
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
-}
-
-/* Handwritten accent text */
-.handwritten {
-  font-family: 'Caveat', cursive;
-  font-size: 1.1em;
+.mono, .data-value, .label {
+  font-family:    'JetBrains Mono', 'Courier New', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size:      0.6875rem;
 }
 
 /* ── Accessibility ─────────────────────────────────────────── */
 *:focus-visible {
-  outline: 2px solid var(--crimson);
+  outline:        2px solid var(--accent);
   outline-offset: 2px;
 }
 
 /* ── Animations ────────────────────────────────────────────── */
-@keyframes grimrGlowPulse {
-  0%, 100% { text-shadow: 0 0 30px rgba(139,0,0,0.5), 0 0 60px rgba(139,0,0,0.25); }
-  50%       { text-shadow: 0 0 55px rgba(139,0,0,0.80), 0 0 110px rgba(139,0,0,0.38); }
-}
-
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(18px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
 }
 
 @keyframes slideInFromBottom {
@@ -109,98 +91,74 @@ h5, h6 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes dashDraw {
+  from { stroke-dashoffset: 1000; }
+  to   { stroke-dashoffset: 0; }
+}
+
 /* ── Utility classes ───────────────────────────────────────── */
+.fade-in-up   { animation: fadeInUp 0.45s ease both; }
+.fade-in-up-delay-1 { animation-delay: 0.08s; }
+.fade-in-up-delay-2 { animation-delay: 0.16s; }
+.fade-in-up-delay-3 { animation-delay: 0.28s; }
+.fade-in-up-delay-4 { animation-delay: 0.42s; }
 
-/* Glowing title */
-.grimr-glow {
-  animation: grimrGlowPulse 4s ease-in-out infinite;
-  text-shadow: 0 0 40px rgba(139,0,0,0.55), 0 0 80px rgba(139,0,0,0.25);
-}
-
-/* Gold shimmer text */
-.gold-shimmer {
-  background: linear-gradient(90deg, var(--gold) 0%, #fff8e1 40%, var(--gold) 60%, #B8860B 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: shimmer 4s linear infinite;
-}
-
-/* Entrance stagger */
-.fade-in-up              { animation: fadeInUp 0.55s ease both; }
-.fade-in-up-delay-1      { animation-delay: 0.10s; }
-.fade-in-up-delay-2      { animation-delay: 0.20s; }
-.fade-in-up-delay-3      { animation-delay: 0.34s; }
-.fade-in-up-delay-4      { animation-delay: 0.50s; }
-
-/* Slide up (for bottom-sheet-style modals) */
 .slide-in-up { animation: slideInFromBottom 0.3s ease both; }
 
-/* Thin gold top-border accent */
-.gold-accent-top { border-top: 1px solid rgba(212,175,55,0.35) !important; }
-
-/* Glass surface */
-.glass-card {
-  background: rgba(20, 20, 20, 0.80);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+/* Grimr wordmark — subtle text shadow, no glow (paper surface) */
+.grimr-wordmark {
+  font-family:    'Archivo Black', sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow:    1px 1px 0 rgba(20,20,20,0.15);
 }
 
-/* ── Mobile touch targets ──────────────────────────────────── */
-/* Ensure interactive items are at least 44px tall (Apple HIG) */
-button, [role="button"], a, input, select, textarea,
-.MuiButtonBase-root {
-  min-height: 44px;
+/* Hard-border card utility */
+.hard-card {
+  border:     1.5px solid var(--line);
+  box-shadow: 1.5px 1.5px 0 rgba(20,20,20,0.2);
 }
 
-/* Smaller icon buttons can stay small but get a bigger hit area */
-.MuiIconButton-root {
-  padding: 10px !important;
+/* Accent label (JetBrains Mono, uppercase) */
+.lbl {
+  font-family:    'JetBrains Mono', monospace;
+  font-size:      0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color:          var(--muted);
+}
+.lbl.accent { color: var(--accent); }
+
+/* Dark hero (landing, share sheet) */
+.dark-hero {
+  background:     #0A0A0A;
+  color:          #F1ECE0;
+  --paper:        #0A0A0A;
+  --paper-2:      #151515;
+  --ink:          #F1ECE0;
+  --line:         #2A2A2A;
+  --muted:        #9A948A;
 }
 
-/* ── Quill Rich-Text Editor ────────────────────────────────── */
-.ql-editor {
-  font-family: 'EB Garamond', Georgia, serif;
-  font-size: 16px; /* 16px prevents iOS auto-zoom on focus */
-  line-height: 1.7;
-}
-.ql-editor p    { margin-bottom: 0.5em; }
-.ql-editor strong { font-weight: 700; }
-.ql-editor em   { font-style: italic; }
-.ql-editor u    { text-decoration: underline; }
-.ql-editor s    { text-decoration: line-through; }
-
-.ql-editor blockquote {
-  border-left: 3px solid rgba(212,175,55,0.5);
-  padding-left: 16px;
-  margin: 0;
-  font-style: italic;
-  color: var(--silver);
-}
-
-.ql-editor code {
-  background: rgba(255,255,255,0.05);
-  padding: 2px 5px;
-  border-radius: 3px;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.ql-editor pre {
-  background: rgba(255,255,255,0.04);
-  padding: 12px;
-  border-radius: 6px;
-  overflow-x: auto;
-}
-
-.ql-editor ul,
-.ql-editor ol { padding-left: 1.5em; margin-bottom: 0.5em; }
-
-.ql-editor a       { color: #B22222; text-decoration: underline; }
-.ql-editor a:hover { color: #D22222; }
-
-/* ── Input font-size fix (prevents iOS zoom) ───────────────── */
+/* ── Input font-size fix (prevent iOS zoom) ────────────────── */
 input, textarea, select {
   font-size: 16px !important;
+}
+
+/* ── Quill rich-text editor ────────────────────────────────── */
+.ql-editor {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size:   16px;
+  line-height: 1.7;
+  color:       var(--ink);
+}
+.ql-editor p          { margin-bottom: 0.5em; }
+.ql-editor strong     { font-weight: 700; }
+.ql-editor em         { font-style: italic; }
+.ql-editor blockquote {
+  border-left:  2px solid var(--accent);
+  padding-left: 14px;
+  margin:       0;
+  font-style:   italic;
+  color:        var(--muted);
 }

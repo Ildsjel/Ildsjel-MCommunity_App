@@ -12,7 +12,6 @@ import {
   Typography,
   Alert,
   Link as MuiLink,
-  Grid,
   InputAdornment,
   IconButton,
   Snackbar,
@@ -166,8 +165,8 @@ export default function RegisterPage() {
             />
 
             {/* Location — 2-col grid on sm+, stacked on xs */}
-            <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
-              <Grid item xs={12} sm={6}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, mb: 2.5 }}>
+              <Box>
                 <TextField
                   fullWidth label="Country (optional)"
                   value={formData.country} onChange={set('country')}
@@ -180,8 +179,8 @@ export default function RegisterPage() {
                     ),
                   }}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
+              </Box>
+              <Box>
                 <TextField
                   fullWidth label="City (optional)"
                   value={formData.city} onChange={set('city')}
@@ -194,8 +193,8 @@ export default function RegisterPage() {
                     ),
                   }}
                 />
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
 
             <Button
               type="submit" fullWidth variant="contained" size="large"

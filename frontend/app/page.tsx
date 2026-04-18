@@ -3,42 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
-} from '@mui/material'
-import {
-  Group as GroupIcon,
-  LibraryMusic as LibraryMusicIcon,
-  TravelExplore as TravelExploreIcon,
-  ArrowForward as ArrowForwardIcon,
-} from '@mui/icons-material'
+import { Box, Typography, Stack } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
-
-const FEATURES = [
-  {
-    icon: <GroupIcon sx={{ fontSize: 28, color: 'secondary.main' }} />,
-    title: 'Find Your Tribe',
-    body: 'Discover metalheads in your city and around the world. Connect over shared artists and subgenres.',
-  },
-  {
-    icon: <LibraryMusicIcon sx={{ fontSize: 28, color: 'secondary.main' }} />,
-    title: 'Build Your Metal-ID',
-    body: 'Link Spotify and let your listening history speak. Your top artists and genres define your identity.',
-  },
-  {
-    icon: <TravelExploreIcon sx={{ fontSize: 28, color: 'secondary.main' }} />,
-    title: 'Discover by Taste',
-    body: 'Search by artist, genre, or location. See who you share the most music with before reaching out.',
-  },
-]
+import Sigil from '@/app/components/Sigil'
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -47,265 +14,207 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true)
-    setIsAuthenticated(!!localStorage.getItem('access_token'))
-  }, [])
+    const hasToken = !!localStorage.getItem('access_token')
+    setIsAuthenticated(hasToken)
+    if (hasToken) router.replace('/feed')
+  }, [router])
 
   return (
     <>
       <Navigation />
 
-      {/* ── Hero ─────────────────────────────────────────────── */}
+      {/* ── Ritual poster landing ─────────────────────────────── */}
       <Box
         sx={{
-          minHeight: { xs: 'calc(100dvh - 56px)', md: '88vh' },
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          px: { xs: 3, md: 4 },
-          py: { xs: 6, md: 10 },
+          minHeight:      'calc(100dvh - 52px)',
+          display:        'flex',
+          flexDirection:  'column',
+          px:             { xs: 3, md: 5 },
+          py:             { xs: 3, md: 4 },
+          maxWidth:       480,
+          mx:             'auto',
+          gap:            0,
         }}
       >
-        <Box sx={{ maxWidth: { xs: '100%', sm: 560, md: 700 } }}>
-          {/* Badge */}
-          <Chip
-            label="The Metal Community"
-            size="small"
-            className="fade-in-up"
-            sx={{
-              mb: { xs: 3, md: 4 },
-              border: '1px solid rgba(212,175,55,0.4)',
-              color: 'secondary.main',
-              bgcolor: 'rgba(212,175,55,0.06)',
-              letterSpacing: '0.08em',
-              fontSize: '0.65rem',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-            }}
-          />
-
-          {/* Title — Archivo Black, fluid size */}
-          <Typography
-            variant="h1"
-            className="grimr-glow fade-in-up fade-in-up-delay-1"
-            sx={{
-              fontFamily: '"Archivo Black", sans-serif',
-              fontSize: { xs: '4rem', sm: '5.5rem', md: '7rem' },
-              lineHeight: 1,
-              letterSpacing: '0.02em',
-              mb: { xs: 2, md: 2.5 },
-            }}
-          >
-            Grimr
-          </Typography>
-
-          {/* Tagline — EB Garamond italic */}
-          <Typography
-            className="fade-in-up fade-in-up-delay-2"
-            sx={{
-              fontFamily: '"EB Garamond", Georgia, serif',
-              fontSize: { xs: '1.25rem', md: '1.6rem' },
-              fontStyle: 'italic',
-              color: 'text.secondary',
-              mb: { xs: 1.5, md: 2 },
-            }}
-          >
-            Where Metalheads Connect
-          </Typography>
-
-          {/* Sub-copy */}
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            className="fade-in-up fade-in-up-delay-3"
-            sx={{
-              mb: { xs: 4, md: 5 },
-              maxWidth: 420,
-              mx: 'auto',
-              fontSize: { xs: '0.95rem', md: '1rem' },
-            }}
-          >
-            Letterboxd meets Bandcamp — for Metal. Track your listening,
-            discover fans who share your taste, and find your local community.
-          </Typography>
-
-          {/* CTAs */}
-          {mounted && (
-            <Box
-              className="fade-in-up fade-in-up-delay-4"
-              sx={{
-                display: 'flex',
-                gap: 1.5,
-                justifyContent: 'center',
-                flexDirection: { xs: 'column', sm: 'row' },
-                maxWidth: { xs: 280, sm: 'unset' },
-                mx: 'auto',
-              }}
-            >
-              {isAuthenticated ? (
-                <>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    fullWidth={false}
-                    onClick={() => router.push('/profile')}
-                    endIcon={<ArrowForwardIcon />}
-                    sx={{ minWidth: { xs: '100%', sm: 180 } }}
-                  >
-                    My Profile
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    onClick={() => router.push('/search')}
-                    sx={{ minWidth: { xs: '100%', sm: 160 } }}
-                  >
-                    Find Metalheads
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    component={Link}
-                    href="/auth/register"
-                    sx={{ minWidth: { xs: '100%', sm: 180 } }}
-                  >
-                    Sign Up Free
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    component={Link}
-                    href="/auth/login"
-                    sx={{ minWidth: { xs: '100%', sm: 140 } }}
-                  >
-                    Login
-                  </Button>
-                </>
-              )}
-            </Box>
-          )}
-        </Box>
-      </Box>
-
-      {/* ── Section divider ──────────────────────────────────── */}
-      <Box sx={{ px: { xs: 3, md: 8 } }}>
-        <Divider sx={{ '&::before, &::after': { borderColor: 'rgba(212,175,55,0.12)' } }}>
-          <Box
-            sx={{
-              width: 6, height: 6,
-              bgcolor: 'secondary.dark',
-              transform: 'rotate(45deg)',
-              opacity: 0.55,
-            }}
-          />
-        </Divider>
-      </Box>
-
-      {/* ── Features ─────────────────────────────────────────── */}
-      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 }, px: { xs: 2, md: 3 } }}>
+        {/* Top label */}
         <Typography
-          variant="h3"
-          align="center"
-          sx={{ mb: 1, fontSize: { xs: '1.5rem', md: '2rem' } }}
-        >
-          Everything you need
-        </Typography>
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          align="center"
-          sx={{ mb: { xs: 4, md: 6 }, maxWidth: 420, mx: 'auto', fontSize: { xs: '0.9rem', md: '1rem' } }}
-        >
-          A social layer built specifically for the metal community
-        </Typography>
-
-        {/* Features: vertical stack on mobile, 3-col on desktop */}
-        <Box
+          className="fade-in-up"
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-            gap: { xs: 2, md: 3 },
+            fontFamily:    '"JetBrains Mono", monospace',
+            fontSize:      '0.5625rem',
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color:         'text.secondary',
+            mb:            1.5,
           }}
         >
-          {FEATURES.map((f) => (
-            <Card
-              key={f.title}
-              className="gold-accent-top"
+          MMXXVI · Invitation
+        </Typography>
+
+        {/* Headline — gig poster typography */}
+        <Box className="fade-in-up fade-in-up-delay-1">
+          <Typography
+            variant="h1"
+            sx={{
+              fontSize:      { xs: '3.5rem', sm: '4.5rem' },
+              lineHeight:    0.88,
+              letterSpacing: '-0.01em',
+              mb:            0,
+            }}
+          >
+            Metal
+          </Typography>
+          <Typography
+            variant="h1"
+            sx={{
+              fontSize:      { xs: '3.5rem', sm: '4.5rem' },
+              lineHeight:    0.88,
+              letterSpacing: '-0.01em',
+              mb:            0,
+            }}
+          >
+            Heads
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: '"EB Garamond", serif',
+              fontStyle:  'italic',
+              fontWeight: 400,
+              fontSize:   { xs: '3rem', sm: '4rem' },
+              lineHeight: 0.95,
+              color:      'primary.main',
+              textTransform: 'none',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            connect.
+          </Typography>
+        </Box>
+
+        {/* Rule with date */}
+        <Box
+          className="fade-in-up fade-in-up-delay-2"
+          sx={{
+            display:    'flex',
+            gap:        1.5,
+            alignItems: 'center',
+            my:         2,
+          }}
+        >
+          <Box sx={{ flex: 1, height: '1.5px', backgroundColor: '#1A1A1A' }} />
+          <Typography
+            sx={{
+              fontFamily:    '"JetBrains Mono", monospace',
+              fontSize:      '0.5rem',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color:         'text.secondary',
+              flexShrink:    0,
+            }}
+          >
+            XVI · IV · MMXXVI
+          </Typography>
+          <Box sx={{ flex: 1, height: '1.5px', backgroundColor: '#1A1A1A' }} />
+        </Box>
+
+        {/* Tagline */}
+        <Typography
+          className="fade-in-up fade-in-up-delay-2"
+          sx={{
+            fontFamily: '"EB Garamond", serif',
+            fontSize:   { xs: '0.9375rem', md: '1rem' },
+            color:      'text.secondary',
+            mb:         1,
+            lineHeight: 1.55,
+          }}
+        >
+          Letterboxd meets Bandcamp. Built for the underground. Connect Spotify — we read the sigil, you find your kind.
+        </Typography>
+
+        {/* Sigil centered */}
+        <Box
+          className="fade-in-up fade-in-up-delay-3"
+          sx={{
+            flex:         1,
+            display:      'flex',
+            alignItems:   'center',
+            justifyContent: 'center',
+            py:           2,
+          }}
+        >
+          <Box sx={{ width: '100%', maxWidth: 220, aspectRatio: '1' }}>
+            <Sigil
+              size={240}
+              genres={['?', '?', '?', '?', '?']}
+              artists={['', '', '', '', '', '']}
+              centerTop="☩"
+              centerBottom="GRIMR"
+              loading={true}
+            />
+          </Box>
+        </Box>
+
+        {/* CTAs */}
+        {mounted && (
+          <Stack
+            className="fade-in-up fade-in-up-delay-4"
+            spacing={1}
+            sx={{ pb: 2 }}
+          >
+            <Box
+              component={Link}
+              href="/auth/register"
               sx={{
+                display:       'block',
+                width:         '100%',
+                py:            1.625,
+                textAlign:     'center',
+                border:        '1.5px solid',
+                borderColor:   'primary.main',
+                borderRadius:  '3px',
+                background:    '#9A1A1A',
+                color:         '#F3EFE7',
+                fontFamily:    '"Archivo Black", sans-serif',
+                fontSize:      '0.75rem',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                boxShadow:     '1.5px 1.5px 0 rgba(20,20,20,0.3)',
+                transition:    'box-shadow 0.15s, transform 0.1s',
                 '&:hover': {
-                  boxShadow: '0 0 24px rgba(139,0,0,0.12)',
-                  borderColor: 'rgba(212,175,55,0.18)',
+                  boxShadow: '3px 3px 0 rgba(20,20,20,0.3)',
+                  transform: 'translate(-1px,-1px)',
                 },
               }}
             >
-              <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
-                <Box sx={{ mb: 1.5 }}>{f.icon}</Box>
-                <Typography variant="h5" gutterBottom sx={{ fontSize: '1rem' }}>
-                  {f.title}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ lineHeight: 1.65, fontSize: '0.875rem' }}
-                >
-                  {f.body}
-                </Typography>
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
-      </Container>
-
-      {/* ── Stats ────────────────────────────────────────────── */}
-      <Container maxWidth="sm" sx={{ pb: { xs: 6, md: 10 }, px: { xs: 2, md: 3 } }}>
-        <Card
-          sx={{
-            border: '1px solid rgba(212,175,55,0.12)',
-            background: 'rgba(12,12,12,0.9)',
-          }}
-        >
-          <CardContent sx={{ py: { xs: 3, md: 4 } }}>
+              Summon Account
+            </Box>
             <Box
+              component={Link}
+              href="/auth/login"
               sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 1,
-                textAlign: 'center',
+                display:       'block',
+                width:         '100%',
+                py:            1.375,
+                textAlign:     'center',
+                border:        '1.5px solid #1A1A1A',
+                borderRadius:  '3px',
+                background:    'transparent',
+                color:         '#141414',
+                fontFamily:    '"Archivo Black", sans-serif',
+                fontSize:      '0.75rem',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                transition:    'background 0.12s',
+                '&:hover': { background: 'rgba(20,20,20,0.04)' },
               }}
             >
-              {[
-                { value: '1K+',  label: 'Metalheads' },
-                { value: '50K+', label: 'Scrobbles' },
-                { value: '100+', label: 'Genres' },
-              ].map((s) => (
-                <Box key={s.label}>
-                  <Typography
-                    className="gold-shimmer"
-                    sx={{
-                      fontFamily: '"Archivo Black", sans-serif',
-                      fontSize: { xs: '1.6rem', md: '2rem' },
-                      lineHeight: 1,
-                      mb: 0.5,
-                    }}
-                  >
-                    {s.value}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ fontSize: '0.7rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}
-                  >
-                    {s.label}
-                  </Typography>
-                </Box>
-              ))}
+              Sign In
             </Box>
-          </CardContent>
-        </Card>
-      </Container>
+          </Stack>
+        )}
+      </Box>
     </>
   )
 }
