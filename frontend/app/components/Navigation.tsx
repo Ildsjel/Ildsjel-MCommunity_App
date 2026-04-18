@@ -23,6 +23,7 @@ import {
   Logout as LogoutIcon,
   Search as SearchIcon,
   AdminPanelSettings as AdminIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material'
 import { useUser } from '@/app/context/UserContext'
 import { useNotifications } from '@/app/context/NotificationContext'
@@ -240,6 +241,13 @@ export default function Navigation() {
                 >
                   <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
                   Profile
+                </MenuItem>
+                <MenuItem
+                  onClick={() => { router.push('/settings'); handleProfileMenuClose() }}
+                  sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                >
+                  <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
+                  Settings
                 </MenuItem>
                 {(user.role === 'admin' || user.role === 'superadmin') && (
                   <MenuItem

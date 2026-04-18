@@ -433,45 +433,6 @@ export default function ProfilePage() {
           </Box>
         </div>
 
-        {/* Admin portal shortcut */}
-        {(ctxUser?.role === 'admin' || ctxUser?.role === 'superadmin') && (
-          <Box
-            onClick={() => router.push('/admin')}
-            sx={{ border: '1.5px solid rgba(196,58,42,0.35)', borderRadius: '3px', backgroundColor: '#120e18', px: 1.5, py: 1.125, mb: 2, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', '&:hover': { borderColor: 'rgba(196,58,42,0.6)' }, transition: 'border-color 0.1s' }}
-          >
-            <span style={{ ...lbl, color: 'var(--accent)' }}>⌖ ADMIN PORTAL</span>
-            <span style={{ ...lbl, fontSize: '0.5rem', color: 'var(--muted)' }}>{ctxUser.role} →</span>
-          </Box>
-        )}
-
-        {/* Redeem admin token */}
-        {!ctxUser?.role || ctxUser.role === 'user' ? (
-          <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', backgroundColor: '#120e18', px: 1.5, py: 1.25, mb: 2 }}>
-            <span style={{ ...lbl, fontSize: '0.5rem', display: 'block', marginBottom: 10 }}>REDEEM ADMIN TOKEN</span>
-            <Box component="form" onSubmit={handleRedeemToken} sx={{ display: 'flex', gap: 0.75 }}>
-              <TextField
-                value={redeemToken}
-                onChange={(e) => setRedeemToken(e.target.value)}
-                placeholder="Paste your token here…"
-                size="small" fullWidth
-                sx={{
-                  '& .MuiInputBase-root': { fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--ink)' },
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.2)', borderRadius: '3px' },
-                  '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.5)' },
-                }}
-              />
-              <Box component="button" type="submit" disabled={redeemLoading || !redeemToken.trim()} sx={{ border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px', px: 1.25, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--ink)', flexShrink: 0, '&:disabled': { opacity: 0.4 } }}>
-                {redeemLoading ? '…' : 'REDEEM'}
-              </Box>
-            </Box>
-            {redeemMsg && (
-              <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: redeemMsg.ok ? '#6a9a7a' : 'var(--accent)', mt: 0.75 }}>
-                {redeemMsg.ok ? '✓ ' : '✕ '}{redeemMsg.text}
-              </Typography>
-            )}
-          </Box>
-        ) : null}
-
         {/* Gallery */}
         <span style={{ ...lbl, display: 'block', marginBottom: 8 }}>◉ GALLERY</span>
         <GalleryManager
