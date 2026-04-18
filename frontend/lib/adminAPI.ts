@@ -5,6 +5,22 @@ function authHeaders() {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 }
 
+async function uploadFile<T>(path: string, file: File): Promise<T> {
+  const token = localStorage.getItem('access_token')
+  const form = new FormData()
+  form.append('file', file)
+  const res = await fetch(`${API_BASE}/api/v1${path}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail || 'Upload failed')
+  }
+  return res.json()
+}
+
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}/api/v1${path}`, {
     method,
@@ -35,6 +51,8 @@ export const adminAPI = {
   createBand: (data: unknown) => req<any>('POST', '/admin/bands', data),
   updateBand: (id: string, data: unknown) => req<any>('PATCH', `/admin/bands/${id}`, data),
   deleteBand: (id: string) => req<void>('DELETE', `/admin/bands/${id}`),
+  uploadBandPhoto: (id: string, file: File) => uploadFile<any>(`/admin/bands/${id}/image`, file),
+  uploadBandLogo: (id: string, file: File) => uploadFile<any>(`/admin/bands/${id}/logo`, file),
   createRelease: (bandId: string, data: unknown) => req<any>('POST', `/admin/bands/${bandId}/releases`, data),
   deleteRelease: (releaseId: string) => req<void>('DELETE', `/admin/releases/${releaseId}`),
 

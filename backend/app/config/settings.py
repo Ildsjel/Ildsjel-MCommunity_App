@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     
     # Application
     APP_NAME: str = "Grimr"
-    DEBUG: bool = True
+    DEBUG: bool = False
     ENVIRONMENT: str = "dev"  # dev, test, prod
     
     # CORS

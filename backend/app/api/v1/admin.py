@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from app.auth.permissions import require_admin, require_superadmin
 from app.auth.jwt_handler import get_current_user
 from app.db.neo4j_driver import get_neo4j_session
 from app.services.admin_service import AdminService
 from app.services.band_service import BandService
+from app.services.image_service import image_service
+from app.db.repositories.band_repository import BandRepository
 from app.models.admin_models import (
     AdminTokenCreate, AdminTokenResponse, AdminTokenRedeem,
     UserRoleResponse, UserRoleUpdate,
@@ -28,7 +30,7 @@ async def generate_token(
     session=Depends(get_neo4j_session),
 ):
     svc = AdminService(session)
-    return await svc.generate_token(current_user["id"], body.note)
+    return svc.generate_token(current_user["id"], body.note)
 
 
 @router.get("/tokens", response_model=List[AdminTokenResponse])
@@ -37,7 +39,7 @@ async def list_tokens(
     session=Depends(get_neo4j_session),
 ):
     svc = AdminService(session)
-    return await svc.list_tokens(current_user["id"])
+    return svc.list_tokens(current_user["id"])
 
 
 # ── Token: redeem (any authenticated user) ──────────────────────────────────
@@ -49,7 +51,7 @@ async def redeem_token(
     session=Depends(get_neo4j_session),
 ):
     svc = AdminService(session)
-    result = await svc.redeem_token(body.token, current_user["id"])
+    result = svc.redeem_token(body.token, current_user["id"])
     if not result:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -66,7 +68,7 @@ async def list_users(
     session=Depends(get_neo4j_session),
 ):
     svc = AdminService(session)
-    return await svc.list_users()
+    return svc.list_users()
 
 
 @router.patch("/users/{user_id}/role")
@@ -79,7 +81,7 @@ async def set_user_role(
     if user_id == current_user["id"]:
         raise HTTPException(status_code=400, detail="Cannot change your own role")
     svc = AdminService(session)
-    ok = await svc.set_role(user_id, body.role)
+    ok = svc.set_role(user_id, body.role)
     if not ok:
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": f"Role updated to {body.role}"}
@@ -95,7 +97,7 @@ async def list_bands(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    return await BandService(session).list_bands(status, skip, limit)
+    return BandService(session).list_bands(status, skip, limit)
 
 
 @router.post("/bands", response_model=BandResponse, status_code=201)
@@ -104,7 +106,7 @@ async def create_band(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    return await BandService(session).create_band(body.model_dump(), current_user["id"])
+    return BandService(session).create_band(body.model_dump(), current_user["id"])
 
 
 @router.get("/bands/{band_id}", response_model=BandResponse)
@@ -113,7 +115,7 @@ async def get_band(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    band = await BandService(session).get_band(band_id)
+    band = BandService(session).get_band(band_id)
     if not band:
         raise HTTPException(status_code=404, detail="Band not found")
     return band
@@ -126,7 +128,7 @@ async def update_band(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    updated = await BandService(session).update_band(
+    updated = BandService(session).update_band(
         band_id, body.model_dump(exclude_none=True), current_user["id"]
     )
     if not updated:
@@ -140,9 +142,37 @@ async def delete_band(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    ok = await BandService(session).delete_band(band_id)
+    ok = BandService(session).delete_band(band_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Band not found")
+
+
+@router.post("/bands/{band_id}/image", response_model=BandResponse)
+async def upload_band_photo(
+    band_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    image_url, _ = await image_service.process_band_photo(file, band_id)
+    band = BandRepository(session).set_band_image(band_id, "image_url", image_url)
+    if not band:
+        raise HTTPException(status_code=404, detail="Band not found")
+    return band
+
+
+@router.post("/bands/{band_id}/logo", response_model=BandResponse)
+async def upload_band_logo(
+    band_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    logo_url, _ = await image_service.process_band_logo(file, band_id)
+    band = BandRepository(session).set_band_image(band_id, "logo_url", logo_url)
+    if not band:
+        raise HTTPException(status_code=404, detail="Band not found")
+    return band
 
 
 # ── Releases (admin) ─────────────────────────────────────────────────────────
@@ -154,7 +184,7 @@ async def create_release(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    return await BandService(session).create_release(band_id, body.model_dump())
+    return BandService(session).create_release(band_id, body.model_dump())
 
 
 @router.delete("/releases/{release_id}", status_code=204)
@@ -163,7 +193,7 @@ async def delete_release(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    ok = await BandService(session).delete_release(release_id)
+    ok = BandService(session).delete_release(release_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Release not found")
 
@@ -175,7 +205,7 @@ async def list_genres(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    return await BandService(session).list_genres()
+    return BandService(session).list_genres()
 
 
 @router.post("/genres", response_model=GenreResponse, status_code=201)
@@ -184,7 +214,7 @@ async def create_genre(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    return await BandService(session).create_genre(body.model_dump())
+    return BandService(session).create_genre(body.model_dump())
 
 
 @router.patch("/genres/{genre_id}", response_model=GenreResponse)
@@ -194,7 +224,7 @@ async def update_genre(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    updated = await BandService(session).update_genre(genre_id, body.model_dump(exclude_unset=True))
+    updated = BandService(session).update_genre(genre_id, body.model_dump(exclude_unset=True))
     if not updated:
         raise HTTPException(status_code=404, detail="Genre not found")
     return updated
@@ -206,7 +236,7 @@ async def delete_genre(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    ok = await BandService(session).delete_genre(genre_id)
+    ok = BandService(session).delete_genre(genre_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Genre not found")
 
@@ -219,7 +249,7 @@ async def list_tags(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    return await BandService(session).list_tags(category)
+    return BandService(session).list_tags(category)
 
 
 @router.post("/tags", response_model=TagResponse, status_code=201)
@@ -228,7 +258,7 @@ async def create_tag(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    return await BandService(session).create_tag(body.model_dump())
+    return BandService(session).create_tag(body.model_dump())
 
 
 @router.patch("/tags/{tag_id}", response_model=TagResponse)
@@ -238,7 +268,7 @@ async def update_tag(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    updated = await BandService(session).update_tag(tag_id, body.model_dump(exclude_none=True))
+    updated = BandService(session).update_tag(tag_id, body.model_dump(exclude_none=True))
     if not updated:
         raise HTTPException(status_code=404, detail="Tag not found")
     return updated
@@ -250,7 +280,7 @@ async def delete_tag(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    ok = await BandService(session).delete_tag(tag_id)
+    ok = BandService(session).delete_tag(tag_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Tag not found")
 
@@ -261,7 +291,7 @@ async def merge_tags(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    ok = await BandService(session).merge_tags(body.source_id, body.target_id)
+    ok = BandService(session).merge_tags(body.source_id, body.target_id)
     if not ok:
         raise HTTPException(status_code=400, detail="Merge failed — check source and target IDs")
     return {"message": "Tags merged successfully"}

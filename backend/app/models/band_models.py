@@ -70,16 +70,20 @@ class BandUpdate(BaseModel):
     status: Optional[Literal["draft", "published", "archived"]] = None
     genre_ids: Optional[List[str]] = None
     tag_ids: Optional[List[str]] = None
+    image_url: Optional[str] = None
+    logo_url: Optional[str] = None
 
 
 class BandResponse(BandBase):
     id: str
     status: str
+    image_url: Optional[str] = None
+    logo_url: Optional[str] = None
     releases: List[ReleaseResponse] = []
     genres: List[dict] = []
     tags: List[dict] = []
-    created_by_id: Optional[str]
-    updated_by_id: Optional[str]
+    created_by_id: Optional[str] = None
+    updated_by_id: Optional[str] = None
 
 
 class GenreBase(BaseModel):

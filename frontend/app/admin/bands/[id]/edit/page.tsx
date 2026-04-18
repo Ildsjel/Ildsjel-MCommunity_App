@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography, TextField, CircularProgress } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -24,6 +26,85 @@ const inputSx = {
 
 const RELEASE_TYPES = ['LP', 'EP', 'Split-EP', 'Demo', 'Live', 'Single', 'Compilation']
 
+function ImageUploadZone({
+  label,
+  currentUrl,
+  aspect,
+  uploading,
+  onFile,
+}: {
+  label: string
+  currentUrl?: string | null
+  aspect: '16/9' | '1/1'
+  uploading: boolean
+  onFile: (f: File) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const fullUrl = currentUrl ? `${API_BASE}${currentUrl}` : null
+
+  return (
+    <Box>
+      <span style={{ ...lbl, display: 'block', marginBottom: 6 }}>{label}</span>
+      <Box
+        onClick={() => !uploading && inputRef.current?.click()}
+        sx={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: aspect,
+          border: '1.5px dashed rgba(216,207,184,0.25)',
+          borderRadius: '3px',
+          overflow: 'hidden',
+          cursor: uploading ? 'default' : 'pointer',
+          backgroundColor: '#120e18',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          '&:hover': { borderColor: uploading ? 'rgba(216,207,184,0.25)' : 'rgba(216,207,184,0.5)' },
+          transition: 'border-color 0.15s',
+        }}
+      >
+        {fullUrl && (
+          <Box
+            component="img"
+            src={fullUrl}
+            alt={label}
+            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        )}
+
+        <Box sx={{
+          position: 'relative', zIndex: 1,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5,
+          backgroundColor: fullUrl ? 'rgba(8,6,10,0.65)' : 'transparent',
+          px: 2, py: 1.5, borderRadius: '3px',
+        }}>
+          {uploading ? (
+            <CircularProgress size={16} sx={{ color: 'var(--accent)' }} />
+          ) : (
+            <>
+              <span style={{ fontSize: '1.1rem', color: 'rgba(216,207,184,0.5)' }}>↑</span>
+              <span style={{ ...lbl, fontSize: '0.4375rem', color: fullUrl ? 'rgba(216,207,184,0.8)' : 'rgba(216,207,184,0.4)' }}>
+                {fullUrl ? 'CLICK TO REPLACE' : 'CLICK TO UPLOAD'}
+              </span>
+            </>
+          )}
+        </Box>
+      </Box>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) { onFile(f); e.target.value = '' }
+        }}
+      />
+    </Box>
+  )
+}
+
 export default function EditBandPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { id } = params
@@ -32,6 +113,10 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', country: '', country_code: '', formed: '', bio: '' })
+
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [imageMsg, setImageMsg] = useState<string | null>(null)
 
   // New release form
   const [showRelease, setShowRelease] = useState(false)
@@ -67,6 +152,34 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
       setError(err.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handlePhotoUpload = async (file: File) => {
+    setPhotoUploading(true)
+    setImageMsg(null)
+    try {
+      const updated = await adminAPI.uploadBandPhoto(id, file)
+      setBand(updated)
+      setImageMsg('Photo updated')
+    } catch (err: any) {
+      setImageMsg(err.message)
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
+
+  const handleLogoUpload = async (file: File) => {
+    setLogoUploading(true)
+    setImageMsg(null)
+    try {
+      const updated = await adminAPI.uploadBandLogo(id, file)
+      setBand(updated)
+      setImageMsg('Logo updated')
+    } catch (err: any) {
+      setImageMsg(err.message)
+    } finally {
+      setLogoUploading(false)
     }
   }
 
@@ -107,7 +220,37 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
       </Box>
       <span style={{ ...lbl, color: 'var(--accent)', display: 'block', marginBottom: 20 }}>EDIT · {band.name}</span>
 
-      {/* Band info form */}
+      {/* ── Images ─────────────────────────────────────────────── */}
+      <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', backgroundColor: '#120e18', p: '14px 16px', mb: 2 }}>
+        <span style={{ ...lbl, display: 'block', marginBottom: 14 }}>IMAGES</span>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <ImageUploadZone
+            label="Band Photo (16:9)"
+            currentUrl={band.image_url}
+            aspect="16/9"
+            uploading={photoUploading}
+            onFile={handlePhotoUpload}
+          />
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Box sx={{ width: 140 }}>
+              <ImageUploadZone
+                label="Logo (square)"
+                currentUrl={band.logo_url}
+                aspect="1/1"
+                uploading={logoUploading}
+                onFile={handleLogoUpload}
+              />
+            </Box>
+          </Box>
+          {imageMsg && (
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: '#6a9a7a' }}>
+              ✓ {imageMsg}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+
+      {/* ── Band info form ──────────────────────────────────────── */}
       <Box component="form" onSubmit={handleSave} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
         <TextField label="Band Name" value={form.name} onChange={set('name')} required fullWidth size="small" sx={inputSx} />
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -122,7 +265,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
         </Box>
       </Box>
 
-      {/* Discography */}
+      {/* ── Discography ─────────────────────────────────────────── */}
       <Box sx={{ borderTop: '1px solid rgba(216,207,184,0.1)', pt: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.25 }}>
           <span style={lbl}>◉ RELEASES ({band.releases?.length ?? 0})</span>
