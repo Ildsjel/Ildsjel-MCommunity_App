@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Fonts (via next/font in layout.tsx — this @import is fallback only) ── */
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&family=Caveat:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
+/* Fonts loaded via next/font in layout.tsx — CSS variables: --font-display, --font-serif, --font-mono */
 
 /* ── CSS Variables ─────────────────────────────────────────── */
 :root {

@@ -39,10 +39,10 @@ export const theme = createTheme({
 
   // ── Typography ──────────────────────────────────────────────
   typography: {
-    fontFamily: '"EB Garamond", Georgia, serif',
+    fontFamily: 'var(--font-serif), "EB Garamond", Georgia, serif',
 
     h1: {
-      fontFamily:    '"Archivo Black", sans-serif',
+      fontFamily:    'var(--font-display), "Archivo Black", sans-serif',
       fontWeight:    400,
       fontSize:      'clamp(2.5rem, 8vw, 5rem)',
       lineHeight:    1.0,
@@ -50,7 +50,7 @@ export const theme = createTheme({
       textTransform: 'uppercase' as const,
     },
     h2: {
-      fontFamily:    '"Archivo Black", sans-serif',
+      fontFamily: 'var(--font-display), "Archivo Black", sans-serif',
       fontWeight:    400,
       fontSize:      'clamp(1.75rem, 5vw, 2.8rem)',
       lineHeight:    1.0,
@@ -58,7 +58,7 @@ export const theme = createTheme({
       textTransform: 'uppercase' as const,
     },
     h3: {
-      fontFamily:    '"Archivo Black", sans-serif',
+      fontFamily: 'var(--font-display), "Archivo Black", sans-serif',
       fontWeight:    400,
       fontSize:      'clamp(1.4rem, 4vw, 2rem)',
       lineHeight:    1.05,
@@ -66,7 +66,7 @@ export const theme = createTheme({
       textTransform: 'uppercase' as const,
     },
     h4: {
-      fontFamily:    '"Archivo Black", sans-serif',
+      fontFamily: 'var(--font-display), "Archivo Black", sans-serif',
       fontWeight:    400,
       fontSize:      'clamp(1.2rem, 3.5vw, 1.5rem)',
       lineHeight:    1.1,
@@ -74,7 +74,7 @@ export const theme = createTheme({
       textTransform: 'uppercase' as const,
     },
     h5: {
-      fontFamily:    '"Archivo Black", sans-serif',
+      fontFamily: 'var(--font-display), "Archivo Black", sans-serif',
       fontWeight:    400,
       fontSize:      '1.125rem',
       lineHeight:    1.2,
@@ -82,7 +82,7 @@ export const theme = createTheme({
       textTransform: 'uppercase' as const,
     },
     h6: {
-      fontFamily:    '"Archivo Black", sans-serif',
+      fontFamily: 'var(--font-display), "Archivo Black", sans-serif',
       fontWeight:    400,
       fontSize:      '1rem',
       lineHeight:    1.3,
@@ -90,30 +90,30 @@ export const theme = createTheme({
       textTransform: 'uppercase' as const,
     },
     body1: {
-      fontFamily: '"EB Garamond", Georgia, serif',
+      fontFamily: 'var(--font-serif), "EB Garamond", Georgia, serif',
       fontSize:   '1rem',
       lineHeight: 1.6,
     },
     body2: {
-      fontFamily: '"EB Garamond", Georgia, serif',
+      fontFamily: 'var(--font-serif), "EB Garamond", Georgia, serif',
       fontSize:   '0.9375rem',
       lineHeight: 1.55,
     },
     caption: {
-      fontFamily:    '"JetBrains Mono", monospace',
+      fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
       fontSize:      '0.6875rem',
       lineHeight:    1.4,
       letterSpacing: '0.12em',
       textTransform: 'uppercase' as const,
     },
     overline: {
-      fontFamily:    '"JetBrains Mono", monospace',
+      fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
       fontSize:      '0.6875rem',
       letterSpacing: '0.14em',
       textTransform: 'uppercase' as const,
     },
     button: {
-      fontFamily:    '"Archivo Black", sans-serif',
+      fontFamily: 'var(--font-display), "Archivo Black", sans-serif',
       fontWeight:    400,
       fontSize:      '0.8125rem',
       letterSpacing: '0.1em',
@@ -252,7 +252,7 @@ export const theme = createTheme({
         root: {
           borderRadius:  3,
           border:        '1.5px solid #1A1A1A',
-          fontFamily:    '"JetBrains Mono", monospace',
+          fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
           fontSize:      '0.625rem',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
@@ -284,7 +284,7 @@ export const theme = createTheme({
             color: '#9A1A1A',
           },
           '& .MuiBottomNavigationAction-label': {
-            fontFamily:    '"JetBrains Mono", monospace',
+            fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
             fontSize:      '0.5625rem',
             letterSpacing: '0.1em',
             textTransform: 'uppercase',

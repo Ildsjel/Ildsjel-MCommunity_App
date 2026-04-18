@@ -1,7 +1,31 @@
 import type { Metadata, Viewport } from 'next'
+import { Archivo_Black, EB_Garamond, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from './ThemeProvider'
 import { UserProvider } from './context/UserContext'
+
+// ── Fonts via next/font (no CDN round-trip at runtime) ─────
+const archivo = Archivo_Black({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+})
+
+const garamond = EB_Garamond({
+  weight: ['400', '500', '600'],
+  style: ['normal', 'italic'],
+  subsets: ['latin'],
+  variable: '--font-serif',
+  display: 'swap',
+})
+
+const mono = JetBrains_Mono({
+  weight: ['400', '500'],
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+})
 
 // ── SEO & PWA metadata ─────────────────────────────────────
 export const metadata: Metadata = {
@@ -13,9 +37,7 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'Grimr',
   },
-  icons: {
-    apple: '/apple-touch-icon.png',
-  },
+  icons: { apple: '/apple-touch-icon.png' },
   openGraph: {
     title: 'Grimr — Metalheads Connect',
     description: 'Letterboxd meets Bandcamp for Metal.',
@@ -23,28 +45,18 @@ export const metadata: Metadata = {
   },
 }
 
-// ── Viewport (separate export — Next.js 14 requirement) ────
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,      // prevent unwanted double-tap zoom on iOS
+  maximumScale: 1,
   userScalable: false,
-  viewportFit: 'cover', // extend into iOS notch / Dynamic Island
-  themeColor: '#0A0A0A',
+  viewportFit: 'cover',
+  themeColor: '#DCD6C8',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        {/* Preconnect to Google Fonts CDN for faster font load */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
+    <html lang="en" className={`${archivo.variable} ${garamond.variable} ${mono.variable}`}>
       <body>
         <ThemeProvider>
           <UserProvider>
