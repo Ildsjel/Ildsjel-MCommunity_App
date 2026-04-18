@@ -11,10 +11,10 @@ type FeedMode = 'reviews' | 'people'
 type Filter   = 'all' | 'coven' | 'near'
 
 const MOCK_FEED = [
-  { id: '1', user: 'MGLA_PURIST', initial: 'M', time: '2h',  artist: 'Panopticon',  album: 'Roads to the North',       review: '"a slow cathedral collapse — every riff earned, every silence deliberate."', horns: 42, discuss: 7,  stars: 4, filters: ['all', 'coven'] as Filter[] },
-  { id: '2', user: 'HRAFN',       initial: 'H', time: '5h',  artist: 'Bell Witch',  album: 'Mirror Reaper',             review: '"impenetrable. required. two hours of descent."',                           horns: 18, discuss: 2,  stars: 5, filters: ['all', 'near']  as Filter[] },
-  { id: '3', user: 'VARG_OUTSIDER',initial:'V', time: '1d',  artist: 'Mgła',        album: 'Exercises in Futility',     review: null,                                                                        horns: 9,  discuss: 0,  stars: 5, filters: ['all']           as Filter[] },
-  { id: '4', user: 'ASHES_42',    initial: 'A', time: '1d',  artist: 'Sunn O)))',   album: 'Life Metal',                review: '"drone as devotion. this record rewired something."',                      horns: 31, discuss: 11, stars: 4, filters: ['all', 'coven', 'near'] as Filter[] },
+  { id: '1', albumPath: '/bands/panopticon/roads-to-the-north', user: 'MGLA_PURIST', initial: 'M', time: '2h',  artist: 'Panopticon',  album: 'Roads to the North',       review: '"a slow cathedral collapse — every riff earned, every silence deliberate."', horns: 42, discuss: 7,  stars: 4, filters: ['all', 'coven'] as Filter[] },
+  { id: '2', albumPath: '/bands/bell-witch/mirror-reaper',       user: 'HRAFN',       initial: 'H', time: '5h',  artist: 'Bell Witch',  album: 'Mirror Reaper',             review: '"impenetrable. required. two hours of descent."',                           horns: 18, discuss: 2,  stars: 5, filters: ['all', 'near']  as Filter[] },
+  { id: '3', albumPath: '/bands/mgla/exercises-in-futility',     user: 'VARG_OUTSIDER',initial:'V', time: '1d',  artist: 'Mgła',        album: 'Exercises in Futility',     review: null,                                                                        horns: 9,  discuss: 0,  stars: 5, filters: ['all']           as Filter[] },
+  { id: '4', albumPath: '/bands/sunno/life-metal',               user: 'ASHES_42',    initial: 'A', time: '1d',  artist: 'Sunn O)))',   album: 'Life Metal',                review: '"drone as devotion. this record rewired something."',                      horns: 31, discuss: 11, stars: 4, filters: ['all', 'coven', 'near'] as Filter[] },
 ]
 
 const FILTER_DESCRIPTIONS: Record<Filter, { label: string; desc: string }> = {
@@ -145,7 +145,7 @@ export default function FeedPage() {
                 {items.map((item) => (
                   <Box
                     key={item.id}
-                    onClick={() => router.push(`/album/${item.id}`)}
+                    onClick={() => router.push(item.albumPath)}
                     sx={{
                       border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
                       backgroundColor: '#120e18', px: 1.25, py: 1.25,
