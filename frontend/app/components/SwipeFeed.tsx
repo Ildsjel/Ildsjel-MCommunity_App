@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { Box, Typography } from '@mui/material'
 import { useNotifications } from '@/app/context/NotificationContext'
+import { useUser } from '@/app/context/UserContext'
+import { distanceBetweenCities } from '@/lib/geo'
 
 const THRESHOLD = 80
 
@@ -18,7 +20,8 @@ interface Profile {
   id: string
   handle: string
   initial: string
-  location: string
+  city: string
+  country: string
   compatibility: number
   artists: string[]
   about: string
@@ -32,11 +35,11 @@ interface Comment {
 }
 
 const PROFILES: Profile[] = [
-  { id: 'u1', handle: 'SKALD_EIRIK',   initial: 'S', location: 'Oslo · 42km',       compatibility: 87, artists: ['Enslaved', 'Ihsahn', 'Mgła'],                      about: 'Black metal pilgrim. Concerts are church.' },
-  { id: 'u2', handle: 'FENRIR_KEEPER', initial: 'F', location: 'Hamburg · 180km',    compatibility: 74, artists: ['Bolt Thrower', 'Cannibal Corpse', 'Morbid Angel'],  about: 'Death metal only. No exceptions.' },
-  { id: 'u3', handle: 'VOIDWALKER',    initial: 'V', location: 'Düsseldorf · 94km',  compatibility: 91, artists: ['Sunn O)))', 'Earth', 'Sleep'],                      about: 'Drone is prayer. Volume is god.' },
-  { id: 'u4', handle: 'BRISINGR_PATH', initial: 'B', location: 'Cologne · 67km',     compatibility: 68, artists: ['Bathory', 'Dissection', 'Watain'],                  about: 'Vikings, darkness, riffs.' },
-  { id: 'u5', handle: 'MORDGRIMM',     initial: 'M', location: 'Frankfurt · 210km',  compatibility: 82, artists: ['Primordial', 'Agalloch', 'Wolves in the Throne Room'], about: 'Folk-tinged black metal devotee.' },
+  { id: 'u1', handle: 'SKALD_EIRIK',   initial: 'S', city: 'Oslo',       country: 'NO', compatibility: 87, artists: ['Enslaved', 'Ihsahn', 'Mgła'],                        about: 'Black metal pilgrim. Concerts are church.' },
+  { id: 'u2', handle: 'FENRIR_KEEPER', initial: 'F', city: 'Hamburg',    country: 'DE', compatibility: 74, artists: ['Bolt Thrower', 'Cannibal Corpse', 'Morbid Angel'],    about: 'Death metal only. No exceptions.' },
+  { id: 'u3', handle: 'VOIDWALKER',    initial: 'V', city: 'Düsseldorf', country: 'DE', compatibility: 91, artists: ['Sunn O)))', 'Earth', 'Sleep'],                        about: 'Drone is prayer. Volume is god.' },
+  { id: 'u4', handle: 'BRISINGR_PATH', initial: 'B', city: 'Cologne',    country: 'DE', compatibility: 68, artists: ['Bathory', 'Dissection', 'Watain'],                    about: 'Vikings, darkness, riffs.' },
+  { id: 'u5', handle: 'MORDGRIMM',     initial: 'M', city: 'Frankfurt',  country: 'DE', compatibility: 82, artists: ['Primordial', 'Agalloch', 'Wolves in the Throne Room'], about: 'Folk-tinged black metal devotee.' },
 ]
 
 // Profiles that already liked the current user → mutual fit on right-swipe
@@ -63,6 +66,18 @@ const lbl: React.CSSProperties = {
 
 export default function SwipeFeed() {
   const { addNotification } = useNotifications()
+  const { user } = useUser()
+
+  // Pre-compute distances from user's city to each profile city
+  const distances = useMemo(() => {
+    const userCity = user?.city ?? null
+    return Object.fromEntries(
+      PROFILES.map((p) => {
+        const km = userCity ? distanceBetweenCities(userCity, p.city) : null
+        return [p.id, km]
+      })
+    ) as Record<string, number | null>
+  }, [user?.city])
   const [idx, setIdx]               = useState(0)
   const [dragX, setDragX]           = useState(0)
   const [dragY, setDragY]           = useState(0)
@@ -277,7 +292,12 @@ export default function SwipeFeed() {
               </Typography>
             </Box>
 
-            <span style={{ ...lbl, display: 'block', marginBottom: 10 }}>⌖ {profile.location}</span>
+            <span style={{ ...lbl, display: 'block', marginBottom: 10 }}>
+              ⌖ {profile.city}
+              {distances[profile.id] !== null && distances[profile.id] !== undefined
+                ? ` · ${distances[profile.id]} km`
+                : ''}
+            </span>
 
             {/* Artists */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.25 }}>
