@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Container,
   Box,
   Card,
   CardContent,
@@ -20,242 +19,216 @@ import {
   Divider,
 } from '@mui/material'
 import {
-  Visibility,
-  VisibilityOff,
-  Email,
-  Lock,
-  Person,
-  LocationOn,
-  Public,
+  Visibility, VisibilityOff, Email, Lock, Person, LocationOn, Public,
 } from '@mui/icons-material'
 import { authAPI } from '@/lib/api'
 
 export default function RegisterPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
-    handle: '',
-    email: '',
-    password: '',
-    country: '',
-    city: '',
+    handle: '', email: '', password: '', country: '', city: '',
   })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [showPw, setShowPw]     = useState(false)
   const [successOpen, setSuccessOpen] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-
     try {
       await authAPI.register(formData)
       setSuccessOpen(true)
       setTimeout(() => router.push('/auth/login'), 2000)
     } catch (err: any) {
       const detail = err.response?.data?.detail
-      if (Array.isArray(detail)) {
-        setError(detail.map((e: any) => e.msg).join(', '))
-      } else if (typeof detail === 'string') {
-        setError(detail)
-      } else {
-        setError('Registration failed')
-      }
+      if (Array.isArray(detail)) setError(detail.map((e: any) => e.msg).join(', '))
+      else if (typeof detail === 'string') setError(detail)
+      else setError('Registration failed')
     } finally {
       setLoading(false)
     }
   }
 
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setFormData((f) => ({ ...f, [k]: e.target.value }))
+
   return (
-    <Container maxWidth="sm">
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          py: 4,
-        }}
-      >
-        {/* Grimr logo / brand */}
-        <Box sx={{ textAlign: 'center', mb: 5 }}>
-          <Typography
-            variant="h1"
-            className="grimr-glow"
-            component={Link}
-            href="/"
-            sx={{
-              fontSize: { xs: '3rem', md: '4rem' },
-              letterSpacing: '0.05em',
-              display: 'inline-block',
-              color: 'text.primary',
-              textDecoration: 'none',
-              mb: 2,
-            }}
-          >
-            Grimr
-          </Typography>
-          <Typography variant="h5" sx={{ fontWeight: 400, fontStyle: 'italic', mb: 0.5 }}>
-            Join the Community
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Create your Metal-ID and connect with the community
-          </Typography>
-        </Box>
+    <Box
+      sx={{
+        minHeight: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        px: { xs: 2, sm: 4 },
+        py: { xs: 4, md: 6 },
+        maxWidth: 480,
+        mx: 'auto',
+      }}
+    >
+      {/* Grimr brand mark */}
+      <Box sx={{ textAlign: 'center', mb: { xs: 4, md: 5 } }}>
+        <Typography
+          component={Link}
+          href="/"
+          className="grimr-glow"
+          sx={{
+            fontFamily: '"Archivo Black", sans-serif',
+            fontSize: { xs: '2.8rem', md: '3.5rem' },
+            letterSpacing: '0.04em',
+            color: 'text.primary',
+            textDecoration: 'none',
+            display: 'inline-block',
+            mb: 1.5,
+            lineHeight: 1,
+          }}
+        >
+          Grimr
+        </Typography>
+        <Typography
+          sx={{
+            fontFamily: '"EB Garamond", serif',
+            fontStyle: 'italic',
+            fontSize: '1.25rem',
+            color: 'text.secondary',
+            mb: 0.5,
+          }}
+        >
+          Join the community
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          Create your Metal-ID
+        </Typography>
+      </Box>
 
-        {/* Form card */}
-        <Card>
-          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-            <Box component="form" onSubmit={handleSubmit}>
-              {error && (
-                <Alert severity="error" sx={{ mb: 3 }}>
-                  {error}
-                </Alert>
-              )}
+      {/* Form card */}
+      <Card>
+        <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+          <Box component="form" onSubmit={handleSubmit}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2.5, fontSize: '0.875rem' }}>
+                {error}
+              </Alert>
+            )}
 
-              <TextField
-                fullWidth
-                label="Handle"
-                required
-                autoComplete="username"
-                value={formData.handle}
-                onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
-                placeholder="metalhead666"
-                sx={{ mb: 2.5 }}
-                helperText="Your unique username on Grimr"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Person sx={{ color: 'text.disabled', fontSize: 20 }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+            <TextField
+              fullWidth label="Handle" required autoComplete="username"
+              value={formData.handle} onChange={set('handle')}
+              placeholder="metalhead666"
+              helperText="Your unique username"
+              sx={{ mb: 2 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Person sx={{ color: 'text.disabled', fontSize: 18 }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                required
-                autoComplete="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="you@example.com"
-                sx={{ mb: 2.5 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Email sx={{ color: 'text.disabled', fontSize: 20 }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+            <TextField
+              fullWidth label="Email" type="email" required autoComplete="email"
+              value={formData.email} onChange={set('email')}
+              placeholder="you@example.com"
+              sx={{ mb: 2 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Email sx={{ color: 'text.disabled', fontSize: 18 }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-              <TextField
-                fullWidth
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                required
-                autoComplete="new-password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="••••••••"
-                sx={{ mb: 2.5 }}
-                helperText="Min. 8 chars · 1 uppercase · 1 number · 1 special character"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock sx={{ color: 'text.disabled', fontSize: 20 }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                        size="small"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
+            <TextField
+              fullWidth label="Password" required autoComplete="new-password"
+              type={showPw ? 'text' : 'password'}
+              value={formData.password} onChange={set('password')}
+              placeholder="••••••••"
+              helperText="Min. 8 chars · 1 uppercase · 1 number · 1 special char"
+              sx={{ mb: 2 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock sx={{ color: 'text.disabled', fontSize: 18 }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowPw(!showPw)} edge="end" size="small"
+                      aria-label={showPw ? 'Hide' : 'Show'}>
+                      {showPw ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-              {/* Location — optional, grouped together */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Country (optional)"
-                    value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    placeholder="Germany"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Public sx={{ color: 'text.disabled', fontSize: 20 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="City (optional)"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Berlin"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LocationOn sx={{ color: 'text.disabled', fontSize: 20 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
+            {/* Location — 2-col grid on sm+, stacked on xs */}
+            <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth label="Country (optional)"
+                  value={formData.country} onChange={set('country')}
+                  placeholder="Germany"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Public sx={{ color: 'text.disabled', fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
               </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth label="City (optional)"
+                  value={formData.city} onChange={set('city')}
+                  placeholder="Berlin"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LocationOn sx={{ color: 'text.disabled', fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+            </Grid>
 
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                size="large"
-                disabled={loading}
-                sx={{ mb: 2 }}
-              >
-                {loading ? 'Creating Account…' : 'Create Account'}
-              </Button>
+            <Button
+              type="submit" fullWidth variant="contained" size="large"
+              disabled={loading} sx={{ mb: 1.5 }}
+            >
+              {loading ? 'Creating account…' : 'Create Account'}
+            </Button>
 
-              <Divider sx={{ my: 2.5 }} />
+            <Divider sx={{ my: 2.5 }} />
 
-              <Typography variant="body2" color="text.secondary" align="center">
-                Already have an account?{' '}
-                <MuiLink component={Link} href="/auth/login" color="primary" underline="hover">
-                  Login
-                </MuiLink>
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
+            <Typography variant="body2" color="text.secondary" align="center" sx={{ fontSize: '0.875rem' }}>
+              Already have an account?{' '}
+              <MuiLink component={Link} href="/auth/login" color="primary" underline="hover">
+                Login
+              </MuiLink>
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
 
-        <Box sx={{ textAlign: 'center', mt: 3 }}>
-          <MuiLink component={Link} href="/" color="text.secondary" underline="hover" variant="body2">
-            ← Back to Home
-          </MuiLink>
-        </Box>
+      <Box sx={{ textAlign: 'center', mt: 3 }}>
+        <MuiLink component={Link} href="/" color="text.secondary" underline="hover" sx={{ fontSize: '0.8rem' }}>
+          ← Back to Home
+        </MuiLink>
       </Box>
 
       <Snackbar
         open={successOpen}
-        autoHideDuration={6000}
+        autoHideDuration={5000}
         onClose={() => setSuccessOpen(false)}
         message="Account created! Please check your email to verify."
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
-    </Container>
+    </Box>
   )
 }

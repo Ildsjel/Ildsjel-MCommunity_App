@@ -24,17 +24,17 @@ import Navigation from '@/app/components/Navigation'
 
 const FEATURES = [
   {
-    icon: <GroupIcon sx={{ fontSize: 32, color: 'secondary.main' }} />,
+    icon: <GroupIcon sx={{ fontSize: 28, color: 'secondary.main' }} />,
     title: 'Find Your Tribe',
     body: 'Discover metalheads in your city and around the world. Connect over shared artists and subgenres.',
   },
   {
-    icon: <LibraryMusicIcon sx={{ fontSize: 32, color: 'secondary.main' }} />,
+    icon: <LibraryMusicIcon sx={{ fontSize: 28, color: 'secondary.main' }} />,
     title: 'Build Your Metal-ID',
-    body: 'Link Spotify and let your listening history speak. Your top artists and genres define your profile.',
+    body: 'Link Spotify and let your listening history speak. Your top artists and genres define your identity.',
   },
   {
-    icon: <TravelExploreIcon sx={{ fontSize: 32, color: 'secondary.main' }} />,
+    icon: <TravelExploreIcon sx={{ fontSize: 28, color: 'secondary.main' }} />,
     title: 'Discover by Taste',
     body: 'Search by artist, genre, or location. See who you share the most music with before reaching out.',
   },
@@ -47,8 +47,7 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true)
-    const token = localStorage.getItem('access_token')
-    setIsAuthenticated(!!token)
+    setIsAuthenticated(!!localStorage.getItem('access_token'))
   }, [])
 
   return (
@@ -58,88 +57,100 @@ export default function Home() {
       {/* ── Hero ─────────────────────────────────────────────── */}
       <Box
         sx={{
-          minHeight: '88vh',
+          minHeight: { xs: 'calc(100dvh - 56px)', md: '88vh' },
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          py: { xs: 8, md: 12 },
           textAlign: 'center',
-          position: 'relative',
+          px: { xs: 3, md: 4 },
+          py: { xs: 6, md: 10 },
         }}
       >
-        <Container maxWidth="md">
-          {/* Pre-heading badge */}
+        <Box sx={{ maxWidth: { xs: '100%', sm: 560, md: 700 } }}>
+          {/* Badge */}
           <Chip
             label="The Metal Community"
             size="small"
+            className="fade-in-up"
             sx={{
-              mb: 4,
+              mb: { xs: 3, md: 4 },
               border: '1px solid rgba(212,175,55,0.4)',
               color: 'secondary.main',
               bgcolor: 'rgba(212,175,55,0.06)',
               letterSpacing: '0.08em',
-              fontSize: '0.7rem',
+              fontSize: '0.65rem',
               fontWeight: 600,
               textTransform: 'uppercase',
             }}
-            className="fade-in-up"
           />
 
-          {/* Main title */}
+          {/* Title — Archivo Black, fluid size */}
           <Typography
             variant="h1"
             className="grimr-glow fade-in-up fade-in-up-delay-1"
             sx={{
-              fontSize: { xs: '4.5rem', sm: '6rem', md: '8rem' },
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              mb: 2,
+              fontFamily: '"Archivo Black", sans-serif',
+              fontSize: { xs: '4rem', sm: '5.5rem', md: '7rem' },
               lineHeight: 1,
+              letterSpacing: '0.02em',
+              mb: { xs: 2, md: 2.5 },
             }}
           >
             Grimr
           </Typography>
 
-          {/* Tagline */}
+          {/* Tagline — EB Garamond italic */}
           <Typography
-            variant="h4"
             className="fade-in-up fade-in-up-delay-2"
             sx={{
-              color: 'text.secondary',
-              fontWeight: 400,
-              fontStyle: 'italic',
-              mb: 2,
+              fontFamily: '"EB Garamond", Georgia, serif',
               fontSize: { xs: '1.25rem', md: '1.6rem' },
+              fontStyle: 'italic',
+              color: 'text.secondary',
+              mb: { xs: 1.5, md: 2 },
             }}
           >
             Where Metalheads Connect
           </Typography>
 
-          {/* Sub-tagline */}
+          {/* Sub-copy */}
           <Typography
             variant="body1"
             color="text.secondary"
             className="fade-in-up fade-in-up-delay-3"
-            sx={{ mb: 5, maxWidth: 480, mx: 'auto', fontSize: '1rem' }}
+            sx={{
+              mb: { xs: 4, md: 5 },
+              maxWidth: 420,
+              mx: 'auto',
+              fontSize: { xs: '0.95rem', md: '1rem' },
+            }}
           >
-            Letterboxd meets Bandcamp — for Metal. Track your listening, discover
-            fans who share your taste, and find your local community.
+            Letterboxd meets Bandcamp — for Metal. Track your listening,
+            discover fans who share your taste, and find your local community.
           </Typography>
 
           {/* CTAs */}
           {mounted && (
             <Box
               className="fade-in-up fade-in-up-delay-4"
-              sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}
+              sx={{
+                display: 'flex',
+                gap: 1.5,
+                justifyContent: 'center',
+                flexDirection: { xs: 'column', sm: 'row' },
+                maxWidth: { xs: 280, sm: 'unset' },
+                mx: 'auto',
+              }}
             >
               {isAuthenticated ? (
                 <>
                   <Button
                     variant="contained"
                     size="large"
+                    fullWidth={false}
                     onClick={() => router.push('/profile')}
                     endIcon={<ArrowForwardIcon />}
-                    sx={{ minWidth: 180 }}
+                    sx={{ minWidth: { xs: '100%', sm: 180 } }}
                   >
                     My Profile
                   </Button>
@@ -147,7 +158,7 @@ export default function Home() {
                     variant="outlined"
                     size="large"
                     onClick={() => router.push('/search')}
-                    sx={{ minWidth: 160 }}
+                    sx={{ minWidth: { xs: '100%', sm: 160 } }}
                   >
                     Find Metalheads
                   </Button>
@@ -159,7 +170,7 @@ export default function Home() {
                     size="large"
                     component={Link}
                     href="/auth/register"
-                    sx={{ minWidth: 180 }}
+                    sx={{ minWidth: { xs: '100%', sm: 180 } }}
                   >
                     Sign Up Free
                   </Button>
@@ -168,7 +179,7 @@ export default function Home() {
                     size="large"
                     component={Link}
                     href="/auth/login"
-                    sx={{ minWidth: 140 }}
+                    sx={{ minWidth: { xs: '100%', sm: 140 } }}
                   >
                     Login
                   </Button>
@@ -176,38 +187,29 @@ export default function Home() {
               )}
             </Box>
           )}
-        </Container>
+        </Box>
       </Box>
 
       {/* ── Section divider ──────────────────────────────────── */}
       <Box sx={{ px: { xs: 3, md: 8 } }}>
-        <Divider
-          sx={{
-            borderColor: 'rgba(212,175,55,0.15)',
-            '&::before, &::after': { borderColor: 'rgba(212,175,55,0.15)' },
-          }}
-        >
+        <Divider sx={{ '&::before, &::after': { borderColor: 'rgba(212,175,55,0.12)' } }}>
           <Box
-            component="span"
             sx={{
-              display: 'inline-block',
-              width: 8,
-              height: 8,
+              width: 6, height: 6,
               bgcolor: 'secondary.dark',
               transform: 'rotate(45deg)',
-              mx: 1,
-              opacity: 0.6,
+              opacity: 0.55,
             }}
           />
         </Divider>
       </Box>
 
       {/* ── Features ─────────────────────────────────────────── */}
-      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 }, px: { xs: 2, md: 3 } }}>
         <Typography
           variant="h3"
           align="center"
-          sx={{ mb: 1, fontSize: { xs: '1.75rem', md: '2rem' } }}
+          sx={{ mb: 1, fontSize: { xs: '1.5rem', md: '2rem' } }}
         >
           Everything you need
         </Typography>
@@ -215,71 +217,92 @@ export default function Home() {
           variant="body1"
           color="text.secondary"
           align="center"
-          sx={{ mb: 6, maxWidth: 480, mx: 'auto' }}
+          sx={{ mb: { xs: 4, md: 6 }, maxWidth: 420, mx: 'auto', fontSize: { xs: '0.9rem', md: '1rem' } }}
         >
           A social layer built specifically for the metal community
         </Typography>
 
-        <Grid container spacing={3}>
+        {/* Features: vertical stack on mobile, 3-col on desktop */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+            gap: { xs: 2, md: 3 },
+          }}
+        >
           {FEATURES.map((f) => (
-            <Grid item xs={12} md={4} key={f.title}>
-              <Card
-                className="gold-accent-top"
-                sx={{
-                  height: '100%',
-                  p: 1,
-                  '&:hover': {
-                    boxShadow: '0 0 24px rgba(139,0,0,0.15)',
-                    borderColor: 'rgba(212,175,55,0.2)',
-                  },
-                }}
-              >
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ mb: 2 }}>{f.icon}</Box>
-                  <Typography variant="h6" gutterBottom>
-                    {f.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-                    {f.body}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+            <Card
+              key={f.title}
+              className="gold-accent-top"
+              sx={{
+                '&:hover': {
+                  boxShadow: '0 0 24px rgba(139,0,0,0.12)',
+                  borderColor: 'rgba(212,175,55,0.18)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
+                <Box sx={{ mb: 1.5 }}>{f.icon}</Box>
+                <Typography variant="h5" gutterBottom sx={{ fontSize: '1rem' }}>
+                  {f.title}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ lineHeight: 1.65, fontSize: '0.875rem' }}
+                >
+                  {f.body}
+                </Typography>
+              </CardContent>
+            </Card>
           ))}
-        </Grid>
+        </Box>
       </Container>
 
       {/* ── Stats ────────────────────────────────────────────── */}
-      <Container maxWidth="md" sx={{ pb: { xs: 8, md: 12 } }}>
+      <Container maxWidth="sm" sx={{ pb: { xs: 6, md: 10 }, px: { xs: 2, md: 3 } }}>
         <Card
           sx={{
             border: '1px solid rgba(212,175,55,0.12)',
-            background: 'rgba(14,14,14,0.9)',
+            background: 'rgba(12,12,12,0.9)',
           }}
         >
-          <CardContent sx={{ py: 5 }}>
-            <Grid container spacing={2}>
+          <CardContent sx={{ py: { xs: 3, md: 4 } }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 1,
+                textAlign: 'center',
+              }}
+            >
               {[
-                { value: '1K+', label: 'Active Metalheads' },
-                { value: '50K+', label: 'Scrobbled Tracks' },
-                { value: '100+', label: 'Genres Covered' },
-              ].map((stat) => (
-                <Grid item xs={12} sm={4} key={stat.label}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography
-                      variant="h3"
-                      className="gold-shimmer"
-                      sx={{ fontWeight: 700, mb: 0.5 }}
-                    >
-                      {stat.value}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {stat.label}
-                    </Typography>
-                  </Box>
-                </Grid>
+                { value: '1K+',  label: 'Metalheads' },
+                { value: '50K+', label: 'Scrobbles' },
+                { value: '100+', label: 'Genres' },
+              ].map((s) => (
+                <Box key={s.label}>
+                  <Typography
+                    className="gold-shimmer"
+                    sx={{
+                      fontFamily: '"Archivo Black", sans-serif',
+                      fontSize: { xs: '1.6rem', md: '2rem' },
+                      lineHeight: 1,
+                      mb: 0.5,
+                    }}
+                  >
+                    {s.value}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontSize: '0.7rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}
+                  >
+                    {s.label}
+                  </Typography>
+                </Box>
               ))}
-            </Grid>
+            </Box>
           </CardContent>
         </Card>
       </Container>

@@ -2,47 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital,wght@0,400;0,700;1,400&display=swap');
+/* ── Google Fonts ──────────────────────────────────────────── */
+/* Design system: Archivo Black (display/heads) · EB Garamond (body/reviews)
+   JetBrains Mono (data) · Caveat (handwritten accents) */
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&family=Caveat:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* ── CSS Variables ─────────────────────────────────────────── */
 :root {
-  --crimson: #8B0000;
-  --gold: #D4AF37;
-  --grim-black: #0A0A0A;
-  --deep-charcoal: #141414;
-  --ghost-white: #F0F0F0;
-  --silver: #A8A8A8;
+  /* Core palette */
+  --crimson:       #8B0000;
+  --crimson-light: #B22222;
+  --gold:          #D4AF37;
+  --grim-black:    #0A0A0A;
+  --paper:         #141414;
+  --ghost-white:   #F0F0F0;
+  --silver:        #A8A8A8;
+
+  /* Mobile layout */
+  --bottom-nav-height: 56px;
+  --safe-area-bottom:  env(safe-area-inset-bottom, 0px);
+  --safe-area-top:     env(safe-area-inset-top, 0px);
+  --page-bottom-pad:   calc(var(--bottom-nav-height) + var(--safe-area-bottom) + 16px);
 }
 
 /* ── Base ──────────────────────────────────────────────────── */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent; /* kill the blue flash on iOS taps */
+}
+
+html {
+  /* Prevent font-size bump on orientation change (iOS) */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   color: var(--ghost-white);
   background-color: var(--grim-black);
   min-height: 100vh;
+  min-height: 100dvh; /* dynamic viewport height for mobile browsers */
+  /* Extra bottom space so content isn't hidden behind bottom nav */
+  padding-bottom: var(--page-bottom-pad);
+  font-family: 'EB Garamond', Georgia, serif;
+}
+
+/* Desktop: no bottom nav, no extra padding */
+@media (min-width: 900px) {
+  body {
+    padding-bottom: 0;
+  }
 }
 
 /* ── Scrollbar ─────────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #111;
-}
-::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3a3a3a;
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
 
 /* ── Typography ────────────────────────────────────────────── */
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Playfair Display', 'IM Fell DW Pica', Georgia, serif;
-  font-weight: 700;
+h1, h2, h3, h4 {
+  font-family: 'Archivo Black', 'Impact', sans-serif;
+  font-weight: 400; /* Archivo Black is inherently bold */
+  letter-spacing: -0.01em;
+}
+
+h5, h6 {
+  font-family: 'Archivo Black', sans-serif;
+  font-weight: 400;
+}
+
+/* Data / scrobble counts → monospace */
+.mono, .data-value {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* Handwritten accent text */
+.handwritten {
+  font-family: 'Caveat', cursive;
+  font-size: 1.1em;
 }
 
 /* ── Accessibility ─────────────────────────────────────────── */
@@ -54,11 +91,11 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Animations ────────────────────────────────────────────── */
 @keyframes grimrGlowPulse {
   0%, 100% { text-shadow: 0 0 30px rgba(139,0,0,0.5), 0 0 60px rgba(139,0,0,0.25); }
-  50%       { text-shadow: 0 0 50px rgba(139,0,0,0.75), 0 0 100px rgba(139,0,0,0.35); }
+  50%       { text-shadow: 0 0 55px rgba(139,0,0,0.80), 0 0 110px rgba(139,0,0,0.38); }
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -67,9 +104,14 @@ h1, h2, h3, h4, h5, h6 {
   100% { background-position:  200% center; }
 }
 
+@keyframes slideInFromBottom {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ── Utility classes ───────────────────────────────────────── */
 
-/* Glowing Grimr logo text */
+/* Glowing title */
 .grimr-glow {
   animation: grimrGlowPulse 4s ease-in-out infinite;
   text-shadow: 0 0 40px rgba(139,0,0,0.55), 0 0 80px rgba(139,0,0,0.25);
@@ -85,30 +127,43 @@ h1, h2, h3, h4, h5, h6 {
   animation: shimmer 4s linear infinite;
 }
 
-/* Entrance animation */
-.fade-in-up {
-  animation: fadeInUp 0.6s ease both;
-}
-.fade-in-up-delay-1 { animation-delay: 0.1s; }
-.fade-in-up-delay-2 { animation-delay: 0.2s; }
-.fade-in-up-delay-3 { animation-delay: 0.35s; }
-.fade-in-up-delay-4 { animation-delay: 0.5s; }
+/* Entrance stagger */
+.fade-in-up              { animation: fadeInUp 0.55s ease both; }
+.fade-in-up-delay-1      { animation-delay: 0.10s; }
+.fade-in-up-delay-2      { animation-delay: 0.20s; }
+.fade-in-up-delay-3      { animation-delay: 0.34s; }
+.fade-in-up-delay-4      { animation-delay: 0.50s; }
 
-/* Glass card surface */
+/* Slide up (for bottom-sheet-style modals) */
+.slide-in-up { animation: slideInFromBottom 0.3s ease both; }
+
+/* Thin gold top-border accent */
+.gold-accent-top { border-top: 1px solid rgba(212,175,55,0.35) !important; }
+
+/* Glass surface */
 .glass-card {
   background: rgba(20, 20, 20, 0.80);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-/* Thin gold top-border accent */
-.gold-accent-top {
-  border-top: 1px solid rgba(212,175,55,0.35) !important;
+/* ── Mobile touch targets ──────────────────────────────────── */
+/* Ensure interactive items are at least 44px tall (Apple HIG) */
+button, [role="button"], a, input, select, textarea,
+.MuiButtonBase-root {
+  min-height: 44px;
+}
+
+/* Smaller icon buttons can stay small but get a bigger hit area */
+.MuiIconButton-root {
+  padding: 10px !important;
 }
 
 /* ── Quill Rich-Text Editor ────────────────────────────────── */
 .ql-editor {
-  font-size: 14px;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 16px; /* 16px prevents iOS auto-zoom on focus */
   line-height: 1.7;
 }
 .ql-editor p    { margin-bottom: 0.5em; }
@@ -126,29 +181,26 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .ql-editor code {
-  background-color: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.05);
   padding: 2px 5px;
   border-radius: 3px;
-  font-family: 'Courier New', monospace;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 .ql-editor pre {
-  background-color: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.04);
   padding: 12px;
   border-radius: 6px;
   overflow-x: auto;
 }
 
 .ql-editor ul,
-.ql-editor ol {
-  padding-left: 1.5em;
-  margin-bottom: 0.5em;
-}
+.ql-editor ol { padding-left: 1.5em; margin-bottom: 0.5em; }
 
-.ql-editor a {
-  color: #B22222;
-  text-decoration: underline;
-}
-.ql-editor a:hover {
-  color: #D22222;
+.ql-editor a       { color: #B22222; text-decoration: underline; }
+.ql-editor a:hover { color: #D22222; }
+
+/* ── Input font-size fix (prevents iOS zoom) ───────────────── */
+input, textarea, select {
+  font-size: 16px !important;
 }

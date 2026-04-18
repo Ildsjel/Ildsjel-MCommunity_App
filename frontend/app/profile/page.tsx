@@ -214,59 +214,59 @@ export default function ProfilePage() {
   return (
     <>
       <Navigation />
-      <Box sx={{ 
+      <Box sx={{
         width: '100%',
         maxWidth: '100vw',
-        py: 4, 
-        px: 4,
-        boxSizing: 'border-box'
+        py: { xs: 2, md: 4 },
+        px: { xs: 2, md: 4 },
+        boxSizing: 'border-box',
       }}>
-        <Box sx={{ 
+        <Box sx={{
           display: 'flex',
-          gap: 3,
+          gap: { xs: 2, md: 3 },
           flexDirection: { xs: 'column', lg: 'row' },
-          width: '100%'
+          width: '100%',
         }}>
-          {/* Left Column: Profile Info + About Me + Connected Accounts */}
-          <Box sx={{ 
-            flex: { xs: '1 1 100%', lg: '1 1 75%' },
-            minWidth: 0
-          }}>
-            <Stack spacing={3}>
+          {/* Left Column: Profile Info + About Me + Gallery */}
+          <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 75%' }, minWidth: 0 }}>
+            <Stack spacing={{ xs: 2, md: 3 }}>
+
               {/* Profile Header */}
               <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3, mb: 2 }}>
-                    {/* Avatar and Spotify Logo */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                      <AvatarUpload size={100} />
-                      <SpotifyConnection 
+                <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 2, md: 3 } }}>
+                    {/* Avatar + Spotify badge */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                      <AvatarUpload size={{ xs: 72, md: 96 } as any} />
+                      <SpotifyConnection
                         isConnected={user.source_accounts.includes('spotify')}
-                        onDisconnect={() => {
-                          // Refresh will be handled by the component
-                        }}
+                        onDisconnect={() => {}}
                       />
                     </Box>
-                    
-                    {/* User Info */}
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography variant="h3" gutterBottom>
+
+                    {/* User info */}
+                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="h3"
+                        noWrap
+                        sx={{ fontSize: { xs: '1.4rem', md: '2rem' }, mb: 0.5 }}
+                      >
                         {user.handle}
                       </Typography>
-                      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                      <Stack spacing={0.5}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <LocationOn fontSize="small" color="action" />
-                          <Typography variant="body2">
+                          <LocationOn sx={{ fontSize: 14, color: 'text.disabled' }} />
+                          <Typography variant="caption" color="text.secondary">
                             {user.city || 'Unknown'}{user.country && `, ${user.country}`}
                           </Typography>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <CalendarToday fontSize="small" color="action" />
-                          <Typography variant="body2">
-                            Member since {new Date(user.created_at).toLocaleDateString()}
+                          <CalendarToday sx={{ fontSize: 14, color: 'text.disabled' }} />
+                          <Typography variant="caption" color="text.secondary">
+                            Since {new Date(user.created_at).toLocaleDateString()}
                           </Typography>
                         </Box>
-                        {user.is_pro && <Chip label="PRO" color="secondary" size="small" />}
+                        {user.is_pro && <Chip label="PRO" color="secondary" size="small" sx={{ alignSelf: 'flex-start' }} />}
                       </Stack>
                     </Box>
                   </Box>
@@ -275,9 +275,9 @@ export default function ProfilePage() {
 
               {/* About Me */}
               <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h5">
+                <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Typography variant="h5" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                       About Me
                     </Typography>
                     {!editAboutMe ? (
@@ -326,19 +326,16 @@ export default function ProfilePage() {
           </Box>
 
           {/* Right Column: Top Artists & Recently Played Timeline */}
-          <Box sx={{ 
-            flex: { xs: '1 1 100%', lg: '1 1 25%' },
-            minWidth: 0
-          }}>
-            <Stack spacing={3}>
+          <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 25%' }, minWidth: 0 }}>
+            <Stack spacing={{ xs: 2, md: 3 }}>
               {/* Top 10 Artists */}
               <TopArtists userId={user.id} isOwnProfile={true} />
 
               {/* Recently Played Timeline */}
               <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6">
+                <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Typography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.125rem' } }}>
                       Recently Played
                     </Typography>
                     {user.source_accounts.includes('spotify') && (

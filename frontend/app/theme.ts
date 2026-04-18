@@ -2,216 +2,299 @@
 
 import { createTheme } from '@mui/material/styles'
 
-// Grimr Dark Theme — Metal-inspired color palette
+// Grimr — Mobile-First Metal Theme
+// Fonts: Archivo Black (display) · EB Garamond (body) · JetBrains Mono (data)
 export const theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#8B0000', // occult-crimson
+      main: '#8B0000',   // occult-crimson
       light: '#B22222',
       dark: '#5C0000',
       contrastText: '#F5F5F5',
     },
     secondary: {
-      main: '#D4AF37', // shadow-gold
+      main: '#D4AF37',   // shadow-gold
       light: '#FFD700',
       dark: '#B8860B',
       contrastText: '#1A1A1A',
     },
-    success: {
-      main: '#4A9B8E',
-      light: '#5DBAA8',
-      dark: '#357A6F',
-    },
-    error: {
-      main: '#DC143C',
-      light: '#FF6B6B',
-      dark: '#A00000',
-    },
-    warning: {
-      main: '#CD7F32',
-      light: '#E89B5A',
-      dark: '#A0522D',
-    },
+    success: { main: '#4A9B8E', light: '#5DBAA8', dark: '#357A6F' },
+    error:   { main: '#DC143C', light: '#FF6B6B', dark: '#A00000' },
+    warning: { main: '#CD7F32', light: '#E89B5A', dark: '#A0522D' },
     background: {
-      default: '#0A0A0A', // grim-black
-      paper: '#141414',   // deep charcoal — slightly lighter than before for contrast
+      default: '#0A0A0A',
+      paper:   '#141414',
     },
     text: {
-      primary: '#F0F0F0',
+      primary:  '#F0F0F0',
       secondary: '#A8A8A8',
-      disabled: '#5A5A5A',
+      disabled:  '#5A5A5A',
     },
     divider: 'rgba(255,255,255,0.08)',
   },
+
+  // ── Typography ──────────────────────────────────────────────
   typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    // Body / UI chrome → Inter (neutral, readable at small sizes)
+    fontFamily: '"Inter", "Helvetica", "Arial", sans-serif',
+
     h1: {
-      fontFamily: '"Playfair Display", "IM Fell DW Pica", Georgia, serif',
-      fontWeight: 700,
-      fontSize: '3.5rem',
-      lineHeight: 1.15,
+      fontFamily: '"Archivo Black", "Impact", sans-serif',
+      fontWeight: 400,
+      fontSize: 'clamp(2.5rem, 8vw, 5rem)',
+      lineHeight: 1.05,
       letterSpacing: '-0.01em',
     },
     h2: {
-      fontFamily: '"Playfair Display", "IM Fell DW Pica", Georgia, serif',
-      fontWeight: 700,
-      fontSize: '2.5rem',
-      lineHeight: 1.2,
+      fontFamily: '"Archivo Black", "Impact", sans-serif',
+      fontWeight: 400,
+      fontSize: 'clamp(1.75rem, 5vw, 2.5rem)',
+      lineHeight: 1.1,
     },
     h3: {
-      fontFamily: '"Playfair Display", "IM Fell DW Pica", Georgia, serif',
-      fontWeight: 700,
-      fontSize: '2rem',
-      lineHeight: 1.25,
+      fontFamily: '"Archivo Black", "Impact", sans-serif',
+      fontWeight: 400,
+      fontSize: 'clamp(1.4rem, 4vw, 2rem)',
+      lineHeight: 1.15,
     },
     h4: {
-      fontFamily: '"Playfair Display", "IM Fell DW Pica", Georgia, serif',
-      fontWeight: 700,
-      fontSize: '1.75rem',
-      lineHeight: 1.3,
+      fontFamily: '"Archivo Black", "Impact", sans-serif',
+      fontWeight: 400,
+      fontSize: 'clamp(1.2rem, 3.5vw, 1.75rem)',
+      lineHeight: 1.2,
     },
     h5: {
-      fontFamily: '"Playfair Display", "IM Fell DW Pica", Georgia, serif',
-      fontWeight: 600,
-      fontSize: '1.375rem',
-      lineHeight: 1.4,
+      fontFamily: '"Archivo Black", "Impact", sans-serif',
+      fontWeight: 400,
+      fontSize: '1.125rem',
+      lineHeight: 1.3,
     },
     h6: {
-      fontFamily: '"Playfair Display", "IM Fell DW Pica", Georgia, serif',
-      fontWeight: 600,
-      fontSize: '1.125rem',
-      lineHeight: 1.45,
+      fontFamily: '"Archivo Black", "Impact", sans-serif',
+      fontWeight: 400,
+      fontSize: '1rem',
+      lineHeight: 1.4,
     },
     body1: {
-      lineHeight: 1.7,
+      fontFamily: '"EB Garamond", Georgia, serif',
+      fontSize: '1rem',
+      lineHeight: 1.75,
     },
     body2: {
-      lineHeight: 1.6,
+      fontFamily: '"EB Garamond", Georgia, serif',
+      fontSize: '0.9375rem',
+      lineHeight: 1.65,
+    },
+    caption: {
+      fontFamily: '"Inter", sans-serif',
+      fontSize: '0.75rem',
+      lineHeight: 1.4,
+    },
+    overline: {
+      fontFamily: '"Inter", sans-serif',
+      fontSize: '0.6875rem',
+      letterSpacing: '0.08em',
+      textTransform: 'uppercase',
+    },
+    button: {
+      fontFamily: '"Inter", sans-serif',
+      fontWeight: 600,
+      fontSize: '0.875rem',
+      letterSpacing: '0.01em',
     },
   },
-  shape: {
-    borderRadius: 8,
-  },
+
+  shape: { borderRadius: 10 },
+
+  // ── Component overrides ─────────────────────────────────────
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        // Ensure body has no competing background
         body: {
           backgroundColor: '#0A0A0A',
           backgroundImage: 'none',
         },
       },
     },
+
+    // AppBar — glass blur
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: 'rgba(10,10,10,0.82)',
+          backgroundColor: 'rgba(10,10,10,0.85)',
           backgroundImage: 'none',
           backdropFilter: 'blur(14px)',
-          borderBottom: '1px solid rgba(212,175,55,0.08)',
-          boxShadow: '0 1px 0 rgba(0,0,0,0.5)',
+          WebkitBackdropFilter: 'blur(14px)',
+          borderBottom: '1px solid rgba(212,175,55,0.07)',
+          boxShadow: 'none',
         },
       },
     },
+
+    // Toolbar height — 56 px on mobile (standard iOS feel), 64 px on desktop
+    MuiToolbar: {
+      styleOverrides: {
+        root: {
+          '@media (max-width: 599px)': {
+            minHeight: '56px',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+          },
+        },
+      },
+    },
+
+    // Buttons — large tap area, glow on press
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
+          borderRadius: 10,
           textTransform: 'none',
           fontWeight: 600,
-          padding: '10px 24px',
+          minHeight: '44px',    // Apple HIG minimum
           transition: 'all 0.2s ease',
         },
         contained: {
           boxShadow: 'none',
           '&:hover': {
-            boxShadow: '0 0 20px rgba(139,0,0,0.45), 0 4px 12px rgba(0,0,0,0.4)',
+            boxShadow: '0 0 22px rgba(139,0,0,0.50), 0 4px 12px rgba(0,0,0,0.4)',
             transform: 'translateY(-1px)',
           },
-          '&:active': {
-            transform: 'translateY(0)',
-          },
+          '&:active': { transform: 'translateY(0)', boxShadow: 'none' },
         },
         outlined: {
           borderColor: 'rgba(212,175,55,0.35)',
           '&:hover': {
-            borderColor: 'rgba(212,175,55,0.7)',
+            borderColor: 'rgba(212,175,55,0.70)',
             backgroundColor: 'rgba(212,175,55,0.06)',
-            boxShadow: '0 0 14px rgba(212,175,55,0.15)',
           },
         },
         sizeLarge: {
-          padding: '13px 32px',
+          minHeight: '52px',
+          padding: '14px 32px',
           fontSize: '1rem',
+        },
+        sizeSmall: {
+          minHeight: '36px',
+          padding: '6px 14px',
         },
       },
     },
+
+    // Cards — glass surface
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
+          borderRadius: 14,
           border: '1px solid rgba(255,255,255,0.07)',
           backgroundImage: 'none',
           backgroundColor: 'rgba(20,20,20,0.88)',
           backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
           transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-          '&:hover': {
-            borderColor: 'rgba(212,175,55,0.12)',
-          },
+          '&:hover': { borderColor: 'rgba(212,175,55,0.12)' },
         },
       },
     },
+
+    MuiCardContent: {
+      styleOverrides: {
+        root: {
+          padding: '16px',
+          '&:last-child': { paddingBottom: '16px' },
+        },
+      },
+    },
+
+    // Inputs — 16 px font-size prevents iOS auto-zoom
     MuiTextField: {
       styleOverrides: {
         root: {
+          '& .MuiInputBase-input': { fontSize: '16px' },
           '& .MuiOutlinedInput-root': {
-            borderRadius: 8,
-            '& fieldset': {
-              borderColor: 'rgba(255,255,255,0.12)',
-            },
-            '&:hover fieldset': {
-              borderColor: 'rgba(212,175,55,0.35)',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: '#8B0000',
-            },
+            borderRadius: 10,
+            '& fieldset': { borderColor: 'rgba(255,255,255,0.12)' },
+            '&:hover fieldset': { borderColor: 'rgba(212,175,55,0.35)' },
+            '&.Mui-focused fieldset': { borderColor: '#8B0000' },
           },
         },
       },
     },
+
+    // Chips
     MuiChip: {
       styleOverrides: {
+        root: { borderRadius: 8, minHeight: '32px' },
+      },
+    },
+
+    // Bottom Navigation
+    MuiBottomNavigation: {
+      styleOverrides: {
         root: {
-          borderRadius: 8,
+          backgroundColor: 'transparent',
+          height: '56px',
         },
       },
     },
+    MuiBottomNavigationAction: {
+      styleOverrides: {
+        root: {
+          color: 'rgba(255,255,255,0.4)',
+          minWidth: '60px',
+          padding: '6px 0',
+          '&.Mui-selected': {
+            color: '#D4AF37',
+          },
+          '& .MuiBottomNavigationAction-label': {
+            fontSize: '0.65rem',
+            fontFamily: '"Inter", sans-serif',
+            fontWeight: 500,
+            letterSpacing: '0.03em',
+            '&.Mui-selected': { fontSize: '0.65rem' },
+          },
+        },
+      },
+    },
+
+    // Icon buttons — bigger touch area
     MuiIconButton: {
       styleOverrides: {
         root: {
+          padding: '10px',
           transition: 'color 0.15s ease, background-color 0.15s ease',
         },
       },
     },
+
+    // Drawer (mobile nav drawer kept for edge-cases)
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundImage: 'none',
+          backgroundColor: '#111',
+        },
+      },
+    },
+
+    // List item buttons
     MuiListItemButton: {
       styleOverrides: {
         root: {
           borderRadius: 8,
+          minHeight: '44px',
           '&.Mui-selected': {
             backgroundColor: 'rgba(139,0,0,0.15)',
-            '&:hover': {
-              backgroundColor: 'rgba(139,0,0,0.22)',
-            },
+            '&:hover': { backgroundColor: 'rgba(139,0,0,0.22)' },
           },
         },
       },
     },
+
     MuiDivider: {
       styleOverrides: {
-        root: {
-          borderColor: 'rgba(255,255,255,0.07)',
-        },
+        root: { borderColor: 'rgba(255,255,255,0.07)' },
       },
     },
   },
