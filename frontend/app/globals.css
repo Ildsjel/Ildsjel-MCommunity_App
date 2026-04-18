@@ -2,120 +2,172 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+/* Fonts loaded via next/font in layout.tsx — CSS variables: --font-display, --font-serif, --font-mono */
 
-/* IM Fell DW Pica for headings - fallback to Georgia */
-@import url('https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital,wght@0,400;0,700;1,400&display=swap');
-
+/* ── CSS Variables ─────────────────────────────────────────── */
 :root {
-  --foreground-rgb: 234, 234, 234;
-  --background-start-rgb: 10, 10, 10;
-  --background-end-rgb: 10, 10, 10;
+  /* Void purple palette */
+  --paper:      #120e18;
+  --paper-2:    #1a1424;
+  --canvas-bg:  #08060a;
+  --ink:        #ece5d3;
+  --ink-2:      #c9c2ae;
+  --muted:      #7a7364;
+  --line:       #d8cfb8;
+  --accent:     #c43a2a;
+  --accent-2:   #e05a3a;
+  --grid:       rgba(230,220,200,.05);
+  --medieval:   var(--font-medieval, "UnifrakturCook", "EB Garamond", serif);
+
+  /* Mobile layout */
+  --bottom-nav-height: 56px;
+  --safe-area-bottom:  env(safe-area-inset-bottom, 0px);
+  --safe-area-top:     env(safe-area-inset-top, 0px);
+  --page-bottom-pad:   calc(var(--bottom-nav-height) + var(--safe-area-bottom) + 16px);
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-  min-height: 100vh;
+  color:            var(--ink);
+  background-color: var(--canvas-bg);
+  min-height:       100vh;
+  min-height:       100dvh;
+  padding-bottom:   var(--page-bottom-pad);
+  font-family:      'EB Garamond', Georgia, serif;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(196,58,42,.08), transparent 45%),
+    radial-gradient(circle at 80% 80%, rgba(230,220,200,.04), transparent 55%),
+    repeating-linear-gradient(0deg, transparent 0, transparent 23px, var(--grid) 23px, var(--grid) 24px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 23px, var(--grid) 23px, var(--grid) 24px);
 }
 
-/* Custom scrollbar for dark theme */
-::-webkit-scrollbar {
-  width: 10px;
+@media (min-width: 900px) {
+  body { padding-bottom: 0; }
 }
 
-::-webkit-scrollbar-track {
-  background: #1C1C1E;
-}
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track  { background: var(--canvas-bg); }
+::-webkit-scrollbar-thumb  { background: #3a3040; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #574d60; }
 
-::-webkit-scrollbar-thumb {
-  background: #333333;
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555555;
-}
-
-/* Heading styles with serif font */
+/* ── Typography ────────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'IM Fell DW Pica', Georgia, serif;
-  font-weight: 700;
+  font-family:    'Archivo Black', sans-serif;
+  font-weight:    400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-/* Focus states for accessibility */
+.mono, .data-value, .label {
+  font-family:    'JetBrains Mono', 'Courier New', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size:      0.6875rem;
+}
+
+/* ── Accessibility ─────────────────────────────────────────── */
 *:focus-visible {
-  outline: 2px solid #8D021F;
+  outline:        2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* Quill Rich Text Editor Styles */
+/* ── Animations ────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInFromBottom {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dashDraw {
+  from { stroke-dashoffset: 1000; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* ── Utility classes ───────────────────────────────────────── */
+.fade-in-up   { animation: fadeInUp 0.45s ease both; }
+.fade-in-up-delay-1 { animation-delay: 0.08s; }
+.fade-in-up-delay-2 { animation-delay: 0.16s; }
+.fade-in-up-delay-3 { animation-delay: 0.28s; }
+.fade-in-up-delay-4 { animation-delay: 0.42s; }
+
+.slide-in-up { animation: slideInFromBottom 0.3s ease both; }
+
+/* Grimr wordmark — medieval display font */
+.grimr-wordmark {
+  font-family:    var(--medieval, 'Archivo Black', sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  text-shadow:    0 0 24px rgba(196,58,42,.35);
+}
+/* Medieval utility — key display headings */
+.medieval {
+  font-family:    var(--medieval, 'EB Garamond', serif);
+  font-weight:    700;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height:    1.1;
+}
+
+/* Hard-border card utility (warm cream border on dark) */
+.hard-card {
+  border:     1.5px solid rgba(216,207,184,0.25);
+  box-shadow: 2px 2px 0 rgba(216,207,184,.1);
+}
+
+/* Accent label (JetBrains Mono, uppercase) */
+.lbl {
+  font-family:    'JetBrains Mono', monospace;
+  font-size:      0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color:          var(--muted);
+}
+.lbl.accent { color: var(--accent); }
+
+/* Void hero — deeper black variant for landing / sigil screens */
+.void-hero {
+  background:     #08060a;
+  color:          #ece5d3;
+  --paper:        #08060a;
+  --paper-2:      #120e18;
+  --ink:          #ece5d3;
+  --line:         #d8cfb8;
+  --muted:        #7a7364;
+}
+
+/* ── Input font-size fix (prevent iOS zoom) ────────────────── */
+input, textarea, select {
+  font-size: 16px !important;
+}
+
+/* ── Quill rich-text editor ────────────────────────────────── */
 .ql-editor {
-  font-size: 14px;
-  line-height: 1.6;
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size:   16px;
+  line-height: 1.7;
+  color:       var(--ink);
 }
-
-.ql-editor p {
-  margin-bottom: 0.5em;
-}
-
-.ql-editor strong {
-  font-weight: 700;
-}
-
-.ql-editor em {
-  font-style: italic;
-}
-
-.ql-editor u {
-  text-decoration: underline;
-}
-
-.ql-editor s {
-  text-decoration: line-through;
-}
-
+.ql-editor p          { margin-bottom: 0.5em; }
+.ql-editor strong     { font-weight: 700; }
+.ql-editor em         { font-style: italic; }
 .ql-editor blockquote {
-  border-left: 4px solid #555;
-  padding-left: 16px;
-  margin-left: 0;
-  margin-right: 0;
-  font-style: italic;
-  color: #aaa;
+  border-left:  2px solid var(--accent);
+  padding-left: 14px;
+  margin:       0;
+  font-style:   italic;
+  color:        var(--muted);
 }
-
-.ql-editor code {
-  background-color: rgba(255, 255, 255, 0.05);
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
-}
-
-.ql-editor pre {
-  background-color: rgba(255, 255, 255, 0.05);
-  padding: 12px;
-  border-radius: 4px;
-  overflow-x: auto;
-}
-
-.ql-editor ul,
-.ql-editor ol {
-  padding-left: 1.5em;
-  margin-bottom: 0.5em;
-}
-
-.ql-editor a {
-  color: #8D021F;
-  text-decoration: underline;
-}
-
-.ql-editor a:hover {
-  color: #B8022A;
-}
-

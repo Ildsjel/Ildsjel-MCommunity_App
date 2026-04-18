@@ -12,6 +12,10 @@ interface User {
   country?: string
   city?: string
   is_pro: boolean
+  created_at?: string
+  source_accounts?: string[]
+  about_me?: string
+  onboarding_complete?: boolean
 }
 
 interface UserContextType {
@@ -28,14 +32,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Load user from localStorage on mount
     const storedUser = localStorage.getItem('user')
-    if (storedUser) {
+    const token = localStorage.getItem('access_token')
+    if (storedUser && token) {
       try {
         setUser(JSON.parse(storedUser))
       } catch (e) {
-        console.error('Failed to parse stored user:', e)
+        localStorage.removeItem('user')
       }
+    } else {
+      // Clear stale auth state if either half is missing
+      localStorage.removeItem('user')
+      localStorage.removeItem('access_token')
     }
     setIsLoading(false)
   }, [])

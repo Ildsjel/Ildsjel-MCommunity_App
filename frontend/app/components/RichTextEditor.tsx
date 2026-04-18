@@ -88,7 +88,6 @@ export default function RichTextEditor({
         }}
       >
         <ReactQuill
-          ref={quillRef}
           theme="snow"
           value={value}
           onChange={onChange}

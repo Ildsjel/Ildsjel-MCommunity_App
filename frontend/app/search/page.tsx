@@ -1,452 +1,361 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  Container,
   Box,
-  TextField,
   Typography,
-  Card,
-  CardContent,
   Avatar,
-  Chip,
-  Stack,
-  Button,
   CircularProgress,
   Alert,
-  IconButton,
-  InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
-  Divider,
 } from '@mui/material'
-import {
-  Search as SearchIcon,
-  Clear,
-  Person,
-  MusicNote,
-  Category,
-  LocationOn,
-  TrendingUp,
-} from '@mui/icons-material'
 import Navigation from '@/app/components/Navigation'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-interface SharedArtist {
-  artist_id: string
-  artist_name: string
-  play_count_requester: number
-  play_count_target: number
-}
-
+interface SharedArtist { artist_id: string; artist_name: string; play_count_requester: number; play_count_target: number }
 interface ProfileSearchHit {
-  user_id: string
-  handle: string
-  city_bucket?: string
-  profile_image_url?: string
-  top_shared_artists: SharedArtist[]
-  shared_genres: string[]
-  compatibility_score?: number
-  search_score: number
-  badges: string[]
-  distance_km?: number
-  last_active?: string
+  user_id: string; handle: string; city_bucket?: string; profile_image_url?: string
+  top_shared_artists: SharedArtist[]; shared_genres: string[]
+  compatibility_score?: number; search_score: number; badges: string[]
+  distance_km?: number; last_active?: string
 }
+interface SearchResponse { hits: ProfileSearchHit[]; total: number; next_cursor?: string; query_time_ms: number }
 
-interface SearchResponse {
-  hits: ProfileSearchHit[]
-  total: number
-  next_cursor?: string
-  query_time_ms: number
+type SearchType = 'mixed' | 'name' | 'artist' | 'genre'
+
+const CHIPS: { label: string; value: SearchType | 'all' }[] = [
+  { label: 'ALL', value: 'all' },
+  { label: 'PEOPLE', value: 'name' },
+  { label: 'BANDS', value: 'artist' },
+  { label: 'GENRES', value: 'genre' },
+]
+
+const TRENDING = [
+  { badge: 'BAND · +142%', name: 'Chat Pile' },
+  { badge: 'GENRE · +67%', name: 'Dungeon Synth' },
+  { badge: 'REVIEW · 98↑', name: 'Mirror Reaper' },
+  { badge: 'USER · NEW', name: 'BRÁGI' },
+]
+
+const lbl: React.CSSProperties = {
+  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+  fontSize: '0.5625rem',
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  color: 'var(--muted, #7A756D)',
 }
 
 export default function SearchPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+  const inputRef = useRef<HTMLInputElement>(null)
+
   const [query, setQuery] = useState(searchParams?.get('q') || '')
-  const [searchType, setSearchType] = useState<'mixed' | 'name' | 'artist' | 'genre'>('mixed')
+  const [activeChip, setActiveChip] = useState<SearchType | 'all'>('all')
   const [results, setResults] = useState<ProfileSearchHit[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [queryTime, setQueryTime] = useState(0)
   const [total, setTotal] = useState(0)
-
-  // Filters
-  const [radiusKm, setRadiusKm] = useState(50)
-  const [minSharedArtists, setMinSharedArtists] = useState<number | ''>('')
+  const [hasSearched, setHasSearched] = useState(false)
+  const [recent, setRecent] = useState<string[]>([])
 
   useEffect(() => {
     const q = searchParams?.get('q')
-    if (q) {
-      setQuery(q)
-      performSearch(q)
-    } else {
-      // Load random users on initial load
-      loadRandomUsers()
-    }
-  }, [searchParams])
+    if (q) { setQuery(q); performSearch(q, activeChip) }
+    else loadRandomUsers()
+    const stored = localStorage.getItem('grimr_recent_searches')
+    if (stored) setRecent(JSON.parse(stored).slice(0, 5))
+  }, [])
+
+  const saveRecent = (q: string) => {
+    const updated = [q, ...recent.filter((r) => r !== q)].slice(0, 5)
+    setRecent(updated)
+    localStorage.setItem('grimr_recent_searches', JSON.stringify(updated))
+  }
 
   const loadRandomUsers = async () => {
-    setLoading(true)
-    setError('')
-
+    setLoading(true); setError('')
     try {
       const token = localStorage.getItem('access_token')
-      const response = await axios.get<SearchResponse>(
-        `${API_BASE}/api/v1/search/random?limit=20`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-
-      setResults(response.data.hits)
-      setTotal(response.data.total)
-      setQueryTime(response.data.query_time_ms)
-    } catch (err: any) {
-      console.error('Failed to load random users:', err)
-      setError(err.response?.data?.detail || 'Failed to load users')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const performSearch = async (searchQuery: string) => {
-    if (searchQuery.length < 2) {
-      setError('Please enter at least 2 characters')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-
-    try {
-      const token = localStorage.getItem('access_token')
-      const params = new URLSearchParams({
-        q: searchQuery,
-        type: searchType,
-        radius_km: radiusKm.toString(),
-        limit: '20',
+      const res = await axios.get<SearchResponse>(`${API_BASE}/api/v1/search/random?limit=20`, {
+        headers: { Authorization: `Bearer ${token}` },
       })
-
-      if (minSharedArtists) {
-        params.append('min_shared_artists', minSharedArtists.toString())
-      }
-
-      const response = await axios.get<SearchResponse>(
-        `${API_BASE}/api/v1/search/profiles?${params}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-
-      setResults(response.data.hits)
-      setTotal(response.data.total)
-      setQueryTime(response.data.query_time_ms)
-    } catch (err: any) {
-      console.error('Search failed:', err)
-      setError(err.response?.data?.detail || 'Search failed')
-    } finally {
-      setLoading(false)
-    }
+      setResults(res.data.hits); setTotal(res.data.total)
+    } catch (e: any) {
+      setError(e.response?.data?.detail || 'Failed to load users')
+    } finally { setLoading(false) }
   }
 
-  const handleSearch = (e: React.FormEvent) => {
+  const performSearch = async (q: string, type: SearchType | 'all') => {
+    if (q.length < 2) { setError('Enter at least 2 characters'); return }
+    setLoading(true); setError(''); setHasSearched(true)
+    saveRecent(q)
+    try {
+      const token = localStorage.getItem('access_token')
+      const searchType = type === 'all' ? 'mixed' : type
+      const params = new URLSearchParams({ q, type: searchType, limit: '20' })
+      const res = await axios.get<SearchResponse>(`${API_BASE}/api/v1/search/profiles?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setResults(res.data.hits); setTotal(res.data.total)
+    } catch (e: any) {
+      setError(e.response?.data?.detail || 'Search failed')
+    } finally { setLoading(false) }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    performSearch(query)
+    if (query.trim()) performSearch(query.trim(), activeChip)
   }
 
-  const handleClear = () => {
-    setQuery('')
-    setResults([])
-    setTotal(0)
-    setError('')
+  const handleRecentClick = (q: string) => {
+    setQuery(q)
+    performSearch(q, activeChip)
   }
 
-  const handleProfileClick = (userId: string) => {
-    router.push(`/profile/${userId}`)
+  const handleChipClick = (chip: SearchType | 'all') => {
+    setActiveChip(chip)
+    if (query.trim().length >= 2) performSearch(query.trim(), chip)
   }
+
+  const showIdle = !hasSearched && results.length === 0 && !loading
 
   return (
     <>
       <Navigation />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        {/* Search Header */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h3" gutterBottom>
-            Find Metalheads
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Search by name, artist, or genre to find like-minded fans
-          </Typography>
+      <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 4 }}>
+
+        {/* Search box */}
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            border: '1.5px solid rgba(216,207,184,0.2)',
+            borderRadius: '3px',
+            backgroundColor: '#120e18',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.25,
+            py: 1,
+            mb: 1.25,
+          }}
+        >
+          <span style={{ fontSize: '1rem', lineHeight: 1, color: 'var(--muted)' }}>⌕</span>
+          <Box
+            component="input"
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search people, bands, genres…"
+            sx={{
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              fontFamily: 'var(--font-serif, "EB Garamond", serif)',
+              fontStyle: 'italic',
+              fontSize: '0.9375rem',
+              color: 'var(--ink)',
+              '&::placeholder': { color: 'var(--muted)' },
+            }}
+          />
+          {query && (
+            <span
+              style={{ ...lbl, cursor: 'pointer', color: 'var(--muted)' }}
+              onClick={() => { setQuery(''); setResults([]); setHasSearched(false); loadRandomUsers() }}
+            >
+              ✕
+            </span>
+          )}
         </Box>
 
-        {/* Search Form */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <form onSubmit={handleSearch}>
-              <Stack spacing={2}>
-                {/* Search Input */}
-                <TextField
-                  fullWidth
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search for users, artists, or genres..."
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                    endAdornment: query && (
-                      <InputAdornment position="end">
-                        <IconButton onClick={handleClear} size="small">
-                          <Clear />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                {/* Filters Row */}
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Search Type</InputLabel>
-                      <Select
-                        value={searchType}
-                        label="Search Type"
-                        onChange={(e) => setSearchType(e.target.value as any)}
-                      >
-                        <MenuItem value="mixed">
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <TrendingUp fontSize="small" />
-                            Mixed
-                          </Box>
-                        </MenuItem>
-                        <MenuItem value="name">
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Person fontSize="small" />
-                            Name
-                          </Box>
-                        </MenuItem>
-                        <MenuItem value="artist">
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <MusicNote fontSize="small" />
-                            Artist
-                          </Box>
-                        </MenuItem>
-                        <MenuItem value="genre">
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Category fontSize="small" />
-                            Genre
-                          </Box>
-                        </MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Radius</InputLabel>
-                      <Select
-                        value={radiusKm}
-                        label="Radius"
-                        onChange={(e) => setRadiusKm(e.target.value as number)}
-                      >
-                        <MenuItem value={10}>10 km</MenuItem>
-                        <MenuItem value={25}>25 km</MenuItem>
-                        <MenuItem value={50}>50 km</MenuItem>
-                        <MenuItem value={100}>100 km</MenuItem>
-                        <MenuItem value={200}>200 km</MenuItem>
-                        <MenuItem value={500}>500 km</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      type="number"
-                      label="Min Shared Artists"
-                      value={minSharedArtists}
-                      onChange={(e) => setMinSharedArtists(e.target.value ? parseInt(e.target.value) : '')}
-                      InputProps={{ inputProps: { min: 0, max: 50 } }}
-                    />
-                  </Grid>
-                </Grid>
-
-                {/* Search Button */}
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  disabled={loading || query.length < 2}
-                  startIcon={loading ? <CircularProgress size={20} /> : <SearchIcon />}
-                >
-                  {loading ? 'Searching...' : 'Search'}
-                </Button>
-              </Stack>
-            </form>
-          </CardContent>
-        </Card>
+        {/* Type chips */}
+        <Box sx={{ display: 'flex', gap: 0.75, mb: 2 }}>
+          {CHIPS.map((chip) => {
+            const active = activeChip === chip.value
+            return (
+              <Box
+                key={chip.value}
+                onClick={() => handleChipClick(chip.value)}
+                sx={{
+                  border: '1.5px solid rgba(216,207,184,0.2)',
+                  borderRadius: '3px',
+                  px: 0.75,
+                  height: 24,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  backgroundColor: active ? '#ece5d3' : 'transparent',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.5625rem',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: active ? '#120e18' : 'var(--ink)',
+                  transition: 'background 0.1s',
+                }}
+              >
+                {chip.label}
+              </Box>
+            )
+          })}
+        </Box>
 
         {/* Error */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+        {error && <Alert severity="error" sx={{ mb: 1.5 }}>{error}</Alert>}
 
-        {/* Results Header */}
-        {results.length > 0 && (
-          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">
-              {total} {total === 1 ? 'result' : 'results'} found
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {queryTime}ms
-            </Typography>
+        {/* Loading */}
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress sx={{ color: 'var(--accent)' }} size={24} />
           </Box>
         )}
 
-        {/* Results */}
-        <Stack spacing={2}>
-          {results.map((hit) => (
-            <Card
-              key={hit.user_id}
-              sx={{
-                cursor: 'pointer',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              }}
-              onClick={() => handleProfileClick(hit.user_id)}
-            >
-              <CardContent>
-                <Grid container spacing={2}>
-                  {/* Avatar & Basic Info */}
-                  <Grid item xs={12} md={4}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar
-                        src={hit.profile_image_url ? `${API_BASE}${hit.profile_image_url}` : undefined}
-                        sx={{ width: 64, height: 64 }}
-                      >
-                        {hit.handle.charAt(0).toUpperCase()}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="h6">{hit.handle}</Typography>
-                        {hit.city_bucket && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                            <LocationOn fontSize="small" color="action" />
-                            <Typography variant="body2" color="text.secondary">
-                              {hit.city_bucket}
-                              {hit.distance_km && ` (${Math.round(hit.distance_km)} km)`}
-                            </Typography>
-                          </Box>
-                        )}
-                        {hit.last_active && (
-                          <Typography variant="caption" color="text.secondary">
-                            Active {hit.last_active}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  </Grid>
-
-                  {/* Shared Artists */}
-                  <Grid item xs={12} md={4}>
-                    <Typography variant="caption" color="text.secondary" gutterBottom>
-                      Shared Artists
+        {/* Idle state: recent + trending */}
+        {!loading && showIdle && (
+          <>
+            {recent.length > 0 && (
+              <>
+                <span style={{ ...lbl, display: 'block', marginBottom: 6 }}>◉ RECENT</span>
+                {recent.map((r) => (
+                  <Box
+                    key={r}
+                    onClick={() => handleRecentClick(r)}
+                    sx={{
+                      border: '1.5px solid rgba(216,207,184,0.2)',
+                      borderRadius: '3px',
+                      px: 1.25,
+                      py: 0.75,
+                      mb: 0.75,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      cursor: 'pointer',
+                      backgroundColor: '#120e18',
+                      '&:hover': { backgroundColor: '#1a1424' },
+                    }}
+                  >
+                    <span style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>⌕</span>
+                    <Typography sx={{ fontFamily: 'var(--font-serif)', fontSize: '0.875rem' }}>
+                      {r}
                     </Typography>
-                    {hit.top_shared_artists.length > 0 ? (
-                      <Stack spacing={0.5}>
-                        {hit.top_shared_artists.map((artist) => (
-                          <Chip
-                            key={artist.artist_id}
-                            label={artist.artist_name}
-                            size="small"
-                            icon={<MusicNote />}
-                            variant="outlined"
-                          />
-                        ))}
-                      </Stack>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        No shared artists
+                  </Box>
+                ))}
+              </>
+            )}
+
+            <span style={{ ...lbl, display: 'block', marginBottom: 8, marginTop: recent.length > 0 ? 16 : 0 }}>
+              ◉ TRENDING
+            </span>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
+              {TRENDING.map((item) => (
+                <Box key={item.name} sx={{
+                  border: '1.5px solid rgba(216,207,184,0.2)',
+                  borderRadius: '3px',
+                  p: 1,
+                  backgroundColor: '#120e18',
+                  cursor: 'pointer',
+                  '&:hover': { backgroundColor: '#1a1424' },
+                }}>
+                  <span style={{ ...lbl, color: 'var(--accent)', display: 'block', marginBottom: 2 }}>
+                    {item.badge}
+                  </span>
+                  <Typography sx={{
+                    fontFamily: 'var(--font-serif, "EB Garamond", serif)',
+                    fontSize: '0.875rem',
+                  }}>
+                    {item.name}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </>
+        )}
+
+        {/* Results */}
+        {!loading && results.length > 0 && (
+          <>
+            {hasSearched && (
+              <span style={{ ...lbl, display: 'block', marginBottom: 10 }}>
+                {total} {total === 1 ? 'RESULT' : 'RESULTS'}
+              </span>
+            )}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              {results.map((hit) => (
+                <Box
+                  key={hit.user_id}
+                  onClick={() => router.push(`/profile/${hit.user_id}`)}
+                  sx={{
+                    border: '1.5px solid rgba(216,207,184,0.2)',
+                    borderRadius: '3px',
+                    backgroundColor: '#120e18',
+                    px: 1.25,
+                    py: 1,
+                    display: 'flex',
+                    gap: 1.25,
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '1.5px 1.5px 0 rgba(216,207,184,.08)',
+                    '&:hover': { boxShadow: '3px 3px 0 rgba(216,207,184,.1)' },
+                    '&:active': { transform: 'translate(1px, 1px)', boxShadow: 'none' },
+                  }}
+                >
+                  <Avatar
+                    src={hit.profile_image_url ? `${API_BASE}${hit.profile_image_url}` : undefined}
+                    sx={{ width: 36, height: 36, flexShrink: 0, bgcolor: 'var(--ink)', fontSize: 14 }}
+                  >
+                    {hit.handle.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="h6" sx={{ fontSize: '0.6875rem', mb: 0.25 }} noWrap>
+                      {hit.handle}
+                    </Typography>
+                    {hit.city_bucket && (
+                      <span style={lbl}>
+                        {hit.city_bucket}{hit.distance_km ? ` · ${Math.round(hit.distance_km)}km` : ''}
+                      </span>
+                    )}
+                    {hit.top_shared_artists.length > 0 && (
+                      <Typography sx={{
+                        fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+                        fontSize: '0.75rem', color: 'var(--muted)',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        mt: 0.25,
+                      }}>
+                        {hit.top_shared_artists.slice(0, 3).map((a) => a.artist_name).join(', ')}
                       </Typography>
                     )}
-                  </Grid>
-
-                  {/* Compatibility & Genres */}
-                  <Grid item xs={12} md={4}>
-                    {hit.compatibility_score !== undefined && hit.compatibility_score > 0 && (
-                      <Box sx={{ mb: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Compatibility
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="h6" color="primary">
-                            {Math.round(hit.compatibility_score)}%
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            (Score: {hit.search_score.toFixed(1)})
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )}
-                    {hit.shared_genres.length > 0 && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" gutterBottom>
-                          Shared Genres
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {hit.shared_genres.map((genre) => (
-                            <Chip key={genre} label={genre} size="small" />
-                          ))}
-                        </Box>
-                      </Box>
-                    )}
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          ))}
-        </Stack>
-
-        {/* No Results */}
-        {!loading && results.length === 0 && query.length >= 2 && !error && (
-          <Card>
-            <CardContent>
-              <Typography variant="body1" color="text.secondary" align="center">
-                No results found for "{query}"
-              </Typography>
-              <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
-                Try a different search term or adjust your filters
-              </Typography>
-            </CardContent>
-          </Card>
+                  </Box>
+                  {hit.compatibility_score !== undefined && hit.compatibility_score > 0 && (
+                    <Typography sx={{
+                      fontFamily: 'var(--font-display, "Archivo Black", sans-serif)',
+                      fontSize: '1.125rem',
+                      color: 'var(--accent)',
+                      flexShrink: 0,
+                    }}>
+                      {Math.round(hit.compatibility_score)}%
+                    </Typography>
+                  )}
+                </Box>
+              ))}
+            </Box>
+          </>
         )}
 
-        {/* Empty State - only show if there was an actual search with no results */}
-        {!loading && results.length === 0 && query.length >= 2 && !error && (
-          <Card>
-            <CardContent>
-              <Typography variant="body1" color="text.secondary" align="center">
-                No users found. Try a different search term.
-              </Typography>
-            </CardContent>
-          </Card>
+        {/* No results */}
+        {!loading && hasSearched && results.length === 0 && !error && (
+          <Box sx={{
+            border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
+            p: 3, textAlign: 'center', backgroundColor: '#120e18',
+          }}>
+            <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--muted)' }}>
+              No results for "{query}"
+            </Typography>
+          </Box>
         )}
-      </Container>
+      </Box>
     </>
   )
 }
-
