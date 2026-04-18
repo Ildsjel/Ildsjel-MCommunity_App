@@ -29,6 +29,12 @@ import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+// Prepend API base for relative paths (same logic as UserAvatar)
+const getAvatarUrl = (url?: string | null): string | null => {
+  if (!url) return null
+  return url.startsWith('/') ? `${API_BASE}${url}` : url
+}
+
 interface User {
   id: string
   handle: string
@@ -112,6 +118,8 @@ export default function ProfilePage() {
         const userData = await userAPI.getMe()
         setUser(userData)
         setAboutMeText(userData.about_me || '')
+        // Sync avatar to context so the nav avatar stays in sync
+        updateAvatar(userData.profile_image_url || '')
         if (userData.source_accounts.includes('spotify')) fetchTimeline(token)
       } catch (err: any) {
         setError('Failed to load profile')
@@ -191,6 +199,7 @@ export default function ProfilePage() {
   )
 
   const hasSpotify = user.source_accounts.includes('spotify')
+  const avatarUrl  = getAvatarUrl(user.profile_image_url)
 
   return (
     <>
@@ -208,39 +217,42 @@ export default function ProfilePage() {
           </span>
         </Box>
 
-        {/* Sigil — click to upload avatar */}
-        <Box
-          sx={{
-            position: 'relative', height: 160,
-            display: 'flex', justifyContent: 'center', mb: 1.5,
-            cursor: 'pointer',
-            '&:hover .sigil-hint': { opacity: 1 },
-          }}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Sigil
-            size={200}
-            centerTop={user.handle}
-            centerBottom={user.profile_image_url ? '' : 'metal-id'}
-            avatarUrl={user.profile_image_url}
-          />
-          {avatarUploading && (
-            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CircularProgress size={24} sx={{ color: 'var(--accent)' }} />
-            </Box>
-          )}
+        {/* Sigil */}
+        <Box sx={{ height: 160, display: 'flex', justifyContent: 'center', mb: 0 }}>
+          <Sigil size={200} centerTop={user.handle} centerBottom="metal-id" />
+        </Box>
+
+        {/* Avatar circle — overlaps bottom of sigil, click to upload */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: '-28px', mb: 2, position: 'relative', zIndex: 2 }}>
           <Box
-            className="sigil-hint"
+            onClick={() => fileInputRef.current?.click()}
             sx={{
-              position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)',
-              opacity: 0, transition: 'opacity 0.15s', pointerEvents: 'none',
-              border: '1.5px solid rgba(216,207,184,0.25)', borderRadius: '3px',
-              px: 1, py: 0.375, backgroundColor: 'rgba(8,6,10,0.85)',
-              fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
-              letterSpacing: '0.12em', color: 'var(--muted)', whiteSpace: 'nowrap',
+              width: 72, height: 72, borderRadius: '50%',
+              border: '2px solid rgba(216,207,184,0.25)',
+              backgroundColor: '#1a1424', cursor: 'pointer',
+              overflow: 'hidden', position: 'relative',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              '&:hover .av-hint': { opacity: 1 },
             }}
           >
-            {user.profile_image_url ? '◉ CHANGE PHOTO' : '◉ ADD PHOTO'}
+            {avatarUploading ? (
+              <CircularProgress size={22} sx={{ color: 'var(--accent)' }} />
+            ) : avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            ) : (
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--muted)', letterSpacing: 0 }}>◉</span>
+            )}
+            <Box className="av-hint" sx={{
+              position: 'absolute', inset: 0, display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              backgroundColor: 'rgba(8,6,10,0.72)',
+              opacity: 0, transition: 'opacity 0.15s',
+            }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.45rem', letterSpacing: '0.12em', color: 'var(--ink)' }}>
+                {avatarUrl ? 'CHANGE' : 'ADD PHOTO'}
+              </span>
+            </Box>
           </Box>
         </Box>
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarSelect} />
