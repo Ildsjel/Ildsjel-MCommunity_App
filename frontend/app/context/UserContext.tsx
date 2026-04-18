@@ -12,6 +12,7 @@ interface User {
   country?: string
   city?: string
   is_pro: boolean
+  role?: 'user' | 'admin' | 'superadmin'
   created_at?: string
   source_accounts?: string[]
   about_me?: string

@@ -10,7 +10,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from pathlib import Path
 from app.config.settings import settings
-from app.api.v1 import auth, users, spotify, gallery, stats, search, comments
+from app.api.v1 import auth, users, spotify, gallery, stats, search, comments, admin, bands
 from app.db.neo4j_driver import neo4j_driver
 
 
@@ -23,7 +23,23 @@ async def lifespan(app: FastAPI):
         print("✅ Neo4j connection successful")
     else:
         print("❌ Neo4j connection failed")
-    
+
+    # Superadmin bootstrap
+    if settings.SUPERADMIN_EMAIL:
+        try:
+            async with neo4j_driver.driver.session() as _session:
+                result = await _session.run(
+                    "MATCH (u:User {email: $email}) SET u.role = 'superadmin' RETURN u.email AS email",
+                    email=settings.SUPERADMIN_EMAIL,
+                )
+                record = await result.single()
+                if record:
+                    print(f"✅ Superadmin: {record['email']}")
+                else:
+                    print(f"⚠️  SUPERADMIN_EMAIL set but no user found with that email yet")
+        except Exception as e:
+            print(f"⚠️  Superadmin bootstrap error: {e}")
+
     # Start Spotify polling service
     from app.services.spotify_polling_service import polling_service
     await polling_service.start()
@@ -68,6 +84,8 @@ app.include_router(gallery.router, prefix="/api/v1")
 app.include_router(stats.router, prefix="/api/v1")
 app.include_router(search.router, prefix="/api/v1")
 app.include_router(comments.router, prefix="/api/v1")
+app.include_router(admin.router, prefix="/api/v1")
+app.include_router(bands.router, prefix="/api/v1")
 
 # Mount static files for uploads
 uploads_dir = Path("/app/uploads")

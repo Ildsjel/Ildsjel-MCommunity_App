@@ -22,6 +22,7 @@ import {
   MusicNote as MusicNoteIcon,
   Logout as LogoutIcon,
   Search as SearchIcon,
+  AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material'
 import { useUser } from '@/app/context/UserContext'
 import { useNotifications } from '@/app/context/NotificationContext'
@@ -240,6 +241,15 @@ export default function Navigation() {
                   <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
                   Profile
                 </MenuItem>
+                {(user.role === 'admin' || user.role === 'superadmin') && (
+                  <MenuItem
+                    onClick={() => { router.push('/admin'); handleProfileMenuClose() }}
+                    sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent, #c43a2a)' }}
+                  >
+                    <ListItemIcon><AdminIcon fontSize="small" sx={{ color: 'var(--accent, #c43a2a)' }} /></ListItemIcon>
+                    Admin
+                  </MenuItem>
+                )}
                 <MenuItem
                   onClick={() => { router.push('/spotify/connect'); handleProfileMenuClose() }}
                   sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}

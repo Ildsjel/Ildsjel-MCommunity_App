@@ -25,6 +25,7 @@ import Sigil from '@/app/components/Sigil'
 import { useUser } from '@/app/context/UserContext'
 import { userAPI } from '@/lib/api'
 import { galleryAPI } from '@/lib/galleryApi'
+import { adminAPI } from '@/lib/adminAPI'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -77,7 +78,7 @@ const box: React.CSSProperties = {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { updateAvatar } = useUser()
+  const { user: ctxUser, updateAvatar } = useUser()
   const [user, setUser] = useState<User | null>(null)
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -89,6 +90,9 @@ export default function ProfilePage() {
   const [aboutMeSaving, setAboutMeSaving] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [redeemToken, setRedeemToken] = useState('')
+  const [redeemLoading, setRedeemLoading] = useState(false)
+  const [redeemMsg, setRedeemMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -174,6 +178,22 @@ export default function ProfilePage() {
       alert(err.response?.data?.detail || 'Could not save')
     } finally {
       setAboutMeSaving(false)
+    }
+  }
+
+  const handleRedeemToken = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!redeemToken.trim()) return
+    setRedeemLoading(true)
+    setRedeemMsg(null)
+    try {
+      const result = await adminAPI.redeemToken(redeemToken.trim())
+      setRedeemMsg({ ok: true, text: result.message })
+      setRedeemToken('')
+    } catch (err: any) {
+      setRedeemMsg({ ok: false, text: err.message })
+    } finally {
+      setRedeemLoading(false)
     }
   }
 
@@ -411,6 +431,45 @@ export default function ProfilePage() {
             </Box>
           </Box>
         </div>
+
+        {/* Admin portal shortcut */}
+        {(ctxUser?.role === 'admin' || ctxUser?.role === 'superadmin') && (
+          <Box
+            onClick={() => router.push('/admin')}
+            sx={{ border: '1.5px solid rgba(196,58,42,0.35)', borderRadius: '3px', backgroundColor: '#120e18', px: 1.5, py: 1.125, mb: 2, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', '&:hover': { borderColor: 'rgba(196,58,42,0.6)' }, transition: 'border-color 0.1s' }}
+          >
+            <span style={{ ...lbl, color: 'var(--accent)' }}>⌖ ADMIN PORTAL</span>
+            <span style={{ ...lbl, fontSize: '0.5rem', color: 'var(--muted)' }}>{ctxUser.role} →</span>
+          </Box>
+        )}
+
+        {/* Redeem admin token */}
+        {!ctxUser?.role || ctxUser.role === 'user' ? (
+          <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', backgroundColor: '#120e18', px: 1.5, py: 1.25, mb: 2 }}>
+            <span style={{ ...lbl, fontSize: '0.5rem', display: 'block', marginBottom: 10 }}>REDEEM ADMIN TOKEN</span>
+            <Box component="form" onSubmit={handleRedeemToken} sx={{ display: 'flex', gap: 0.75 }}>
+              <TextField
+                value={redeemToken}
+                onChange={(e) => setRedeemToken(e.target.value)}
+                placeholder="Paste your token here…"
+                size="small" fullWidth
+                sx={{
+                  '& .MuiInputBase-root': { fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--ink)' },
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.2)', borderRadius: '3px' },
+                  '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.5)' },
+                }}
+              />
+              <Box component="button" type="submit" disabled={redeemLoading || !redeemToken.trim()} sx={{ border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px', px: 1.25, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--ink)', flexShrink: 0, '&:disabled': { opacity: 0.4 } }}>
+                {redeemLoading ? '…' : 'REDEEM'}
+              </Box>
+            </Box>
+            {redeemMsg && (
+              <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: redeemMsg.ok ? '#6a9a7a' : 'var(--accent)', mt: 0.75 }}>
+                {redeemMsg.ok ? '✓ ' : '✕ '}{redeemMsg.text}
+              </Typography>
+            )}
+          </Box>
+        ) : null}
 
         {/* Gallery */}
         <span style={{ ...lbl, display: 'block', marginBottom: 8 }}>◉ GALLERY</span>
