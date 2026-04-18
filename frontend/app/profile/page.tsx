@@ -78,7 +78,7 @@ const box: React.CSSProperties = {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user: ctxUser, updateAvatar } = useUser()
+  const { user: ctxUser, updateAvatar, setUser: setCtxUser } = useUser()
   const [user, setUser] = useState<User | null>(null)
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -122,7 +122,8 @@ export default function ProfilePage() {
         const userData = await userAPI.getMe()
         setUser(userData)
         setAboutMeText(userData.about_me || '')
-        // Sync avatar to context so the nav avatar stays in sync
+        // Sync full user (including role) to context + localStorage
+        setCtxUser(userData)
         updateAvatar(userData.profile_image_url || '')
         if (userData.source_accounts.includes('spotify')) fetchTimeline(token)
       } catch (err: any) {
