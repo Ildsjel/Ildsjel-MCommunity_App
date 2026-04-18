@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Box,
@@ -18,15 +18,23 @@ import {
   ListItem,
 } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
-import AvatarUpload from '@/app/components/AvatarUpload'
 import GalleryManager from '@/app/components/GalleryManager'
 import TopArtists from '@/app/components/TopArtists'
 import SpotifyConnection from '@/app/components/SpotifyConnection'
 import Sigil from '@/app/components/Sigil'
+import { useUser } from '@/app/context/UserContext'
 import { userAPI } from '@/lib/api'
+import { galleryAPI } from '@/lib/galleryApi'
+import { adminAPI } from '@/lib/adminAPI'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+// Prepend API base for relative paths (same logic as UserAvatar)
+const getAvatarUrl = (url?: string | null): string | null => {
+  if (!url) return null
+  return url.startsWith('/') ? `${API_BASE}${url}` : url
+}
 
 interface User {
   id: string
@@ -70,6 +78,7 @@ const box: React.CSSProperties = {
 
 export default function ProfilePage() {
   const router = useRouter()
+  const { user: ctxUser, updateAvatar, setUser: setCtxUser } = useUser()
   const [user, setUser] = useState<User | null>(null)
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -79,6 +88,31 @@ export default function ProfilePage() {
   const [editAboutMe, setEditAboutMe] = useState(false)
   const [aboutMeText, setAboutMeText] = useState('')
   const [aboutMeSaving, setAboutMeSaving] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [redeemToken, setRedeemToken] = useState('')
+  const [redeemLoading, setRedeemLoading] = useState(false)
+  const [redeemMsg, setRedeemMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { alert('Please select an image file'); return }
+    if (file.size > 10 * 1024 * 1024) { alert('File too large. Maximum size: 10MB'); return }
+    setAvatarUploading(true)
+    try {
+      const result = await galleryAPI.uploadAvatar(file)
+      if (result.success && result.image_url) {
+        setUser(prev => prev ? { ...prev, profile_image_url: result.image_url } : prev)
+        updateAvatar(result.image_url!)
+      }
+    } catch (err: any) {
+      alert(`Upload failed: ${err.response?.data?.detail || err.message}`)
+    } finally {
+      setAvatarUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -88,6 +122,9 @@ export default function ProfilePage() {
         const userData = await userAPI.getMe()
         setUser(userData)
         setAboutMeText(userData.about_me || '')
+        // Sync full user (including role) to context + localStorage
+        setCtxUser(userData)
+        updateAvatar(userData.profile_image_url || '')
         if (userData.source_accounts.includes('spotify')) fetchTimeline(token)
       } catch (err: any) {
         setError('Failed to load profile')
@@ -145,6 +182,22 @@ export default function ProfilePage() {
     }
   }
 
+  const handleRedeemToken = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!redeemToken.trim()) return
+    setRedeemLoading(true)
+    setRedeemMsg(null)
+    try {
+      const result = await adminAPI.redeemToken(redeemToken.trim())
+      setRedeemMsg({ ok: true, text: result.message })
+      setRedeemToken('')
+    } catch (err: any) {
+      setRedeemMsg({ ok: false, text: err.message })
+    } finally {
+      setRedeemLoading(false)
+    }
+  }
+
   const formatJoined = (d: string) => {
     const date = new Date(d)
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
@@ -167,6 +220,7 @@ export default function ProfilePage() {
   )
 
   const hasSpotify = user.source_accounts.includes('spotify')
+  const avatarUrl  = getAvatarUrl(user.profile_image_url)
 
   return (
     <>
@@ -176,21 +230,53 @@ export default function ProfilePage() {
         {/* Header row */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <span style={lbl}>ME</span>
-          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-            <AvatarUpload size={28} />
-            <span
-              style={{ ...lbl, cursor: 'pointer' }}
-              onClick={() => setEditAboutMe(!editAboutMe)}
-            >
-              ⚙ EDIT
-            </span>
-          </Box>
+          <span
+            style={{ ...lbl, cursor: 'pointer' }}
+            onClick={() => setEditAboutMe(!editAboutMe)}
+          >
+            ⚙ EDIT
+          </span>
         </Box>
 
         {/* Sigil */}
-        <Box sx={{ height: 160, display: 'flex', justifyContent: 'center', mb: 1.5 }}>
-          <Sigil size={200} loading centerTop={user.handle.slice(0, 8)} centerBottom="metal-id" />
+        <Box sx={{ height: 160, display: 'flex', justifyContent: 'center', mb: 0 }}>
+          <Sigil size={200} centerTop={user.handle} centerBottom="metal-id" />
         </Box>
+
+        {/* Avatar circle — overlaps bottom of sigil, click to upload */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: '-28px', mb: 2, position: 'relative', zIndex: 2 }}>
+          <Box
+            onClick={() => fileInputRef.current?.click()}
+            sx={{
+              width: 72, height: 72, borderRadius: '50%',
+              border: '2px solid rgba(216,207,184,0.25)',
+              backgroundColor: '#1a1424', cursor: 'pointer',
+              overflow: 'hidden', position: 'relative',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              '&:hover .av-hint': { opacity: 1 },
+            }}
+          >
+            {avatarUploading ? (
+              <CircularProgress size={22} sx={{ color: 'var(--accent)' }} />
+            ) : avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            ) : (
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--muted)', letterSpacing: 0 }}>◉</span>
+            )}
+            <Box className="av-hint" sx={{
+              position: 'absolute', inset: 0, display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              backgroundColor: 'rgba(8,6,10,0.72)',
+              opacity: 0, transition: 'opacity 0.15s',
+            }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.45rem', letterSpacing: '0.12em', color: 'var(--ink)' }}>
+                {avatarUrl ? 'CHANGE' : 'ADD PHOTO'}
+              </span>
+            </Box>
+          </Box>
+        </Box>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarSelect} />
 
         {/* Handle */}
         <Typography variant="h4" sx={{ textAlign: 'center', fontSize: '1.25rem', mb: 0.5 }}>

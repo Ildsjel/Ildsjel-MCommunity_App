@@ -1,0 +1,138 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Box, Typography } from '@mui/material'
+import Navigation from '@/app/components/Navigation'
+import { useUser } from '@/app/context/UserContext'
+import { BANDS } from '@/lib/mockBands'
+
+const lbl: React.CSSProperties = {
+  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+  fontSize: '0.5625rem',
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  color: 'var(--muted, #7A756D)',
+}
+
+const TYPE_COLORS: Record<string, string> = {
+  LP: 'var(--accent, #c43a2a)',
+  EP: '#7a5c9a',
+  'Split-EP': '#7a5c9a',
+  Demo: '#5c7a6a',
+  Live: '#7a6a3a',
+}
+
+export default function BandsPage() {
+  const router = useRouter()
+  const { user, isLoading } = useUser()
+
+  useEffect(() => {
+    if (!isLoading && !user) router.push('/auth/login')
+  }, [user, isLoading, router])
+
+  return (
+    <>
+      <Navigation />
+      <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 10 }}>
+
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <span style={lbl}>◆ BANDS</span>
+          <span style={{ ...lbl, fontSize: '0.5rem' }}>{BANDS.length} IN CATALOGUE</span>
+        </Box>
+
+        {/* Band grid */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          {BANDS.map((band) => {
+            const latestRelease = band.releases[band.releases.length - 1]
+            return (
+              <Box
+                key={band.id}
+                onClick={() => router.push(`/bands/${band.slug}`)}
+                sx={{
+                  display: 'flex', gap: 1.5, alignItems: 'center',
+                  border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
+                  backgroundColor: '#120e18', px: 1.5, py: 1.25,
+                  cursor: 'pointer',
+                  boxShadow: '1.5px 1.5px 0 rgba(216,207,184,.06)',
+                  transition: 'box-shadow 0.1s, border-color 0.1s',
+                  '&:hover': { borderColor: 'rgba(216,207,184,0.35)', boxShadow: '3px 3px 0 rgba(216,207,184,.1)' },
+                  '&:active': { transform: 'translate(1px,1px)', boxShadow: 'none' },
+                }}
+              >
+                {/* Logo block */}
+                <Box sx={{
+                  width: 54, height: 54, flexShrink: 0,
+                  border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
+                  background: 'repeating-linear-gradient(135deg, #1a1424 0 4px, #120e18 4px 8px)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  position: 'relative', overflow: 'hidden',
+                }}>
+                  {/* Atmospheric radial glow */}
+                  <Box sx={{
+                    position: 'absolute', inset: 0,
+                    background: 'radial-gradient(circle at 40% 40%, rgba(196,58,42,.12), transparent 70%)',
+                  }} />
+                  <Typography sx={{
+                    fontFamily: 'var(--font-display, "Archivo Black", sans-serif)',
+                    fontSize: '1.5rem', color: 'rgba(236,229,211,0.5)', lineHeight: 1,
+                    position: 'relative', zIndex: 1,
+                  }}>
+                    {band.name.charAt(0)}
+                  </Typography>
+                </Box>
+
+                {/* Info */}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{
+                    fontFamily: 'var(--font-display)', fontSize: '0.875rem',
+                    letterSpacing: '0.03em', mb: 0.375, lineHeight: 1.2,
+                  }}>
+                    {band.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
+                    {band.genres.slice(0, 2).map((g) => (
+                      <Box key={g} sx={{
+                        border: '1px solid rgba(216,207,184,0.18)', borderRadius: '2px',
+                        px: 0.625, height: 16, display: 'inline-flex', alignItems: 'center',
+                        fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                        letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)',
+                      }}>
+                        {g}
+                      </Box>
+                    ))}
+                  </Box>
+                  <span style={{ ...lbl, fontSize: '0.5rem' }}>
+                    {band.countryCode} · est. {band.formed} · {band.releases.length} releases
+                  </span>
+                </Box>
+
+                {/* Latest release year */}
+                {latestRelease && (
+                  <Box sx={{ flexShrink: 0, textAlign: 'right' }}>
+                    <Box sx={{
+                      border: `1px solid ${TYPE_COLORS[latestRelease.type] || 'rgba(216,207,184,0.2)'}`,
+                      borderRadius: '2px', px: 0.75, height: 18, display: 'inline-flex', alignItems: 'center',
+                      fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em',
+                      color: TYPE_COLORS[latestRelease.type] || 'var(--muted)', mb: 0.5,
+                    }}>
+                      {latestRelease.type}
+                    </Box>
+                    <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--muted)', display: 'block', textAlign: 'right' }}>
+                      {latestRelease.year}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            )
+          })}
+        </Box>
+
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <span style={{ ...lbl, letterSpacing: '0.14em' }}>· · · end of catalogue · · ·</span>
+        </Box>
+      </Box>
+    </>
+  )
+}

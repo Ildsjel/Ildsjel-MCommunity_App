@@ -1,7 +1,5 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-
 interface SigilProps {
   size?: number
   genres?: string[]

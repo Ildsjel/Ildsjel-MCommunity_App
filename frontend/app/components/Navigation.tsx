@@ -22,6 +22,8 @@ import {
   MusicNote as MusicNoteIcon,
   Logout as LogoutIcon,
   Search as SearchIcon,
+  AdminPanelSettings as AdminIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material'
 import { useUser } from '@/app/context/UserContext'
 import { useNotifications } from '@/app/context/NotificationContext'
@@ -37,7 +39,7 @@ interface BottomTab {
 const BOTTOM_TABS: BottomTab[] = [
   { label: 'Feed',     glyph: '◉', path: '/feed',          matchPaths: ['/feed'] },
   { label: 'Discover', glyph: '⌕', path: '/search',        matchPaths: ['/search'] },
-  { label: 'Sigil',    glyph: '☩', path: '/sigil',         matchPaths: ['/sigil'] },
+  { label: 'Bands',    glyph: '◆', path: '/bands',         matchPaths: ['/bands'] },
   { label: 'Alerts',   glyph: '◈', path: '/notifications', matchPaths: ['/notifications'] },
   { label: 'Me',       glyph: '✶', path: '/profile',       matchPaths: ['/profile', '/gallery'] },
 ]
@@ -81,6 +83,7 @@ export default function Navigation() {
     ? [
         { label: 'Feed',     path: '/feed' },
         { label: 'Discover', path: '/search' },
+        { label: 'Bands',    path: '/bands' },
         { label: 'Sigil',    path: '/sigil' },
         { label: 'Gather',   path: '/events' },
       ]
@@ -239,6 +242,22 @@ export default function Navigation() {
                   <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
                   Profile
                 </MenuItem>
+                <MenuItem
+                  onClick={() => { router.push('/settings'); handleProfileMenuClose() }}
+                  sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                >
+                  <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
+                  Settings
+                </MenuItem>
+                {(user.role === 'admin' || user.role === 'superadmin') && (
+                  <MenuItem
+                    onClick={() => { router.push('/admin'); handleProfileMenuClose() }}
+                    sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--accent, #c43a2a)' }}
+                  >
+                    <ListItemIcon><AdminIcon fontSize="small" sx={{ color: 'var(--accent, #c43a2a)' }} /></ListItemIcon>
+                    Admin
+                  </MenuItem>
+                )}
                 <MenuItem
                   onClick={() => { router.push('/spotify/connect'); handleProfileMenuClose() }}
                   sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
