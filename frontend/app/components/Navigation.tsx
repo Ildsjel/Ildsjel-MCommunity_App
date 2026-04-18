@@ -24,6 +24,7 @@ import {
   Search as SearchIcon,
 } from '@mui/icons-material'
 import { useUser } from '@/app/context/UserContext'
+import { useNotifications } from '@/app/context/NotificationContext'
 import UserAvatar from './UserAvatar'
 
 interface BottomTab {
@@ -34,11 +35,11 @@ interface BottomTab {
 }
 
 const BOTTOM_TABS: BottomTab[] = [
-  { label: 'Feed',     glyph: '◉', path: '/feed',    matchPaths: ['/feed'] },
-  { label: 'Discover', glyph: '⌕', path: '/search',  matchPaths: ['/search'] },
-  { label: 'Sigil',    glyph: '☩', path: '/sigil',   matchPaths: ['/sigil'] },
-  { label: 'Gather',   glyph: '☍', path: '/events',  matchPaths: ['/events'] },
-  { label: 'Me',       glyph: '✶', path: '/profile', matchPaths: ['/profile', '/gallery'] },
+  { label: 'Feed',     glyph: '◉', path: '/feed',          matchPaths: ['/feed'] },
+  { label: 'Discover', glyph: '⌕', path: '/search',        matchPaths: ['/search'] },
+  { label: 'Sigil',    glyph: '☩', path: '/sigil',         matchPaths: ['/sigil'] },
+  { label: 'Alerts',   glyph: '◈', path: '/notifications', matchPaths: ['/notifications'] },
+  { label: 'Me',       glyph: '✶', path: '/profile',       matchPaths: ['/profile', '/gallery'] },
 ]
 
 function getBottomTabValue(pathname: string, tabs: BottomTab[]): number {
@@ -59,6 +60,7 @@ export default function Navigation() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { user, setUser } = useUser()
 
+  const { unreadCount } = useNotifications()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const isAuthenticated = !!user
 
@@ -174,6 +176,30 @@ export default function Navigation() {
             </Box>
           )}
 
+          {isAuthenticated && (
+            <Box
+              component="button"
+              onClick={() => router.push('/notifications')}
+              sx={{
+                position: 'relative', background: 'none', border: 'none',
+                cursor: 'pointer', p: 0.75, borderRadius: '4px',
+                color: 'text.secondary', fontSize: '1.1rem', lineHeight: 1,
+                mr: 0.25,
+                '&:hover': { color: 'text.primary' },
+              }}
+            >
+              ◈
+              {unreadCount > 0 && (
+                <Box sx={{
+                  position: 'absolute', top: 4, right: 4,
+                  width: 8, height: 8, borderRadius: '50%',
+                  backgroundColor: 'var(--accent, #c43a2a)',
+                  border: '1.5px solid var(--canvas-bg, #08060a)',
+                }} />
+              )}
+            </Box>
+          )}
+
           {isAuthenticated && user && (
             <>
               <IconButton
@@ -261,17 +287,33 @@ export default function Navigation() {
                 key={tab.label}
                 label={tab.label}
                 icon={
-                  <Box
-                    sx={{
-                      fontFamily:    '"Archivo Black", sans-serif',
-                      fontSize:      tab.label === 'Sigil' ? '1.35rem' : '1rem',
-                      lineHeight:    1,
-                      color:         'inherit',
-                      transition:    'transform 0.15s',
-                      '.Mui-selected &': { transform: tab.label === 'Sigil' ? 'scale(1.2)' : 'scale(1.05)' },
-                    }}
-                  >
-                    {tab.glyph}
+                  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                    <Box
+                      sx={{
+                        fontFamily:    '"Archivo Black", sans-serif',
+                        fontSize:      tab.label === 'Sigil' ? '1.35rem' : '1rem',
+                        lineHeight:    1,
+                        color:         'inherit',
+                        transition:    'transform 0.15s',
+                        '.Mui-selected &': { transform: tab.label === 'Sigil' ? 'scale(1.2)' : 'scale(1.05)' },
+                      }}
+                    >
+                      {tab.glyph}
+                    </Box>
+                    {tab.label === 'Alerts' && unreadCount > 0 && (
+                      <Box sx={{
+                        position: 'absolute', top: -3, right: -5,
+                        minWidth: 14, height: 14, borderRadius: '7px',
+                        backgroundColor: 'var(--accent, #c43a2a)',
+                        border: '1.5px solid #1a1424',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontSize: '0.4rem', color: '#ece5d3',
+                        px: '2px',
+                      }}>
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </Box>
+                    )}
                   </Box>
                 }
               />

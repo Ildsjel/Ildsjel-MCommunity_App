@@ -3,6 +3,7 @@ import { Archivo_Black, EB_Garamond, JetBrains_Mono, UnifrakturCook } from 'next
 import './globals.css'
 import { ThemeProvider } from './ThemeProvider'
 import { UserProvider } from './context/UserContext'
+import { NotificationProvider } from './context/NotificationContext'
 
 // ── Fonts via next/font (no CDN round-trip at runtime) ─────
 const archivo = Archivo_Black({
@@ -68,7 +69,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeProvider>
           <UserProvider>
-            {children}
+            <NotificationProvider>
+              {children}
+            </NotificationProvider>
           </UserProvider>
         </ThemeProvider>
       </body>
