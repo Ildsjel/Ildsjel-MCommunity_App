@@ -132,9 +132,9 @@ export default function SearchPage() {
           component="form"
           onSubmit={handleSubmit}
           sx={{
-            border: '1.5px solid #1A1A1A',
+            border: '1.5px solid rgba(216,207,184,0.2)',
             borderRadius: '3px',
-            backgroundColor: '#F3EFE7',
+            backgroundColor: '#120e18',
             display: 'flex',
             alignItems: 'center',
             gap: 1,
@@ -181,19 +181,19 @@ export default function SearchPage() {
                 key={chip.value}
                 onClick={() => handleChipClick(chip.value)}
                 sx={{
-                  border: '1.5px solid #1A1A1A',
+                  border: '1.5px solid rgba(216,207,184,0.2)',
                   borderRadius: '3px',
                   px: 0.75,
                   height: 24,
                   display: 'inline-flex',
                   alignItems: 'center',
                   cursor: 'pointer',
-                  backgroundColor: active ? '#141414' : 'transparent',
+                  backgroundColor: active ? '#ece5d3' : 'transparent',
                   fontFamily: 'var(--font-mono)',
                   fontSize: '0.5625rem',
                   letterSpacing: '0.12em',
                   textTransform: 'uppercase',
-                  color: active ? '#F3EFE7' : 'var(--ink)',
+                  color: active ? '#120e18' : 'var(--ink)',
                   transition: 'background 0.1s',
                 }}
               >
@@ -224,7 +224,7 @@ export default function SearchPage() {
                     key={r}
                     onClick={() => handleRecentClick(r)}
                     sx={{
-                      border: '1.5px solid #1A1A1A',
+                      border: '1.5px solid rgba(216,207,184,0.2)',
                       borderRadius: '3px',
                       px: 1.25,
                       py: 0.75,
@@ -233,8 +233,8 @@ export default function SearchPage() {
                       alignItems: 'center',
                       gap: 1,
                       cursor: 'pointer',
-                      backgroundColor: '#F3EFE7',
-                      '&:hover': { backgroundColor: '#EBE6DC' },
+                      backgroundColor: '#120e18',
+                      '&:hover': { backgroundColor: '#1a1424' },
                     }}
                   >
                     <span style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>⌕</span>
@@ -252,12 +252,12 @@ export default function SearchPage() {
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
               {TRENDING.map((item) => (
                 <Box key={item.name} sx={{
-                  border: '1.5px solid #1A1A1A',
+                  border: '1.5px solid rgba(216,207,184,0.2)',
                   borderRadius: '3px',
                   p: 1,
-                  backgroundColor: '#F3EFE7',
+                  backgroundColor: '#120e18',
                   cursor: 'pointer',
-                  '&:hover': { backgroundColor: '#EBE6DC' },
+                  '&:hover': { backgroundColor: '#1a1424' },
                 }}>
                   <span style={{ ...lbl, color: 'var(--accent)', display: 'block', marginBottom: 2 }}>
                     {item.badge}
@@ -288,17 +288,17 @@ export default function SearchPage() {
                   key={hit.user_id}
                   onClick={() => router.push(`/profile/${hit.user_id}`)}
                   sx={{
-                    border: '1.5px solid #1A1A1A',
+                    border: '1.5px solid rgba(216,207,184,0.2)',
                     borderRadius: '3px',
-                    backgroundColor: '#F3EFE7',
+                    backgroundColor: '#120e18',
                     px: 1.25,
                     py: 1,
                     display: 'flex',
                     gap: 1.25,
                     alignItems: 'center',
                     cursor: 'pointer',
-                    boxShadow: '1.5px 1.5px 0 rgba(20,20,20,0.15)',
-                    '&:hover': { boxShadow: '3px 3px 0 rgba(20,20,20,0.2)' },
+                    boxShadow: '1.5px 1.5px 0 rgba(216,207,184,.08)',
+                    '&:hover': { boxShadow: '3px 3px 0 rgba(216,207,184,.1)' },
                     '&:active': { transform: 'translate(1px, 1px)', boxShadow: 'none' },
                   }}
                 >
@@ -347,8 +347,8 @@ export default function SearchPage() {
         {/* No results */}
         {!loading && hasSearched && results.length === 0 && !error && (
           <Box sx={{
-            border: '1.5px solid #1A1A1A', borderRadius: '3px',
-            p: 3, textAlign: 'center', backgroundColor: '#F3EFE7',
+            border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
+            p: 3, textAlign: 'center', backgroundColor: '#120e18',
           }}>
             <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--muted)' }}>
               No results for "{query}"

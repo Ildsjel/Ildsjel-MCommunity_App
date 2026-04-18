@@ -6,16 +6,18 @@
 
 /* ── CSS Variables ─────────────────────────────────────────── */
 :root {
-  /* Paper palette (light default) */
-  --paper:      #F3EFE7;
-  --paper-2:    #EBE6DC;
-  --canvas-bg:  #DCD6C8;
-  --ink:        #141414;
-  --ink-2:      #2A2A2A;
-  --muted:      #7A756D;
-  --line:       #1A1A1A;
-  --accent:     #9A1A1A;
-  --accent-2:   #C43A2A;
+  /* Void purple palette */
+  --paper:      #120e18;
+  --paper-2:    #1a1424;
+  --canvas-bg:  #08060a;
+  --ink:        #ece5d3;
+  --ink-2:      #c9c2ae;
+  --muted:      #7a7364;
+  --line:       #d8cfb8;
+  --accent:     #c43a2a;
+  --accent-2:   #e05a3a;
+  --grid:       rgba(230,220,200,.05);
+  --medieval:   var(--font-medieval, "UnifrakturCook", "EB Garamond", serif);
 
   /* Mobile layout */
   --bottom-nav-height: 56px;
@@ -42,10 +44,10 @@ body {
   padding-bottom:   var(--page-bottom-pad);
   font-family:      'EB Garamond', Georgia, serif;
   background-image:
-    radial-gradient(circle at 20% 10%, rgba(154,26,26,.04), transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(20,20,20,.06), transparent 50%),
-    repeating-linear-gradient(0deg, transparent 0, transparent 23px, rgba(20,20,20,.06) 23px, rgba(20,20,20,.06) 24px),
-    repeating-linear-gradient(90deg, transparent 0, transparent 23px, rgba(20,20,20,.06) 23px, rgba(20,20,20,.06) 24px);
+    radial-gradient(circle at 20% 10%, rgba(196,58,42,.08), transparent 45%),
+    radial-gradient(circle at 80% 80%, rgba(230,220,200,.04), transparent 55%),
+    repeating-linear-gradient(0deg, transparent 0, transparent 23px, var(--grid) 23px, var(--grid) 24px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 23px, var(--grid) 23px, var(--grid) 24px);
 }
 
 @media (min-width: 900px) {
@@ -55,8 +57,8 @@ body {
 /* ── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track  { background: var(--canvas-bg); }
-::-webkit-scrollbar-thumb  { background: #B0AAA0; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #8A847C; }
+::-webkit-scrollbar-thumb  { background: #3a3040; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #574d60; }
 
 /* ── Typography ────────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
@@ -104,18 +106,26 @@ h1, h2, h3, h4, h5, h6 {
 
 .slide-in-up { animation: slideInFromBottom 0.3s ease both; }
 
-/* Grimr wordmark — subtle text shadow, no glow (paper surface) */
+/* Grimr wordmark — medieval display font */
 .grimr-wordmark {
-  font-family:    'Archivo Black', sans-serif;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  text-shadow:    1px 1px 0 rgba(20,20,20,0.15);
+  font-family:    var(--medieval, 'Archivo Black', sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  text-shadow:    0 0 24px rgba(196,58,42,.35);
+}
+/* Medieval utility — key display headings */
+.medieval {
+  font-family:    var(--medieval, 'EB Garamond', serif);
+  font-weight:    700;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height:    1.1;
 }
 
-/* Hard-border card utility */
+/* Hard-border card utility (warm cream border on dark) */
 .hard-card {
-  border:     1.5px solid var(--line);
-  box-shadow: 1.5px 1.5px 0 rgba(20,20,20,0.2);
+  border:     1.5px solid rgba(216,207,184,0.25);
+  box-shadow: 2px 2px 0 rgba(216,207,184,.1);
 }
 
 /* Accent label (JetBrains Mono, uppercase) */
@@ -128,15 +138,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 .lbl.accent { color: var(--accent); }
 
-/* Dark hero (landing, share sheet) */
-.dark-hero {
-  background:     #0A0A0A;
-  color:          #F1ECE0;
-  --paper:        #0A0A0A;
-  --paper-2:      #151515;
-  --ink:          #F1ECE0;
-  --line:         #2A2A2A;
-  --muted:        #9A948A;
+/* Void hero — deeper black variant for landing / sigil screens */
+.void-hero {
+  background:     #08060a;
+  color:          #ece5d3;
+  --paper:        #08060a;
+  --paper-2:      #120e18;
+  --ink:          #ece5d3;
+  --line:         #d8cfb8;
+  --muted:        #7a7364;
 }
 
 /* ── Input font-size fix (prevent iOS zoom) ────────────────── */

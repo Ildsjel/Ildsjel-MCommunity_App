@@ -62,10 +62,10 @@ const lbl: React.CSSProperties = {
 }
 
 const box: React.CSSProperties = {
-  border: '1.5px solid #1A1A1A',
+  border: '1.5px solid rgba(216,207,184,0.2)',
   borderRadius: '3px',
   padding: '10px 12px',
-  backgroundColor: '#F3EFE7',
+  backgroundColor: '#120e18',
 }
 
 export default function ProfilePage() {
@@ -272,11 +272,11 @@ export default function ProfilePage() {
           ] as [string, string][]).map(([label, value]) => (
             <Box key={label} sx={{
               flex: 1,
-              border: '1.5px solid #1A1A1A',
+              border: '1.5px solid rgba(216,207,184,0.2)',
               borderRadius: '3px',
               p: 1,
               textAlign: 'center',
-              backgroundColor: '#F3EFE7',
+              backgroundColor: '#120e18',
             }}>
               <span style={{ ...lbl, display: 'block', marginBottom: 2 }}>{label}</span>
               <Typography variant="h5" sx={{ fontSize: '1rem' }}>{value}</Typography>

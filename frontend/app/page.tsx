@@ -101,7 +101,7 @@ export default function Home() {
             my:         2,
           }}
         >
-          <Box sx={{ flex: 1, height: '1.5px', backgroundColor: '#1A1A1A' }} />
+          <Box sx={{ flex: 1, height: '1.5px', backgroundColor: 'rgba(216,207,184,0.3)' }} />
           <Typography
             sx={{
               fontFamily:    '"JetBrains Mono", monospace',
@@ -114,7 +114,7 @@ export default function Home() {
           >
             XVI · IV · MMXXVI
           </Typography>
-          <Box sx={{ flex: 1, height: '1.5px', backgroundColor: '#1A1A1A' }} />
+          <Box sx={{ flex: 1, height: '1.5px', backgroundColor: 'rgba(216,207,184,0.3)' }} />
         </Box>
 
         {/* Tagline */}
@@ -172,17 +172,17 @@ export default function Home() {
                 border:        '1.5px solid',
                 borderColor:   'primary.main',
                 borderRadius:  '3px',
-                background:    '#9A1A1A',
-                color:         '#F3EFE7',
+                background:    '#c43a2a',
+                color:         '#ece5d3',
                 fontFamily:    '"Archivo Black", sans-serif',
                 fontSize:      '0.75rem',
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
-                boxShadow:     '1.5px 1.5px 0 rgba(20,20,20,0.3)',
+                boxShadow:     '1.5px 1.5px 0 rgba(0,0,0,0.4)',
                 transition:    'box-shadow 0.15s, transform 0.1s',
                 '&:hover': {
-                  boxShadow: '3px 3px 0 rgba(20,20,20,0.3)',
+                  boxShadow: '3px 3px 0 rgba(0,0,0,0.4)',
                   transform: 'translate(-1px,-1px)',
                 },
               }}
@@ -197,17 +197,17 @@ export default function Home() {
                 width:         '100%',
                 py:            1.375,
                 textAlign:     'center',
-                border:        '1.5px solid #1A1A1A',
+                border:        '1.5px solid rgba(216,207,184,0.4)',
                 borderRadius:  '3px',
                 background:    'transparent',
-                color:         '#141414',
+                color:         '#ece5d3',
                 fontFamily:    '"Archivo Black", sans-serif',
                 fontSize:      '0.75rem',
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 textDecoration: 'none',
                 transition:    'background 0.12s',
-                '&:hover': { background: 'rgba(20,20,20,0.04)' },
+                '&:hover': { background: 'rgba(236,229,211,0.06)' },
               }}
             >
               Sign In

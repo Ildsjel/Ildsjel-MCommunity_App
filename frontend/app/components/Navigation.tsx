@@ -95,16 +95,16 @@ export default function Navigation() {
             component="div"
             onClick={() => router.push(isAuthenticated ? '/feed' : '/')}
             sx={{
-              fontFamily:    '"Archivo Black", sans-serif',
-              fontWeight:    400,
+              fontFamily:    'var(--font-medieval, "Archivo Black", sans-serif)',
+              fontWeight:    700,
               cursor:        'pointer',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              fontSize:      { xs: '1.1rem', md: '1.25rem' },
+              letterSpacing: '0.02em',
+              textTransform: 'none',
+              fontSize:      { xs: '1.25rem', md: '1.4rem' },
               flexGrow:      { xs: 1, md: 0 },
               mr:            { md: 4 },
               color:         'text.primary',
-              textShadow:    '1px 1px 0 rgba(20,20,20,0.15)',
+              textShadow:    '0 0 24px rgba(196,58,42,.4)',
             }}
           >
             Grimr
@@ -201,7 +201,7 @@ export default function Navigation() {
                     minWidth:      160,
                     border:        '1.5px solid',
                     borderColor:   'divider',
-                    boxShadow:     '2px 2px 0 rgba(20,20,20,0.2)',
+                    boxShadow:     '2px 2px 0 rgba(216,207,184,.1)',
                     borderRadius:  '3px',
                   },
                 }}
@@ -243,8 +243,8 @@ export default function Navigation() {
             left:         0,
             right:        0,
             zIndex:       1200,
-            bgcolor:      '#EBE6DC',
-            borderTop:    '1.5px solid #1A1A1A',
+            bgcolor:      '#1a1424',
+            borderTop:    '1.5px solid rgba(216,207,184,0.2)',
             paddingBottom: 'env(safe-area-inset-bottom)',
           }}
         >

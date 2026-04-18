@@ -180,13 +180,13 @@ export default function SigilPage() {
                   borderRadius:  '3px',
                   background:    'primary.main',
                   backgroundColor: '#9A1A1A',
-                  color:         '#F3EFE7',
+                  color:         '#120e18',
                   fontFamily:    '"Archivo Black", sans-serif',
                   fontSize:      '0.75rem',
                   letterSpacing: '0.12em',
                   textTransform: 'uppercase',
                   cursor:        'pointer',
-                  boxShadow:     '1.5px 1.5px 0 rgba(20,20,20,0.3)',
+                  boxShadow:     '1.5px 1.5px 0 rgba(0,0,0,0.5)',
                 }}
               >
                 ◉ Link Spotify

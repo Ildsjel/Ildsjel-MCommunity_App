@@ -48,10 +48,10 @@ const lbl: React.CSSProperties = {
 }
 
 const box: React.CSSProperties = {
-  border: '1.5px solid #1A1A1A',
+  border: '1.5px solid rgba(216,207,184,0.2)',
   borderRadius: '3px',
   padding: '8px 10px',
-  backgroundColor: '#F3EFE7',
+  backgroundColor: '#120e18',
   marginBottom: '8px',
 }
 
@@ -229,7 +229,7 @@ export default function UserProfilePage() {
                   component="img"
                   src={item.album!.image_url}
                   alt={item.album!.name}
-                  sx={{ width: 44, height: 44, borderRadius: '2px', border: '1px solid #1A1A1A', objectFit: 'cover' }}
+                  sx={{ width: 44, height: 44, borderRadius: '2px', border: '1px solid rgba(216,207,184,0.15)', objectFit: 'cover' }}
                 />
               ))}
             </Box>
@@ -237,8 +237,8 @@ export default function UserProfilePage() {
             <Box sx={{ display: 'flex', gap: 1 }}>
               {[0, 1, 2].map((i) => (
                 <Box key={i} sx={{
-                  width: 44, height: 44, border: '1.5px solid #1A1A1A', borderRadius: '2px',
-                  background: 'repeating-linear-gradient(45deg, #DCD6C8 0 3px, #EBE6DC 3px 6px)',
+                  width: 44, height: 44, border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '2px',
+                  background: 'repeating-linear-gradient(45deg, #1a1424 0 3px, #120e18 3px 6px)',
                 }} />
               ))}
             </Box>

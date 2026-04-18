@@ -35,7 +35,7 @@ export default function Sigil({
   const rInner = size * 0.22
   const rCore  = size * 0.08
 
-  const color   = dark ? '#F1ECE0' : '#141414'
+  const color   = dark ? '#F1ECE0' : '#ece5d3'
   const opacity = loading ? 0.5 : 1
 
   // Genre labels on outer ring

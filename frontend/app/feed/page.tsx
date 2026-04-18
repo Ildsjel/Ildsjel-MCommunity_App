@@ -102,8 +102,8 @@ export default function FeedPage() {
                 label={f}
                 size="small"
                 sx={{
-                  backgroundColor: i === 0 ? '#141414' : 'transparent',
-                  color:           i === 0 ? '#F3EFE7' : 'text.secondary',
+                  backgroundColor: i === 0 ? '#ece5d3' : 'transparent',
+                  color: i === 0 ? '#120e18' : 'text.secondary',
                 }}
               />
             ))}
@@ -124,9 +124,9 @@ export default function FeedPage() {
                     width:           56,
                     height:          56,
                     flexShrink:      0,
-                    border:          '1.5px solid #1A1A1A',
+                    border:          '1.5px solid rgba(216,207,184,0.2)',
                     borderRadius:    '3px',
-                    backgroundColor: '#DCD6C8',
+                    backgroundColor: '#08060a',
                     display:         'flex',
                     alignItems:      'center',
                     justifyContent:  'center',
@@ -140,15 +140,15 @@ export default function FeedPage() {
                     <Box
                       sx={{
                         width:           18, height: 18,
-                        border:          '1.5px solid #1A1A1A',
+                        border:          '1.5px solid rgba(216,207,184,0.2)',
                         borderRadius:    '50%',
                         display:         'flex',
                         alignItems:      'center',
                         justifyContent:  'center',
                         fontFamily:      '"Archivo Black", sans-serif',
                         fontSize:        '0.5rem',
-                        color:           '#F3EFE7',
-                        backgroundColor: '#141414',
+                        color:           '#ece5d3',
+                        backgroundColor: '#1a1424',
                         flexShrink:      0,
                       }}
                     >

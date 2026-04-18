@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Archivo_Black, EB_Garamond, JetBrains_Mono } from 'next/font/google'
+import { Archivo_Black, EB_Garamond, JetBrains_Mono, UnifrakturCook } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from './ThemeProvider'
 import { UserProvider } from './context/UserContext'
@@ -27,6 +27,14 @@ const mono = JetBrains_Mono({
   display: 'swap',
 })
 
+// Medieval display font — used for wordmark and key hero headings
+const medieval = UnifrakturCook({
+  weight: '700',
+  subsets: ['latin'],
+  variable: '--font-medieval',
+  display: 'swap',
+})
+
 // ── SEO & PWA metadata ─────────────────────────────────────
 export const metadata: Metadata = {
   title: 'Grimr — Metalheads Connect',
@@ -51,12 +59,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#DCD6C8',
+  themeColor: '#120e18',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${archivo.variable} ${garamond.variable} ${mono.variable}`}>
+    <html lang="en" className={`${archivo.variable} ${garamond.variable} ${mono.variable} ${medieval.variable}`}>
       <body>
         <ThemeProvider>
           <UserProvider>

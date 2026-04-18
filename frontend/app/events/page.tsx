@@ -119,7 +119,7 @@ export default function EventsPage() {
                   sx={{
                     flexShrink:      0,
                     width:           52,
-                    border:          '1.5px solid #1A1A1A',
+                    border:          '1.5px solid rgba(216,207,184,0.2)',
                     borderRadius:    '3px',
                     display:         'flex',
                     flexDirection:   'column',
@@ -127,7 +127,7 @@ export default function EventsPage() {
                     justifyContent:  'center',
                     py:              0.75,
                     px:              0.5,
-                    backgroundColor: '#EBE6DC',
+                    backgroundColor: '#1a1424',
                   }}
                 >
                   <Typography

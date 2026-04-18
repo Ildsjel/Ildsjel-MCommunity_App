@@ -60,13 +60,13 @@ export default function AlbumPage() {
               component="img"
               src={review.album.thumbnail}
               alt={review.album.title}
-              sx={{ width: 44, height: 44, border: '1.5px solid #1A1A1A', borderRadius: '2px', objectFit: 'cover', flexShrink: 0 }}
+              sx={{ width: 44, height: 44, border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '2px', objectFit: 'cover', flexShrink: 0 }}
             />
           ) : (
             <Box sx={{
               width: 44, height: 44, flexShrink: 0,
-              border: '1.5px solid #1A1A1A', borderRadius: '2px',
-              background: 'repeating-linear-gradient(45deg, #DCD6C8 0 3px, #EBE6DC 3px 6px)',
+              border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '2px',
+              background: 'repeating-linear-gradient(45deg, #1a1424 0 3px, #120e18 3px 6px)',
             }} />
           )}
           <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -89,8 +89,8 @@ export default function AlbumPage() {
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1.5 }}>
           <Box sx={{
             width: 28, height: 28, flexShrink: 0,
-            border: '1.5px solid #1A1A1A', borderRadius: '3px',
-            backgroundColor: '#141414', color: '#F3EFE7',
+            border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
+            backgroundColor: '#1a1424', color: '#ece5d3',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--font-display, "Archivo Black", sans-serif)',
             fontSize: '0.75rem',
@@ -110,12 +110,12 @@ export default function AlbumPage() {
 
         {/* Review body */}
         <Box sx={{
-          border: '1.5px solid #1A1A1A',
+          border: '1.5px solid rgba(216,207,184,0.2)',
           borderRadius: '3px',
-          backgroundColor: '#F3EFE7',
+          backgroundColor: '#120e18',
           p: 1.75,
           mb: 2,
-          boxShadow: '1.5px 1.5px 0 rgba(20,20,20,0.15)',
+          boxShadow: '1.5px 1.5px 0 rgba(216,207,184,.08)',
         }}>
           {review.body.split('\n\n').map((para, i) => (
             <Typography
@@ -159,9 +159,9 @@ export default function AlbumPage() {
         {/* Album metadata */}
         <Box sx={{
           mt: 3,
-          border: '1.5px solid #1A1A1A',
+          border: '1.5px solid rgba(216,207,184,0.2)',
           borderRadius: '3px',
-          backgroundColor: '#F3EFE7',
+          backgroundColor: '#120e18',
           p: 1.25,
         }}>
           <span style={{ ...lbl, display: 'block', marginBottom: 4 }}>ALBUM INFO</span>
