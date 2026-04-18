@@ -8,6 +8,7 @@ interface SigilProps {
   artists?: string[]
   centerTop?: string
   centerBottom?: string
+  avatarUrl?: string
   loading?: boolean
   dark?: boolean
   className?: string
@@ -23,6 +24,7 @@ export default function Sigil({
   artists = ['Mgła', 'Bell Witch', 'Panopticon', 'Sunn O)))', 'Krallice', 'Ulcerate'],
   centerTop = '—',
   centerBottom = '',
+  avatarUrl,
   loading = false,
   dark = false,
   className,
@@ -112,6 +114,8 @@ export default function Sigil({
     )
   })
 
+  const avatarR = rInner * 0.9
+
   return (
     <svg
       viewBox={`0 0 ${size} ${size}`}
@@ -119,6 +123,12 @@ export default function Sigil({
       className={className}
       aria-label="Metal-ID Sigil"
     >
+      <defs>
+        <clipPath id={`sigil-avatar-${size}`}>
+          <circle cx={cx} cy={cy} r={avatarR} />
+        </clipPath>
+      </defs>
+
       {/* Outer circles */}
       <circle cx={cx} cy={cy} r={rOuter}     fill="none" stroke={color} strokeWidth="0.8" />
       <circle cx={cx} cy={cy} r={rOuter - 3} fill="none" stroke={color} strokeWidth="0.3" strokeDasharray="1 2" />
@@ -135,30 +145,48 @@ export default function Sigil({
       {/* Genre labels */}
       {genreLabels}
 
-      {/* Center text */}
-      <text
-        x={cx} y={cy - 3}
-        textAnchor="middle"
-        fontSize={size * 0.035}
-        fontWeight="700"
-        fill={color}
-        letterSpacing="1.4"
-        fontFamily='"Archivo Black", sans-serif'
-      >
-        {centerTop}
-      </text>
-      {centerBottom && (
-        <text
-          x={cx} y={cy + size * 0.038}
-          textAnchor="middle"
-          fontSize={size * 0.019}
-          fill={color}
-          letterSpacing="0.8"
-          opacity="0.65"
-          fontFamily='"JetBrains Mono", monospace'
-        >
-          {centerBottom}
-        </text>
+      {/* Avatar image */}
+      {avatarUrl ? (
+        <>
+          <circle cx={cx} cy={cy} r={avatarR} fill="#120e18" />
+          <image
+            href={avatarUrl}
+            x={cx - avatarR}
+            y={cy - avatarR}
+            width={avatarR * 2}
+            height={avatarR * 2}
+            clipPath={`url(#sigil-avatar-${size})`}
+            preserveAspectRatio="xMidYMid slice"
+          />
+          <circle cx={cx} cy={cy} r={avatarR} fill="none" stroke={color} strokeWidth="0.8" opacity="0.4" />
+        </>
+      ) : (
+        <>
+          <text
+            x={cx} y={cy - 3}
+            textAnchor="middle"
+            fontSize={size * 0.035}
+            fontWeight="700"
+            fill={color}
+            letterSpacing="1.4"
+            fontFamily='"Archivo Black", sans-serif'
+          >
+            {centerTop}
+          </text>
+          {centerBottom && (
+            <text
+              x={cx} y={cy + size * 0.038}
+              textAnchor="middle"
+              fontSize={size * 0.019}
+              fill={color}
+              letterSpacing="0.8"
+              opacity="0.65"
+              fontFamily='"JetBrains Mono", monospace'
+            >
+              {centerBottom}
+            </text>
+          )}
+        </>
       )}
     </svg>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Box,
@@ -18,12 +18,13 @@ import {
   ListItem,
 } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
-import AvatarUpload from '@/app/components/AvatarUpload'
 import GalleryManager from '@/app/components/GalleryManager'
 import TopArtists from '@/app/components/TopArtists'
 import SpotifyConnection from '@/app/components/SpotifyConnection'
 import Sigil from '@/app/components/Sigil'
+import { useUser } from '@/app/context/UserContext'
 import { userAPI } from '@/lib/api'
+import { galleryAPI } from '@/lib/galleryApi'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -70,6 +71,7 @@ const box: React.CSSProperties = {
 
 export default function ProfilePage() {
   const router = useRouter()
+  const { updateAvatar } = useUser()
   const [user, setUser] = useState<User | null>(null)
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -79,6 +81,28 @@ export default function ProfilePage() {
   const [editAboutMe, setEditAboutMe] = useState(false)
   const [aboutMeText, setAboutMeText] = useState('')
   const [aboutMeSaving, setAboutMeSaving] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { alert('Please select an image file'); return }
+    if (file.size > 10 * 1024 * 1024) { alert('File too large. Maximum size: 10MB'); return }
+    setAvatarUploading(true)
+    try {
+      const result = await galleryAPI.uploadAvatar(file)
+      if (result.success && result.image_url) {
+        setUser(prev => prev ? { ...prev, profile_image_url: result.image_url } : prev)
+        updateAvatar(result.image_url!)
+      }
+    } catch (err: any) {
+      alert(`Upload failed: ${err.response?.data?.detail || err.message}`)
+    } finally {
+      setAvatarUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -176,21 +200,50 @@ export default function ProfilePage() {
         {/* Header row */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <span style={lbl}>ME</span>
-          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-            <AvatarUpload size={28} />
-            <span
-              style={{ ...lbl, cursor: 'pointer' }}
-              onClick={() => setEditAboutMe(!editAboutMe)}
-            >
-              ⚙ EDIT
-            </span>
-          </Box>
+          <span
+            style={{ ...lbl, cursor: 'pointer' }}
+            onClick={() => setEditAboutMe(!editAboutMe)}
+          >
+            ⚙ EDIT
+          </span>
         </Box>
 
-        {/* Sigil */}
-        <Box sx={{ height: 160, display: 'flex', justifyContent: 'center', mb: 1.5 }}>
-          <Sigil size={200} loading centerTop={user.handle.slice(0, 8)} centerBottom="metal-id" />
+        {/* Sigil — click to upload avatar */}
+        <Box
+          sx={{
+            position: 'relative', height: 160,
+            display: 'flex', justifyContent: 'center', mb: 1.5,
+            cursor: 'pointer',
+            '&:hover .sigil-hint': { opacity: 1 },
+          }}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Sigil
+            size={200}
+            centerTop={user.handle}
+            centerBottom={user.profile_image_url ? '' : 'metal-id'}
+            avatarUrl={user.profile_image_url}
+          />
+          {avatarUploading && (
+            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CircularProgress size={24} sx={{ color: 'var(--accent)' }} />
+            </Box>
+          )}
+          <Box
+            className="sigil-hint"
+            sx={{
+              position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)',
+              opacity: 0, transition: 'opacity 0.15s', pointerEvents: 'none',
+              border: '1.5px solid rgba(216,207,184,0.25)', borderRadius: '3px',
+              px: 1, py: 0.375, backgroundColor: 'rgba(8,6,10,0.85)',
+              fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+              letterSpacing: '0.12em', color: 'var(--muted)', whiteSpace: 'nowrap',
+            }}
+          >
+            {user.profile_image_url ? '◉ CHANGE PHOTO' : '◉ ADD PHOTO'}
+          </Box>
         </Box>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarSelect} />
 
         {/* Handle */}
         <Typography variant="h4" sx={{ textAlign: 'center', fontSize: '1.25rem', mb: 0.5 }}>
