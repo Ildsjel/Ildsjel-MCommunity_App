@@ -114,9 +114,14 @@ async def spotify_auth_callback(
             spotify_user_id=profile.get("id")
         )
 
-        # Sync top artists in background
+        # Sync top artists and albums in background
         background_tasks.add_task(
             _sync_top_artists_bg,
+            user_id=current_user["id"],
+            access_token=token_data["access_token"]
+        )
+        background_tasks.add_task(
+            _sync_top_albums_bg,
             user_id=current_user["id"],
             access_token=token_data["access_token"]
         )
@@ -494,22 +499,95 @@ async def _sync_top_artists_bg(user_id: str, access_token: str):
                 )
                 for rank, artist in enumerate(artists, 1):
                     image_url = artist["images"][0]["url"] if artist.get("images") else None
+                    name = artist["name"]
+                    name_norm = name.lower().strip()
                     session.run(
                         """
-                        MERGE (a:Artist {spotify_id: $spotify_id})
+                        MERGE (a:Artist {name_normalized: $name_norm})
                         ON CREATE SET a.id = randomUUID(), a.created_at = datetime()
-                        SET a.name = $name, a.genres = $genres, a.spotify_image_url = $image_url
+                        SET a.name = $name,
+                            a.name_normalized = $name_norm,
+                            a.spotify_id = $spotify_id,
+                            a.genres = $genres,
+                            a.spotify_image_url = $image_url,
+                            a.updated_at = datetime()
                         WITH a
                         MATCH (u:User {id: $uid})
-                        CREATE (u)-[:TOP_ARTIST {rank: $rank, time_range: $tr}]->(a)
+                        CREATE (u)-[:TOP_ARTIST {rank: $rank, time_range: $tr, source: 'spotify'}]->(a)
                         """,
-                        spotify_id=artist["id"], name=artist["name"],
+                        name_norm=name_norm, name=name,
+                        spotify_id=artist["id"],
                         genres=artist.get("genres", []), image_url=image_url,
                         uid=user_id, rank=rank, tr=time_range
                     )
         print(f"✅ Top artists sync complete for user {user_id}")
     except Exception as e:
         print(f"❌ Top artists sync failed for user {user_id}: {e}")
+    finally:
+        await client.close()
+
+
+async def _sync_top_albums_bg(user_id: str, access_token: str):
+    """Derive top albums from Spotify top tracks and sync to Neo4j"""
+    print(f"💿 Syncing Spotify top albums for user {user_id}")
+    from app.db.neo4j_driver import neo4j_driver
+    from collections import defaultdict
+
+    client = SpotifyClient(access_token=access_token)
+    try:
+        # Use long_term for the broadest picture of favourite albums
+        data = await client.get_user_top_tracks(time_range="long_term", limit=50)
+        tracks = data.get("items", [])
+
+        # Aggregate tracks by album_id — count = proxy for how much the user plays that album
+        album_counts: dict = defaultdict(lambda: {"count": 0, "album": None})
+        for track in tracks:
+            album = track.get("album", {})
+            album_id = album.get("id")
+            if not album_id:
+                continue
+            if album_counts[album_id]["album"] is None:
+                album_counts[album_id]["album"] = album
+            album_counts[album_id]["count"] += 1
+
+        sorted_albums = sorted(
+            album_counts.items(),
+            key=lambda x: x[1]["count"],
+            reverse=True,
+        )
+
+        with neo4j_driver.get_driver().session() as db:
+            db.run(
+                "MATCH (u:User {id: $uid})-[r:TOP_ALBUM {source: 'spotify'}]->() DELETE r",
+                uid=user_id,
+            )
+            for rank, (album_id, info) in enumerate(sorted_albums[:50], 1):
+                album = info["album"]
+                name = album["name"]
+                artist_name = (album.get("artists") or [{}])[0].get("name", "")
+                name_norm = f"{artist_name.lower().strip()}::{name.lower().strip()}"
+                image_url = album["images"][0]["url"] if album.get("images") else None
+                track_count = info["count"]
+
+                db.run(
+                    """
+                    MERGE (a:Album {spotify_id: $spotify_id})
+                    ON CREATE SET a.id = randomUUID(), a.created_at = datetime()
+                    SET a.name = $name, a.artist_name = $artist_name,
+                        a.name_normalized = $name_norm,
+                        a.image_url = $image_url, a.updated_at = datetime()
+                    WITH a
+                    MATCH (u:User {id: $uid})
+                    CREATE (u)-[:TOP_ALBUM {rank: $rank, play_count: $pc,
+                                            source: 'spotify', period: 'long_term'}]->(a)
+                    """,
+                    spotify_id=album_id, name=name, artist_name=artist_name,
+                    name_norm=name_norm, image_url=image_url,
+                    uid=user_id, rank=rank, pc=track_count,
+                )
+        print(f"✅ Spotify album sync complete — {len(sorted_albums)} albums for user {user_id}")
+    except Exception as e:
+        print(f"❌ Spotify album sync failed for user {user_id}: {e}")
     finally:
         await client.close()
 
