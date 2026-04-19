@@ -114,6 +114,9 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', country: '', country_code: '', formed: '', bio: '' })
 
+  const [availableTags, setAvailableTags] = useState<any[]>([])
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+
   const [photoUploading, setPhotoUploading] = useState(false)
   const [logoUploading, setLogoUploading] = useState(false)
   const [imageMsg, setImageMsg] = useState<string | null>(null)
@@ -123,11 +126,13 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
   const [relForm, setRelForm] = useState({ title: '', slug: '', type: 'LP', year: '', label: '' })
 
   useEffect(() => {
-    adminAPI.listBands().then((bands) => {
+    Promise.all([adminAPI.listBands(), adminAPI.listTags()]).then(([bands, tags]) => {
+      setAvailableTags(tags)
       const found = bands.find((b: any) => b.id === id)
       if (found) {
         setBand(found)
         setForm({ name: found.name, country: found.country, country_code: found.country_code, formed: String(found.formed), bio: found.bio || '' })
+        setSelectedTagIds((found.tags || []).map((t: any) => t.id))
       }
     }).finally(() => setLoading(false))
   }, [id])
@@ -146,7 +151,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
     setSaving(true)
     setError(null)
     try {
-      const updated = await adminAPI.updateBand(id, { ...form, formed: parseInt(form.formed) })
+      const updated = await adminAPI.updateBand(id, { ...form, formed: parseInt(form.formed), tag_ids: selectedTagIds })
       setBand(updated)
     } catch (err: any) {
       setError(err.message)
@@ -259,6 +264,42 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
         </Box>
         <TextField label="Formed" type="number" value={form.formed} onChange={set('formed')} required fullWidth size="small" sx={inputSx} />
         <TextField label="Bio" value={form.bio} onChange={set('bio')} multiline rows={4} fullWidth size="small" sx={inputSx} />
+
+        {/* Tags */}
+        {availableTags.length > 0 && (
+          <Box>
+            <span style={{ ...lbl, display: 'block', marginBottom: 8 }}>Tags</span>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.625 }}>
+              {availableTags.map((tag: any) => {
+                const active = selectedTagIds.includes(tag.id)
+                return (
+                  <Box
+                    key={tag.id}
+                    component="button"
+                    type="button"
+                    onClick={() => setSelectedTagIds((prev) =>
+                      active ? prev.filter((id) => id !== tag.id) : [...prev, tag.id]
+                    )}
+                    sx={{
+                      border: `1px solid ${active ? 'rgba(216,207,184,0.55)' : 'rgba(216,207,184,0.18)'}`,
+                      borderRadius: '2px',
+                      px: 0.875, height: 22,
+                      background: active ? 'rgba(216,207,184,0.08)' : 'none',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                      letterSpacing: '0.1em', textTransform: 'uppercase',
+                      color: active ? 'var(--ink)' : 'var(--muted)',
+                      transition: 'border-color 0.12s, color 0.12s',
+                    }}
+                  >
+                    {tag.name}
+                  </Box>
+                )
+              })}
+            </Box>
+          </Box>
+        )}
+
         {error && <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--accent)', letterSpacing: '0.1em' }}>{error}</Typography>}
         <Box component="button" type="submit" disabled={saving} sx={{ border: '1.5px solid rgba(216,207,184,0.4)', borderRadius: '3px', py: 0.875, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>
           {saving ? 'SAVING…' : 'SAVE CHANGES'}

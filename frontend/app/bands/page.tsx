@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import { useUser } from '@/app/context/UserContext'
-import { BANDS } from '@/lib/mockBands'
+import axios from 'axios'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -26,10 +28,33 @@ const TYPE_COLORS: Record<string, string> = {
 export default function BandsPage() {
   const router = useRouter()
   const { user, isLoading } = useUser()
+  const [bands, setBands] = useState<any[]>([])
+  const [bandsLoading, setBandsLoading] = useState(true)
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/auth/login')
   }, [user, isLoading, router])
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    axios.get(`${API_BASE}/api/v1/bands`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((res) => setBands(Array.isArray(res.data) ? res.data : res.data.bands ?? []))
+      .catch(console.error)
+      .finally(() => setBandsLoading(false))
+  }, [])
+
+  if (bandsLoading) {
+    return (
+      <>
+        <Navigation />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <CircularProgress size={18} sx={{ color: 'var(--accent)' }} />
+        </Box>
+      </>
+    )
+  }
 
   return (
     <>
@@ -39,13 +64,20 @@ export default function BandsPage() {
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <span style={lbl}>◆ BANDS</span>
-          <span style={{ ...lbl, fontSize: '0.5rem' }}>{BANDS.length} IN CATALOGUE</span>
+          <span style={{ ...lbl, fontSize: '0.5rem' }}>{bands.length} IN CATALOGUE</span>
         </Box>
+
+        {bands.length === 0 && (
+          <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', textAlign: 'center', mt: 6 }}>
+            No bands in catalogue yet.
+          </Typography>
+        )}
 
         {/* Band grid */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-          {BANDS.map((band) => {
-            const latestRelease = band.releases[band.releases.length - 1]
+          {bands.map((band) => {
+            const sortedReleases = [...(band.releases || [])].sort((a: any, b: any) => (b.year ?? 0) - (a.year ?? 0))
+            const latestRelease = sortedReleases[0]
             return (
               <Box
                 key={band.id}
@@ -104,7 +136,7 @@ export default function BandsPage() {
                     ))}
                   </Box>
                   <span style={{ ...lbl, fontSize: '0.5rem' }}>
-                    {band.countryCode} · est. {band.formed} · {band.releases.length} releases
+                    {band.country_code} · est. {band.formed} · {(band.releases || []).length} releases
                   </span>
                 </Box>
 
