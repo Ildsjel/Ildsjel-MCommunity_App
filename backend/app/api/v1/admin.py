@@ -97,7 +97,8 @@ async def list_bands(
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    return BandService(session).list_bands(status, skip, limit)
+    result = BandService(session).list_bands(status, skip, limit)
+    return result.get("bands", result) if isinstance(result, dict) else result
 
 
 @router.post("/bands", response_model=BandResponse, status_code=201)
