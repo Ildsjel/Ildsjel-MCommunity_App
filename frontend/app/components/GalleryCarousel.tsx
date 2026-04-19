@@ -7,8 +7,6 @@ import {
   CardContent,
   Typography,
   IconButton,
-  Button,
-  Alert,
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -18,11 +16,9 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
-  Add,
   Close,
   ZoomIn,
   Delete,
-  Edit,
 } from '@mui/icons-material'
 import { GalleryImage } from '@/lib/galleryApi'
 import ImageComments from './ImageComments'
@@ -38,6 +34,14 @@ interface GalleryCarouselProps {
   maxImages?: number
   imageOwnerId?: string
   showComments?: boolean
+}
+
+const lbl: React.CSSProperties = {
+  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+  fontSize: '0.5625rem',
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  color: 'var(--muted, #7A756D)',
 }
 
 export default function GalleryCarousel({
@@ -79,38 +83,54 @@ export default function GalleryCarousel({
     const imageToDelete = images[currentIndex]
     onDelete(imageToDelete.id)
     setDeleteConfirmOpen(false)
-    
-    // Adjust current index if necessary
     if (currentIndex >= images.length - 1 && currentIndex > 0) {
       setCurrentIndex(currentIndex - 1)
     }
   }
 
+  const isFull = images.length >= maxImages
+
   if (images.length === 0) {
     return (
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
-              Galerie (0/{maxImages})
-            </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+            <span style={lbl}>Gallery (0/{maxImages})</span>
             {isOwnProfile && (
-              <Button
-                variant="contained"
-                startIcon={uploading ? <CircularProgress size={20} /> : <Add />}
+              <Box
+                component="button"
                 onClick={onUpload}
                 disabled={uploading}
-                size="small"
+                sx={{
+                  background: 'none',
+                  border: '1.5px solid rgba(196,58,42,0.45)',
+                  borderRadius: '3px',
+                  px: 1.25,
+                  py: 0.5,
+                  cursor: uploading ? 'default' : 'pointer',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.5rem',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: uploading ? 'rgba(216,207,184,0.25)' : 'var(--accent)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  '&:hover:not(:disabled)': { borderColor: 'var(--accent)' },
+                }}
               >
-                Bild hinzufügen
-              </Button>
+                {uploading ? <CircularProgress size={10} /> : '+'} Add image
+              </Box>
             )}
           </Box>
-          <Alert severity="info">
+          <Typography sx={{
+            fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+            fontSize: '0.8125rem', color: 'var(--muted)', textAlign: 'center', mt: 3,
+          }}>
             {isOwnProfile
-              ? `Noch keine Bilder in deiner Galerie. Füge bis zu ${maxImages} Bilder hinzu!`
-              : 'Dieser User hat noch keine Bilder in der Galerie.'}
-          </Alert>
+              ? `No images yet. Add up to ${maxImages} images.`
+              : 'This user hasn\'t added any images yet.'}
+          </Typography>
         </CardContent>
       </Card>
     )
@@ -123,30 +143,57 @@ export default function GalleryCarousel({
       <Card>
         <CardContent>
           {/* Header */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-            <Typography variant="h6">
-              Galerie ({images.length}/{maxImages})
-            </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
+            <span style={lbl}>Gallery ({images.length}/{maxImages})</span>
             <Box sx={{ display: 'flex', gap: 1 }}>
               {isOwnProfile && (
-                <Button
-                  variant="contained"
-                  startIcon={uploading ? <CircularProgress size={20} /> : <Add />}
+                <Box
+                  component="button"
                   onClick={onUpload}
-                  disabled={uploading || images.length >= maxImages}
-                  size="small"
+                  disabled={uploading || isFull}
+                  sx={{
+                    background: 'none',
+                    border: '1.5px solid',
+                    borderColor: uploading || isFull ? 'rgba(216,207,184,0.1)' : 'rgba(196,58,42,0.45)',
+                    borderRadius: '3px',
+                    px: 1.25,
+                    py: 0.5,
+                    cursor: uploading || isFull ? 'default' : 'pointer',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.5rem',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: uploading || isFull ? 'rgba(216,207,184,0.25)' : 'var(--accent)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    '&:hover:not(:disabled)': { borderColor: 'var(--accent)' },
+                  }}
                 >
-                  Bild hinzufügen
-                </Button>
+                  {uploading ? <CircularProgress size={10} /> : '+'} Add image
+                </Box>
               )}
-              {images.length > 0 && onViewAll && (
-                <Button
-                  variant="outlined"
+              {onViewAll && (
+                <Box
+                  component="button"
                   onClick={onViewAll}
-                  size="small"
+                  sx={{
+                    background: 'none',
+                    border: '1.5px solid rgba(216,207,184,0.2)',
+                    borderRadius: '3px',
+                    px: 1.25,
+                    py: 0.5,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.5rem',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'var(--ink)',
+                    '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
+                  }}
                 >
-                  Alle ansehen
-                </Button>
+                  View all
+                </Box>
               )}
             </Box>
           </Box>
@@ -193,9 +240,7 @@ export default function GalleryCarousel({
                     transform: 'translateY(-50%)',
                     bgcolor: 'rgba(0, 0, 0, 0.5)',
                     color: 'white',
-                    '&:hover': {
-                      bgcolor: 'rgba(0, 0, 0, 0.7)',
-                    },
+                    '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
                   }}
                 >
                   <ChevronLeft />
@@ -209,9 +254,7 @@ export default function GalleryCarousel({
                     transform: 'translateY(-50%)',
                     bgcolor: 'rgba(0, 0, 0, 0.5)',
                     color: 'white',
-                    '&:hover': {
-                      bgcolor: 'rgba(0, 0, 0, 0.7)',
-                    },
+                    '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
                   }}
                 >
                   <ChevronRight />
@@ -220,23 +263,13 @@ export default function GalleryCarousel({
             )}
 
             {/* Action Buttons */}
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                display: 'flex',
-                gap: 1,
-              }}
-            >
+            <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
               <IconButton
                 onClick={handleImageClick}
                 sx={{
                   bgcolor: 'rgba(0, 0, 0, 0.5)',
                   color: 'white',
-                  '&:hover': {
-                    bgcolor: 'rgba(0, 0, 0, 0.7)',
-                  },
+                  '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
                 }}
               >
                 <ZoomIn />
@@ -247,9 +280,7 @@ export default function GalleryCarousel({
                   sx={{
                     bgcolor: 'rgba(0, 0, 0, 0.5)',
                     color: 'white',
-                    '&:hover': {
-                      bgcolor: 'rgba(211, 47, 47, 0.8)',
-                    },
+                    '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.8)' },
                   }}
                 >
                   <Delete />
@@ -295,9 +326,7 @@ export default function GalleryCarousel({
                 mt: 2,
                 overflowX: 'auto',
                 pb: 1,
-                '&::-webkit-scrollbar': {
-                  height: 6,
-                },
+                '&::-webkit-scrollbar': { height: 6 },
                 '&::-webkit-scrollbar-thumb': {
                   backgroundColor: theme.palette.divider,
                   borderRadius: 3,
@@ -317,19 +346,13 @@ export default function GalleryCarousel({
                     borderRadius: 1,
                     overflow: 'hidden',
                     transition: 'border-color 0.2s',
-                    '&:hover': {
-                      borderColor: 'primary.light',
-                    },
+                    '&:hover': { borderColor: 'primary.light' },
                   }}
                 >
                   <img
                     src={`${API_BASE}${image.thumbnail_url}`}
                     alt={`Thumbnail ${index + 1}`}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </Box>
               ))}
@@ -348,7 +371,7 @@ export default function GalleryCarousel({
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h6">
-              {currentImage.caption || `Bild ${currentIndex + 1}`}
+              {currentImage.caption || `Image ${currentIndex + 1}`}
             </Typography>
             <IconButton onClick={() => setViewerOpen(false)}>
               <Close />
@@ -356,28 +379,25 @@ export default function GalleryCarousel({
           </Box>
         </DialogTitle>
         <DialogContent>
-          {/* Image Container */}
-          <Box sx={{ 
+          <Box sx={{
             position: 'relative',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             minHeight: '70vh',
-            mb: 2
+            mb: 2,
           }}>
             <img
               src={`${API_BASE}${currentImage.image_url}`}
               alt={currentImage.caption || 'Gallery image'}
-              style={{ 
-                maxWidth: '100%', 
-                maxHeight: '70vh', 
+              style={{
+                maxWidth: '100%',
+                maxHeight: '70vh',
                 objectFit: 'contain',
                 display: 'block',
-                margin: 'auto'
+                margin: 'auto',
               }}
             />
-            
-            {/* Navigation in Dialog */}
             {images.length > 1 && (
               <>
                 <IconButton
@@ -389,9 +409,7 @@ export default function GalleryCarousel({
                     transform: 'translateY(-50%)',
                     bgcolor: 'rgba(0, 0, 0, 0.5)',
                     color: 'white',
-                    '&:hover': {
-                      bgcolor: 'rgba(0, 0, 0, 0.7)',
-                    },
+                    '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
                   }}
                 >
                   <ChevronLeft />
@@ -405,9 +423,7 @@ export default function GalleryCarousel({
                     transform: 'translateY(-50%)',
                     bgcolor: 'rgba(0, 0, 0, 0.5)',
                     color: 'white',
-                    '&:hover': {
-                      bgcolor: 'rgba(0, 0, 0, 0.7)',
-                    },
+                    '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.7)' },
                   }}
                 >
                   <ChevronRight />
@@ -416,7 +432,6 @@ export default function GalleryCarousel({
             )}
           </Box>
 
-          {/* Caption and Metadata */}
           <Box sx={{ textAlign: 'center' }}>
             {currentImage.caption && (
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -424,15 +439,14 @@ export default function GalleryCarousel({
               </Typography>
             )}
             <Typography variant="caption" display="block">
-              {currentIndex + 1} / {images.length} • Hochgeladen am {new Date(currentImage.uploaded_at).toLocaleDateString('de-DE')}
+              {currentIndex + 1} / {images.length} · Uploaded {new Date(currentImage.uploaded_at).toLocaleDateString('en-GB')}
             </Typography>
           </Box>
 
-          {/* Comments Section in Dialog */}
           {showComments && (
             <Box sx={{ mt: 4 }}>
-              <ImageComments 
-                imageId={currentImage.id} 
+              <ImageComments
+                imageId={currentImage.id}
                 imageOwnerId={imageOwnerId}
               />
             </Box>
@@ -445,15 +459,15 @@ export default function GalleryCarousel({
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
       >
-        <DialogTitle>Bild löschen?</DialogTitle>
+        <DialogTitle>Delete image?</DialogTitle>
         <DialogContent>
           <Typography>
-            Möchtest du dieses Bild wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+            Are you sure you want to delete this image? This action cannot be undone.
           </Typography>
           {currentImage?.caption && (
             <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
               <Typography variant="caption" color="text.secondary">
-                Bildunterschrift:
+                Caption:
               </Typography>
               <Typography variant="body2">
                 {currentImage.caption}
@@ -462,15 +476,48 @@ export default function GalleryCarousel({
           )}
         </DialogContent>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, p: 2 }}>
-          <Button onClick={() => setDeleteConfirmOpen(false)}>
-            Abbrechen
-          </Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Löschen
-          </Button>
+          <Box
+            component="button"
+            onClick={() => setDeleteConfirmOpen(false)}
+            sx={{
+              background: 'none',
+              border: '1.5px solid rgba(216,207,184,0.2)',
+              borderRadius: '3px',
+              px: 1.5,
+              py: 0.75,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.5rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--ink)',
+              '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
+            }}
+          >
+            Cancel
+          </Box>
+          <Box
+            component="button"
+            onClick={handleDeleteConfirm}
+            sx={{
+              background: 'none',
+              border: '1.5px solid rgba(196,58,42,0.45)',
+              borderRadius: '3px',
+              px: 1.5,
+              py: 0.75,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.5rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--accent)',
+              '&:hover': { borderColor: 'var(--accent)' },
+            }}
+          >
+            Delete
+          </Box>
         </Box>
       </Dialog>
     </>
   )
 }
-

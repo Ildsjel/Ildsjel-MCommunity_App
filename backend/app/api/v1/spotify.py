@@ -38,19 +38,20 @@ async def get_spotify_auth_url(
     # Generate PKCE pair
     code_verifier, code_challenge = SpotifyClient.generate_pkce_pair()
     
-    # Store PKCE verifier (use Redis in production!)
+    # Keep a server-side copy as fallback (non-persistent, best-effort)
     _pkce_storage[state] = {
         "code_verifier": code_verifier,
         "user_id": current_user["id"],
         "created_at": datetime.utcnow()
     }
-    
-    # Get authorization URL
+
     auth_url = SpotifyClient.get_authorization_url(state, code_challenge)
-    
+
+    # Return code_verifier so the client can persist it across redirects
     return {
         "auth_url": auth_url,
-        "state": state
+        "state": state,
+        "code_verifier": code_verifier,
     }
 
 
@@ -66,22 +67,22 @@ async def spotify_auth_callback(
     
     Exchange authorization code for tokens and save to database
     """
-    # Get PKCE verifier from storage
     state = token_request.state
-    if not state or state not in _pkce_storage:
+
+    # Prefer client-supplied code_verifier (survives backend restarts).
+    # Fall back to server-side storage for clients that don't send it.
+    if token_request.code_verifier:
+        code_verifier = token_request.code_verifier
+        _pkce_storage.pop(state, None)  # clean up if present
+    elif state and state in _pkce_storage:
+        pkce_data = _pkce_storage.pop(state)
+        code_verifier = pkce_data["code_verifier"]
+        if pkce_data["user_id"] != current_user["id"]:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User mismatch")
+    else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired state parameter"
-        )
-    
-    pkce_data = _pkce_storage.pop(state)
-    code_verifier = pkce_data["code_verifier"]
-    
-    # Verify user matches
-    if pkce_data["user_id"] != current_user["id"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User mismatch"
+            detail="Missing code_verifier — please try connecting again",
         )
     
     # Exchange code for tokens
@@ -92,6 +93,12 @@ async def spotify_auth_callback(
             code_verifier=code_verifier
         )
         
+        # Log granted scopes for debugging
+        import logging
+        logging.getLogger(__name__).info(
+            "Spotify token granted scopes: %s", token_data.get("scope", "NONE")
+        )
+
         # Get Spotify user profile
         client.access_token = token_data["access_token"]
         profile = await client.get_current_user_profile()
@@ -106,10 +113,15 @@ async def spotify_auth_callback(
             scopes=token_data["scope"].split(),
             spotify_user_id=profile.get("id")
         )
-        
-        # Trigger initial backfill in background
+
+        # Sync top artists and albums in background
         background_tasks.add_task(
-            _initial_backfill,
+            _sync_top_artists_bg,
+            user_id=current_user["id"],
+            access_token=token_data["access_token"]
+        )
+        background_tasks.add_task(
+            _sync_top_albums_bg,
             user_id=current_user["id"],
             access_token=token_data["access_token"]
         )
@@ -137,21 +149,24 @@ async def get_spotify_status(
     """Get user's Spotify connection status"""
     repository = SpotifyRepository(session)
     tokens = repository.get_spotify_tokens(current_user["id"])
-    play_count = repository.get_user_play_count(current_user["id"])
-    
+
     if not tokens:
         return SpotifyConnectionStatus(
             user_id=current_user["id"],
             is_connected=False,
-            total_plays=0
         )
-    
+
+    result = session.run(
+        "MATCH (u:User {id: $uid})-[:TOP_ARTIST {time_range: 'medium_term'}]->() RETURN count(*) AS total",
+        uid=current_user["id"]
+    )
+    record = result.single()
+    total_artists = record["total"] if record else 0
+
     return SpotifyConnectionStatus(
         user_id=current_user["id"],
         is_connected=True,
-        access_token_expires_at=tokens.get("expires_at"),
-        scopes=tokens.get("scopes", []),
-        total_plays=play_count
+        total_artists=total_artists,
     )
 
 
@@ -436,34 +451,145 @@ async def get_listening_stats(
 
 @router.get("/top/artists")
 async def get_top_artists(
-    limit: int = 50,
-    time_range_days: Optional[int] = None,
+    limit: int = 10,
+    time_range: str = "medium_term",
     session = Depends(get_neo4j_session),
     current_user: dict = Depends(get_current_user)
 ):
-    """
-    Get user's top artists based on play count
-    
-    Args:
-        limit: Number of artists (max 50)
-        time_range_days: Only count plays from last N days (None = all time)
-    """
-    repository = SpotifyRepository(session)
-    artists = repository.get_user_top_artists(
-        user_id=current_user["id"],
-        limit=min(limit, 50),
-        time_range_days=time_range_days
+    """Get user's top artists from stored Spotify data (medium_term by default)"""
+    result = session.run(
+        """
+        MATCH (u:User {id: $uid})-[r:TOP_ARTIST {time_range: $tr}]->(a:Artist)
+        RETURN a.name AS name, a.spotify_id AS spotify_id,
+               a.genres AS genres, a.spotify_image_url AS image_url,
+               r.rank AS rank
+        ORDER BY r.rank ASC
+        LIMIT $limit
+        """,
+        uid=current_user["id"], tr=time_range, limit=limit
     )
-    
+    artists = [
+        {
+            "name": r["name"],
+            "spotify_id": r["spotify_id"],
+            "genres": r["genres"] or [],
+            "image_url": r["image_url"],
+            "rank": r["rank"],
+        }
+        for r in result
+    ]
     return {"artists": artists}
 
 
 # ============= Background Tasks =============
 
-async def _initial_backfill(user_id: str, access_token: str):
-    """Initial backfill after connecting Spotify"""
-    print(f"🎵 Starting initial backfill for user {user_id}")
-    await _run_backfill(user_id, access_token)
+async def _sync_top_artists_bg(user_id: str, access_token: str):
+    """Sync top artists from Spotify into Neo4j (background)"""
+    print(f"🎵 Syncing top artists for user {user_id}")
+    from app.db.neo4j_driver import neo4j_driver
+    client = SpotifyClient(access_token=access_token)
+    try:
+        with neo4j_driver.get_driver().session() as session:
+            for time_range in ["short_term", "medium_term", "long_term"]:
+                data = await client.get_user_top_artists(time_range=time_range, limit=50)
+                artists = data.get("items", [])
+                session.run(
+                    "MATCH (u:User {id: $uid})-[r:TOP_ARTIST {time_range: $tr}]->() DELETE r",
+                    uid=user_id, tr=time_range
+                )
+                for rank, artist in enumerate(artists, 1):
+                    image_url = artist["images"][0]["url"] if artist.get("images") else None
+                    name = artist["name"]
+                    name_norm = name.lower().strip()
+                    session.run(
+                        """
+                        MERGE (a:Artist {name_normalized: $name_norm})
+                        ON CREATE SET a.id = randomUUID(), a.created_at = datetime()
+                        SET a.name = $name,
+                            a.name_normalized = $name_norm,
+                            a.spotify_id = $spotify_id,
+                            a.genres = $genres,
+                            a.spotify_image_url = $image_url,
+                            a.updated_at = datetime()
+                        WITH a
+                        MATCH (u:User {id: $uid})
+                        CREATE (u)-[:TOP_ARTIST {rank: $rank, time_range: $tr, source: 'spotify'}]->(a)
+                        """,
+                        name_norm=name_norm, name=name,
+                        spotify_id=artist["id"],
+                        genres=artist.get("genres", []), image_url=image_url,
+                        uid=user_id, rank=rank, tr=time_range
+                    )
+        print(f"✅ Top artists sync complete for user {user_id}")
+    except Exception as e:
+        print(f"❌ Top artists sync failed for user {user_id}: {e}")
+    finally:
+        await client.close()
+
+
+async def _sync_top_albums_bg(user_id: str, access_token: str):
+    """Derive top albums from Spotify top tracks and sync to Neo4j"""
+    print(f"💿 Syncing Spotify top albums for user {user_id}")
+    from app.db.neo4j_driver import neo4j_driver
+    from collections import defaultdict
+
+    client = SpotifyClient(access_token=access_token)
+    try:
+        # Use long_term for the broadest picture of favourite albums
+        data = await client.get_user_top_tracks(time_range="long_term", limit=50)
+        tracks = data.get("items", [])
+
+        # Aggregate tracks by album_id — count = proxy for how much the user plays that album
+        album_counts: dict = defaultdict(lambda: {"count": 0, "album": None})
+        for track in tracks:
+            album = track.get("album", {})
+            album_id = album.get("id")
+            if not album_id:
+                continue
+            if album_counts[album_id]["album"] is None:
+                album_counts[album_id]["album"] = album
+            album_counts[album_id]["count"] += 1
+
+        sorted_albums = sorted(
+            album_counts.items(),
+            key=lambda x: x[1]["count"],
+            reverse=True,
+        )
+
+        with neo4j_driver.get_driver().session() as db:
+            db.run(
+                "MATCH (u:User {id: $uid})-[r:TOP_ALBUM {source: 'spotify'}]->() DELETE r",
+                uid=user_id,
+            )
+            for rank, (album_id, info) in enumerate(sorted_albums[:50], 1):
+                album = info["album"]
+                name = album["name"]
+                artist_name = (album.get("artists") or [{}])[0].get("name", "")
+                name_norm = f"{artist_name.lower().strip()}::{name.lower().strip()}"
+                image_url = album["images"][0]["url"] if album.get("images") else None
+                track_count = info["count"]
+
+                db.run(
+                    """
+                    MERGE (a:Album {spotify_id: $spotify_id})
+                    ON CREATE SET a.id = randomUUID(), a.created_at = datetime()
+                    SET a.name = $name, a.artist_name = $artist_name,
+                        a.name_normalized = $name_norm,
+                        a.image_url = $image_url, a.updated_at = datetime()
+                    WITH a
+                    MATCH (u:User {id: $uid})
+                    CREATE (u)-[:TOP_ALBUM {rank: $rank, play_count: $pc,
+                                            source: 'spotify', period: 'long_term'}]->(a)
+                    """,
+                    spotify_id=album_id, name=name, artist_name=artist_name,
+                    name_norm=name_norm, image_url=image_url,
+                    uid=user_id, rank=rank, pc=track_count,
+                )
+        print(f"✅ Spotify album sync complete — {len(sorted_albums)} albums for user {user_id}")
+    except Exception as e:
+        print(f"❌ Spotify album sync failed for user {user_id}: {e}")
+    finally:
+        await client.close()
 
 
 async def _run_backfill_sync(user_id: str, access_token: str):

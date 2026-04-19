@@ -2,20 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Alert,
-  CircularProgress,
-} from '@mui/material'
-import { ArrowBack } from '@mui/icons-material'
+import { Box, CircularProgress, Typography } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import GalleryManager from '@/app/components/GalleryManager'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+const lbl: React.CSSProperties = {
+  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+  fontSize: '0.5625rem',
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  color: 'var(--muted, #7A756D)',
+}
 
 export default function UserGalleryPage() {
   const router = useRouter()
@@ -32,26 +32,22 @@ export default function UserGalleryPage() {
         const response = await axios.get(`${API_BASE}/api/v1/users/${userId}/profile`)
         setUserName(response.data.handle)
       } catch (err) {
-        setError('User nicht gefunden')
+        setError('User not found.')
       } finally {
         setLoading(false)
       }
     }
 
-    if (userId) {
-      fetchUserInfo()
-    }
+    if (userId) fetchUserInfo()
   }, [userId])
 
   if (loading) {
     return (
       <>
         <Navigation />
-        <Container>
-          <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}>
-            <CircularProgress />
-          </Box>
-        </Container>
+        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 8 }}>
+          <CircularProgress size={18} sx={{ color: 'var(--accent)' }} />
+        </Box>
       </>
     )
   }
@@ -60,11 +56,14 @@ export default function UserGalleryPage() {
     return (
       <>
         <Navigation />
-        <Container>
-          <Box sx={{ py: 4 }}>
-            <Alert severity="error">{error}</Alert>
-          </Box>
-        </Container>
+        <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 4 }}>
+          <Typography sx={{
+            fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+            fontSize: '0.8125rem', color: 'var(--muted)', textAlign: 'center',
+          }}>
+            {error}
+          </Typography>
+        </Box>
       </>
     )
   }
@@ -72,26 +71,34 @@ export default function UserGalleryPage() {
   return (
     <>
       <Navigation />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ mb: 3 }}>
-          <Button
-            startIcon={<ArrowBack />}
+      <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 10 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <span style={lbl}>◆ {userName}'s Gallery</span>
+          <Box
+            component="button"
             onClick={() => router.back()}
-            sx={{ mb: 2 }}
+            sx={{
+              background: 'none',
+              border: '1.5px solid rgba(216,207,184,0.2)',
+              borderRadius: '3px',
+              px: 1.25,
+              py: 0.5,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.5rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--ink)',
+              '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
+            }}
           >
-            Zurück
-          </Button>
-          <Typography variant="h3" gutterBottom>
-            {userName}'s Galerie
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Öffentliche Galerie
-          </Typography>
+            ← Back
+          </Box>
         </Box>
 
         <GalleryManager userId={userId} isOwnProfile={false} previewMode={false} />
-      </Container>
+      </Box>
     </>
   )
 }
-

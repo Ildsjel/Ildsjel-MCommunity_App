@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Box, Typography, Card, CardContent, Stack, Chip, CircularProgress } from '@mui/material'
+import { Box, Typography, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import Sigil from '@/app/components/Sigil'
 import { useUser } from '@/app/context/UserContext'
@@ -10,253 +10,165 @@ import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-interface TopArtist {
-  artist_name: string
-  play_count: number
+const mono: React.CSSProperties = {
+  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+}
+
+interface SigilData {
+  genres: string[]
+  artists: string[]
 }
 
 export default function SigilPage() {
   const router = useRouter()
-  const { user, isLoading: loading } = useUser()
-  const [topArtists, setTopArtists] = useState<TopArtist[]>([])
-  const [artistsLoading, setArtistsLoading] = useState(false)
+  const { user, isLoading: userLoading } = useUser()
+  const [data, setData] = useState<SigilData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
-    if (!loading && !user) { router.push('/auth/login'); return }
-    if (!user) return
+    if (userLoading) return
+    if (!user) { router.push('/auth/login'); return }
 
     const token = localStorage.getItem('access_token')
-    if (!token || !user.source_accounts?.includes('spotify')) return
+    if (!token) { router.push('/auth/login'); return }
 
-    setArtistsLoading(true)
+    fetchSigil(token)
+  }, [user, userLoading, router])
+
+  const fetchSigil = (token: string) => {
+    setLoading(true)
     axios
-      .get(`${API_BASE}/api/v1/users/${user.id}/top-artists?limit=6`, {
-        headers: { Authorization: `Bearer ${token}` },
+      .get(`${API_BASE}/api/v1/sigil`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => setData(r.data))
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          router.push('/auth/login')
+        } else {
+          setData({ genres: [], artists: [] })
+        }
       })
-      .then((r) => setTopArtists(r.data?.artists ?? r.data ?? []))
-      .catch(() => {})
-      .finally(() => setArtistsLoading(false))
-  }, [user, loading, router])
-
-  if (loading) {
-    return (
-      <>
-        <Navigation />
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-          <CircularProgress />
-        </Box>
-      </>
-    )
+      .finally(() => setLoading(false))
   }
 
-  const hasSpotify = user?.source_accounts?.includes('spotify')
-  const sigilArtists = topArtists.slice(0, 6).map((a) => a.artist_name)
+  const handleSync = () => {
+    const token = localStorage.getItem('access_token')
+    if (!token) return
+    setSyncing(true)
+    axios
+      .post(`${API_BASE}/api/v1/sigil/sync`, {}, { headers: { Authorization: `Bearer ${token}` } })
+      .then(() => setTimeout(() => {
+        fetchSigil(token)
+        setSyncing(false)
+      }, 4000))
+      .catch(() => setSyncing(false))
+  }
+
+  if (userLoading || loading) return (
+    <>
+      <Navigation />
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={20} sx={{ color: 'var(--accent)' }} />
+      </Box>
+    </>
+  )
+
+  const hasData = (data?.artists.length ?? 0) > 0
+  const year = user?.created_at ? new Date(user.created_at).getFullYear() : '—'
 
   return (
     <>
       <Navigation />
-      <Box sx={{ maxWidth: 480, mx: 'auto', px: { xs: 2, md: 3 }, py: { xs: 2, md: 3 } }}>
+      <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 12 }}>
 
         {/* Header */}
-        <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography
-            sx={{
-              fontFamily:    '"JetBrains Mono", monospace',
-              fontSize:      '0.5625rem',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color:         'text.secondary',
-            }}
-          >
-            Sigil · {new Date().getFullYear()}
-          </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+            Metal-ID · {new Date().getFullYear()}
+          </span>
           <Box
-            sx={{
-              fontFamily:    '"JetBrains Mono", monospace',
-              fontSize:      '0.5625rem',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color:         'primary.main',
-              cursor:        'pointer',
-            }}
+            component="button"
+            onClick={handleSync}
+            disabled={syncing}
+            sx={{ background: 'none', border: 'none', cursor: syncing ? 'default' : 'pointer', p: 0 }}
           >
-            ↗ Share
+            <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: syncing ? 'var(--muted)' : 'var(--accent)' }}>
+              {syncing ? '↻ Syncing…' : '↻ Sync'}
+            </span>
           </Box>
         </Box>
 
-        <Typography
-          sx={{
-            fontFamily: '"EB Garamond", serif',
-            fontStyle:  'italic',
-            fontSize:   '0.875rem',
-            color:      'text.secondary',
-            textAlign:  'center',
-            mb:         0.5,
-          }}
-        >
+        <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.875rem', color: 'var(--muted)', textAlign: 'center', mb: 0.5 }}>
           — the reading of —
         </Typography>
-        <Typography
-          variant="h4"
-          sx={{ textAlign: 'center', mb: 2, fontSize: { xs: '1.35rem', md: '1.75rem' } }}
-        >
+        <Typography variant="h4" sx={{ textAlign: 'center', mb: 2.5, fontSize: '1.35rem', letterSpacing: '0.04em' }}>
           {user?.handle}
         </Typography>
 
-        {/* Sigil SVG */}
-        <Box
-          sx={{
-            width:   '100%',
-            aspectRatio: '1',
-            maxWidth: 320,
-            mx:      'auto',
-            mb:      2,
-            color:   '#141414',
-          }}
-        >
+        {/* Sigil */}
+        <Box sx={{ width: '100%', aspectRatio: '1', maxWidth: 320, mx: 'auto', mb: 2.5 }}>
           <Sigil
             size={300}
-            loading={!hasSpotify || artistsLoading}
-            artists={sigilArtists.length ? sigilArtists : undefined}
+            loading={!hasData}
+            genres={data?.genres.length ? data.genres : undefined}
+            artists={data?.artists.length ? data.artists : undefined}
             centerTop={user?.handle?.toUpperCase() ?? '—'}
-            centerBottom={`Est. ${new Date(user?.created_at ?? '').getFullYear() || '—'} · Lvl I`}
+            centerBottom={`Est. ${year} · Grimr`}
           />
         </Box>
 
-        {/* Stats row */}
-        <Box
-          sx={{
-            display:         'flex',
-            justifyContent:  'space-between',
-            px:              2,
-            mb:              2,
-            fontFamily:      '"JetBrains Mono", monospace',
-            fontSize:        '0.5625rem',
-            letterSpacing:   '0.12em',
-            textTransform:   'uppercase',
-            color:           'text.secondary',
-          }}
-        >
-          <span>Lvl <strong style={{ color: '#9A1A1A' }}>I</strong></span>
-          <span>Rarity <strong style={{ color: '#9A1A1A' }}>—</strong></span>
-          <span>Purity <strong style={{ color: '#9A1A1A' }}>—</strong></span>
-        </Box>
-
         {/* Genre chips */}
-        <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', justifyContent: 'center', mb: 2.5 }}>
-          <Chip label="Metal" size="small" />
-          {hasSpotify && <Chip label="Spotify Connected" size="small" sx={{ color: 'primary.main', borderColor: 'primary.main' }} />}
-        </Box>
-
-        {/* No Spotify callout */}
-        {!hasSpotify && (
-          <Card sx={{ mb: 2 }}>
-            <CardContent>
-              <Typography
-                sx={{
-                  fontFamily:    '"JetBrains Mono", monospace',
-                  fontSize:      '0.5625rem',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color:         'primary.main',
-                  mb:            0.75,
-                }}
-              >
-                Sigil · Unread
-              </Typography>
-              <Typography
-                sx={{ fontFamily: '"EB Garamond", serif', fontSize: '0.9375rem', color: 'text.secondary', mb: 1.5 }}
-              >
-                Connect Spotify so we can read your Metal-DNA and complete the sigil.
-              </Typography>
-              <Box
-                component="button"
-                onClick={() => router.push('/spotify/connect')}
-                sx={{
-                  width:         '100%',
-                  py:            1.25,
-                  border:        '1.5px solid',
-                  borderColor:   'primary.main',
-                  borderRadius:  '3px',
-                  background:    'primary.main',
-                  backgroundColor: '#9A1A1A',
-                  color:         '#120e18',
-                  fontFamily:    '"Archivo Black", sans-serif',
-                  fontSize:      '0.75rem',
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  cursor:        'pointer',
-                  boxShadow:     '1.5px 1.5px 0 rgba(0,0,0,0.5)',
-                }}
-              >
-                ◉ Link Spotify
+        {data?.genres.length ? (
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', justifyContent: 'center', mb: 2.5 }}>
+            {data.genres.map((g) => (
+              <Box key={g} sx={{
+                border: '1px solid rgba(216,207,184,0.25)', borderRadius: '3px',
+                px: 1, py: 0.25,
+              }}>
+                <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.12em', color: 'var(--muted)' }}>{g}</span>
               </Box>
-            </CardContent>
-          </Card>
+            ))}
+          </Box>
+        ) : null}
+
+        {/* No data callout */}
+        {!hasData && (
+          <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', p: '14px 16px', mb: 2, backgroundColor: '#120e18' }}>
+            <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', display: 'block', marginBottom: 8 }}>
+              Sigil · Unread
+            </span>
+            <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.875rem', color: 'var(--muted)', mb: 1.5, lineHeight: 1.5 }}>
+              Connect Spotify or Last.fm so we can read your Metal-DNA and complete the sigil.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box component="button" onClick={() => router.push('/spotify/connect')} sx={{ flex: 1, py: 1, border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px', background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink)', '&:hover': { borderColor: 'rgba(216,207,184,0.6)' } }}>
+                ◉ Spotify
+              </Box>
+              <Box component="button" onClick={() => router.push('/lastfm/connect')} sx={{ flex: 1, py: 1, border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px', background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink)', '&:hover': { borderColor: 'rgba(216,207,184,0.6)' } }}>
+                ◉ Last.fm
+              </Box>
+            </Box>
+          </Box>
         )}
 
-        {/* Anatomy — what the sigil encodes */}
-        <Stack spacing={1}>
-          <Card>
-            <CardContent sx={{ p: '10px 14px !important' }}>
-              <Typography
-                sx={{
-                  fontFamily:    '"JetBrains Mono", monospace',
-                  fontSize:      '0.5rem',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color:         'primary.main',
-                  mb:            0.5,
-                }}
-              >
-                Outer Ring · Genres
+        {/* Anatomy */}
+        <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', backgroundColor: '#120e18', overflow: 'hidden' }}>
+          {[
+            { label: 'Outer Ring · Genres', desc: data?.genres.length ? data.genres.join(' · ') : 'Your top metal subgenres from listening data' },
+            { label: 'Inner Points · Artists', desc: data?.artists.length ? data.artists.join(' · ') : 'Your most-played artists' },
+            { label: 'Heptagram · Core', desc: 'Calculated from play-depth × rarity × consistency' },
+          ].map((row, i) => (
+            <Box key={row.label} sx={{ p: '10px 14px', borderTop: i > 0 ? '1px solid rgba(216,207,184,0.08)' : 'none' }}>
+              <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', display: 'block', marginBottom: 4 }}>
+                {row.label}
+              </span>
+              <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.4 }}>
+                {row.desc}
               </Typography>
-              <Typography sx={{ fontFamily: '"EB Garamond", serif', fontSize: '0.875rem', color: 'text.secondary' }}>
-                Your top metal subgenres from listening data
-              </Typography>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent sx={{ p: '10px 14px !important' }}>
-              <Typography
-                sx={{
-                  fontFamily:    '"JetBrains Mono", monospace',
-                  fontSize:      '0.5rem',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color:         'primary.main',
-                  mb:            0.5,
-                }}
-              >
-                Inner Points · Top Artists
-              </Typography>
-              <Typography sx={{ fontFamily: '"EB Garamond", serif', fontSize: '0.875rem', color: 'text.secondary' }}>
-                {sigilArtists.length
-                  ? sigilArtists.join(' · ')
-                  : 'Connect Spotify to populate'}
-              </Typography>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent sx={{ p: '10px 14px !important' }}>
-              <Typography
-                sx={{
-                  fontFamily:    '"JetBrains Mono", monospace',
-                  fontSize:      '0.5rem',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color:         'primary.main',
-                  mb:            0.5,
-                }}
-              >
-                Heptagram · Level
-              </Typography>
-              <Typography sx={{ fontFamily: '"EB Garamond", serif', fontSize: '0.875rem', color: 'text.secondary' }}>
-                Calculated from play-depth × rarity × consistency
-              </Typography>
-            </CardContent>
-          </Card>
-        </Stack>
+            </Box>
+          ))}
+        </Box>
+
       </Box>
     </>
   )

@@ -6,6 +6,7 @@ import httpx
 import base64
 import secrets
 import hashlib
+from urllib.parse import urlencode
 from typing import Optional, Dict, List, Any
 from datetime import datetime, timedelta
 from app.config.settings import settings
@@ -20,11 +21,10 @@ class SpotifyClient:
     
     # Required scopes for scrobbling
     SCOPES = [
-        "user-read-recently-played",
-        "user-read-currently-playing",
-        "user-read-playback-state",
+        "user-read-private",
+        "user-read-email",
         "user-top-read",
-        "user-library-read"
+        "user-library-read",
     ]
     
     def __init__(self, access_token: Optional[str] = None):
@@ -74,11 +74,10 @@ class SpotifyClient:
             "scope": " ".join(SpotifyClient.SCOPES),
             "code_challenge_method": "S256",
             "code_challenge": code_challenge,
-            "show_dialog": "false"
+            "show_dialog": "true"
         }
         
-        query_string = "&".join(f"{k}={v}" for k, v in params.items())
-        return f"{SpotifyClient.AUTH_URL}?{query_string}"
+        return f"{SpotifyClient.AUTH_URL}?{urlencode(params)}"
     
     async def exchange_code_for_token(
         self, 
@@ -113,30 +112,19 @@ class SpotifyClient:
     
     async def refresh_access_token(self, refresh_token: str) -> Dict[str, Any]:
         """
-        Refresh access token using refresh token
-        
-        Args:
-            refresh_token: Refresh token
-        
-        Returns:
-            New token response dict
+        Refresh access token using refresh token (PKCE — client_id in body, no secret).
         """
-        # Basic auth with client credentials
-        auth_str = f"{settings.SPOTIFY_CLIENT_ID}:{settings.SPOTIFY_CLIENT_SECRET}"
-        auth_bytes = auth_str.encode('utf-8')
-        auth_b64 = base64.b64encode(auth_bytes).decode('utf-8')
-        
         data = {
             "grant_type": "refresh_token",
-            "refresh_token": refresh_token
+            "refresh_token": refresh_token,
+            "client_id": settings.SPOTIFY_CLIENT_ID,
         }
-        
+
         response = await self.client.post(
             self.TOKEN_URL,
             data=data,
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
-                "Authorization": f"Basic {auth_b64}"
             }
         )
         response.raise_for_status()
@@ -148,7 +136,10 @@ class SpotifyClient:
             f"{self.BASE_URL}/me",
             headers={"Authorization": f"Bearer {self.access_token}"}
         )
-        response.raise_for_status()
+        if not response.is_success:
+            raise Exception(
+                f"Spotify /me {response.status_code}: {response.text}"
+            )
         return response.json()
     
     async def get_currently_playing(self) -> Optional[Dict[str, Any]]:

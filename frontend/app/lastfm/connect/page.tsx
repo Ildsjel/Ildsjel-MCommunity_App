@@ -8,10 +8,11 @@ import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-interface SpotifyStatus {
+interface LastFmStatus {
   is_connected: boolean
+  username?: string
+  total_plays?: number
   total_artists?: number
-  last_sync_at?: string
 }
 
 const mono: React.CSSProperties = {
@@ -26,10 +27,10 @@ const sectionBox = {
   mb: 1.5,
 }
 
-export default function SpotifyConnectPage() {
+export default function LastFmConnectPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [status, setStatus] = useState<SpotifyStatus | null>(null)
+  const [status, setStatus] = useState<LastFmStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
@@ -40,19 +41,11 @@ export default function SpotifyConnectPage() {
     const token = localStorage.getItem('access_token')
     if (!token) { router.push('/auth/login'); return }
 
-    const code = searchParams.get('code')
-    const state = searchParams.get('state')
-    const errorParam = searchParams.get('error')
-
-    if (errorParam) {
-      setError(`Spotify declined: ${errorParam}`)
-      setLoading(false)
-      return
-    }
-    if (code && state) {
+    const lfmToken = searchParams.get('token')
+    if (lfmToken) {
       if (callbackFired.current) return
       callbackFired.current = true
-      handleCallback(code, state, token)
+      handleCallback(lfmToken, token)
     } else {
       fetchStatus(token)
     }
@@ -60,39 +53,29 @@ export default function SpotifyConnectPage() {
 
   const fetchStatus = async (token: string) => {
     try {
-      const res = await axios.get(`${API_BASE}/api/v1/spotify/status`, {
+      const res = await axios.get(`${API_BASE}/api/v1/lastfm/status`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setStatus(res.data)
     } catch {
-      setError('Could not load Spotify status')
+      setError('Could not load Last.fm status')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleCallback = async (code: string, rawState: string, token: string) => {
+  const handleCallback = async (lfmToken: string, authToken: string) => {
     setProcessing(true)
     try {
-      let state = rawState
-      let code_verifier: string | undefined
-      try {
-        const decoded = JSON.parse(atob(rawState))
-        state = decoded.s
-        code_verifier = decoded.cv
-      } catch {
-        // plain state — fall back to server-side lookup
-      }
-
       await axios.post(
-        `${API_BASE}/api/v1/spotify/auth/callback`,
-        { code, state, code_verifier },
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${API_BASE}/api/v1/lastfm/auth/callback`,
+        { token: lfmToken },
+        { headers: { Authorization: `Bearer ${authToken}` } }
       )
-      await fetchStatus(token)
-      window.history.replaceState({}, '', '/spotify/connect')
+      await fetchStatus(authToken)
+      window.history.replaceState({}, '', '/lastfm/connect')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to complete Spotify connection')
+      setError(err.response?.data?.detail || 'Failed to complete Last.fm connection')
       setLoading(false)
     } finally {
       setProcessing(false)
@@ -103,23 +86,19 @@ export default function SpotifyConnectPage() {
     setError('')
     try {
       const token = localStorage.getItem('access_token')
-      const res = await axios.get(`${API_BASE}/api/v1/spotify/auth/url`, {
+      const res = await axios.get(`${API_BASE}/api/v1/lastfm/auth/url`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      // Pack verifier into state so no browser storage is needed across origins
-      const packed = btoa(JSON.stringify({ s: res.data.state, cv: res.data.code_verifier }))
-      const url = new URL(res.data.auth_url)
-      url.searchParams.set('state', packed)
-      window.location.href = url.toString()
+      window.location.href = res.data.auth_url
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to start Spotify authorization')
+      setError(err.response?.data?.detail || 'Failed to start Last.fm authorization')
     }
   }
 
   const handleDisconnect = async () => {
     try {
       const token = localStorage.getItem('access_token')
-      await axios.post(`${API_BASE}/api/v1/spotify/disconnect`, {}, {
+      await axios.post(`${API_BASE}/api/v1/lastfm/disconnect`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       })
       setConfirmDisconnect(false)
@@ -146,15 +125,12 @@ export default function SpotifyConnectPage() {
       <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 12 }}>
 
         <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent, #c43a2a)', display: 'block', marginBottom: 20 }}>
-          ◈ Spotify Connection
+          ◈ Last.fm Connection
         </span>
 
-        {/* Error */}
         {error && (
-          <Box sx={{ ...sectionBox, borderColor: 'rgba(196,58,42,0.4)', mb: 2 }}>
-            <span style={{ ...mono, fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--accent, #c43a2a)' }}>
-              ✕ {error}
-            </span>
+          <Box sx={{ border: '1.5px solid rgba(196,58,42,0.4)', borderRadius: '3px', p: '10px 12px', mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ ...mono, fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--accent)' }}>✕ {error}</span>
             <Box component="button" onClick={() => setError('')} sx={{ ml: 1, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.5rem', fontFamily: 'var(--font-mono)' }}>
               dismiss
             </Box>
@@ -163,34 +139,37 @@ export default function SpotifyConnectPage() {
 
         {/* Status */}
         <Box sx={sectionBox}>
-          <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted, #7A756D)', display: 'block', marginBottom: 14 }}>
+          <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 14 }}>
             Status
           </span>
 
           {status?.is_connected ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {/* Connected indicator */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#6a9a7a', flexShrink: 0,
+                <Box sx={{
+                  width: 6, height: 6, borderRadius: '50%', backgroundColor: '#6a9a7a', flexShrink: 0,
                   animation: 'pulse 2s infinite',
                   '@keyframes pulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } },
                 }} />
                 <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.1em', color: '#6a9a7a', textTransform: 'uppercase' }}>
-                  Connected · syncing every 5 min
+                  Connected · {status.username}
                 </span>
               </Box>
 
-              {/* Artist count */}
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
                 <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '2rem', color: 'var(--ink)', lineHeight: 1 }}>
-                  {(status.total_artists || 0).toLocaleString()}
+                  {(status.total_plays || 0).toLocaleString()}
                 </Typography>
                 <span style={{ ...mono, fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--muted)', textTransform: 'uppercase' }}>
-                  top artists synced
+                  scrobbles
                 </span>
               </Box>
+              {(status.total_artists || 0) > 0 && (
+                <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.08em', color: 'var(--muted)' }}>
+                  {status.total_artists} top artists synced
+                </span>
+              )}
 
-              {/* Disconnect */}
               {!confirmDisconnect ? (
                 <Box component="button" onClick={() => setConfirmDisconnect(true)} sx={{
                   alignSelf: 'flex-start', background: 'none',
@@ -205,7 +184,7 @@ export default function SpotifyConnectPage() {
               ) : (
                 <Box sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '3px', p: '10px 12px', backgroundColor: 'rgba(196,58,42,0.05)' }}>
                   <span style={{ ...mono, fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--ink)', display: 'block', marginBottom: 8 }}>
-                    This will remove your Spotify connection and all synced data within 24h. Continue?
+                    This will remove your Last.fm connection and synced data. Continue?
                   </span>
                   <Box sx={{ display: 'flex', gap: 0.75 }}>
                     <Box component="button" onClick={handleDisconnect} sx={{ background: 'none', border: '1px solid rgba(196,58,42,0.5)', borderRadius: '3px', px: 1.25, py: 0.5, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}>
@@ -227,7 +206,7 @@ export default function SpotifyConnectPage() {
                 </span>
               </Box>
               <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
-                Link your Spotify account to start scrobbling your listening history automatically.
+                Link your Last.fm account to sync your top artists and scrobble history.
               </Typography>
               <Box component="button" onClick={handleConnect} sx={{
                 alignSelf: 'flex-start', background: 'none',
@@ -238,7 +217,7 @@ export default function SpotifyConnectPage() {
                 '&:hover': { borderColor: 'rgba(216,207,184,0.7)' },
                 transition: 'border-color 0.15s',
               }}>
-                Connect Spotify →
+                Connect Last.fm →
               </Box>
             </Box>
           )}
@@ -250,9 +229,9 @@ export default function SpotifyConnectPage() {
             What gets tracked
           </span>
           {[
-            'Top 50 artists — short, medium & long term',
-            'Genres and metadata for each artist',
-            'Refreshed automatically on reconnect',
+            'Top 50 artists overall — with play counts',
+            'Artists merged with Spotify data when both are connected',
+            'MusicBrainz IDs used for accurate deduplication',
           ].map((item) => (
             <Box key={item} sx={{ display: 'flex', gap: 1, mb: 0.75, alignItems: 'flex-start' }}>
               <span style={{ ...mono, fontSize: '0.4375rem', color: 'var(--muted)', marginTop: 2 }}>◆</span>
@@ -263,9 +242,8 @@ export default function SpotifyConnectPage() {
           ))}
         </Box>
 
-        {/* Privacy note */}
         <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.08em', color: 'rgba(122,117,109,0.7)', lineHeight: 1.6, display: 'block' }}>
-          Tokens are stored only in your account. Disconnecting removes all synced data within 24 hours (GDPR Art. 17).
+          Session keys are stored only in your account. Disconnecting removes all synced Last.fm data.
         </span>
 
       </Box>

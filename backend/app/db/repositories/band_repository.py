@@ -100,9 +100,25 @@ class BandRepository:
             return None
         return self._band_record_to_dict(record)
 
-    def list_bands(self, status: Optional[str] = None, skip: int = 0, limit: int = 50) -> List[dict]:
-        where = "WHERE b.status = $status" if status else ""
-        result = self.session.run(
+    def list_bands(
+        self,
+        status: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 50,
+        query: Optional[str] = None,
+    ) -> dict:
+        conditions = []
+        params: dict = {"skip": skip, "limit": limit}
+        if status:
+            conditions.append("b.status = $status")
+            params["status"] = status
+        if query:
+            conditions.append("toLower(b.name) CONTAINS toLower($search)")
+            params["search"] = query
+
+        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+        bands = self.session.run(
             f"""
             MATCH (b:Band)
             {where}
@@ -115,9 +131,16 @@ class BandRepository:
             ORDER BY b.name
             SKIP $skip LIMIT $limit
             """,
-            status=status, skip=skip, limit=limit,
+            **params,
         )
-        return [self._band_record_to_dict(r) for r in result]
+        total_rec = self.session.run(
+            f"MATCH (b:Band) {where} RETURN count(b) AS n",
+            **{k: v for k, v in params.items() if k not in ("skip", "limit")},
+        ).single()
+        return {
+            "bands": [self._band_record_to_dict(r) for r in bands],
+            "total": total_rec["n"] if total_rec else 0,
+        }
 
     def update_band(self, band_id: str, data: dict, updated_by_id: str) -> Optional[dict]:
         genre_ids = data.pop("genre_ids", None)

@@ -17,8 +17,8 @@ class BandService:
     def get_band_by_slug(self, slug: str) -> Optional[dict]:
         return self.repo.get_band_by_slug(slug)
 
-    def list_bands(self, status: Optional[str] = None, skip: int = 0, limit: int = 50) -> List[dict]:
-        return self.repo.list_bands(status, skip, limit)
+    def list_bands(self, status: Optional[str] = None, skip: int = 0, limit: int = 50, query: Optional[str] = None) -> dict:
+        return self.repo.list_bands(status, skip, limit, query)
 
     def update_band(self, band_id: str, data: dict, updated_by_id: str) -> Optional[dict]:
         return self.repo.update_band(band_id, data, updated_by_id)

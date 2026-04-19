@@ -2,78 +2,76 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Container,
-  Box,
-  Typography,
-  Button,
-  Alert,
-} from '@mui/material'
-import { ArrowBack } from '@mui/icons-material'
+import { Box, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import GalleryManager from '@/app/components/GalleryManager'
 import { useUser } from '@/app/context/UserContext'
 
+const lbl: React.CSSProperties = {
+  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+  fontSize: '0.5625rem',
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  color: 'var(--muted, #7A756D)',
+}
+
 export default function GalleryPage() {
   const router = useRouter()
-  const { user } = useUser()
+  const { user, isLoading } = useUser()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  if (!mounted) {
+  useEffect(() => {
+    if (!isLoading && !user) router.push('/auth/login')
+  }, [user, isLoading, router])
+
+  if (!mounted || isLoading) {
     return (
       <>
         <Navigation />
-        <Container>
-          <Box sx={{ py: 4 }}>
-            <Typography>Loading...</Typography>
-          </Box>
-        </Container>
+        <Box sx={{ display: 'flex', justifyContent: 'center', pt: 8 }}>
+          <CircularProgress size={18} sx={{ color: 'var(--accent)' }} />
+        </Box>
       </>
     )
   }
 
-  if (!user) {
-    return (
-      <>
-        <Navigation />
-        <Container>
-          <Box sx={{ py: 4 }}>
-            <Alert severity="warning">
-              Bitte melde dich an, um deine Galerie zu sehen.
-            </Alert>
-          </Box>
-        </Container>
-      </>
-    )
-  }
+  if (!user) return null
 
   return (
     <>
       <Navigation />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ mb: 3 }}>
-          <Button
-            startIcon={<ArrowBack />}
+      <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 10 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <span style={lbl}>◆ Gallery</span>
+          <Box
+            component="button"
             onClick={() => router.push('/profile')}
-            sx={{ mb: 2 }}
+            sx={{
+              background: 'none',
+              border: '1.5px solid rgba(216,207,184,0.2)',
+              borderRadius: '3px',
+              px: 1.25,
+              py: 0.5,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.5rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--ink)',
+              '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
+            }}
           >
-            Zurück zum Profil
-          </Button>
-          <Typography variant="h3" gutterBottom>
-            Meine Galerie
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Verwalte deine Bilder (max. 10 Bilder)
-          </Typography>
+            ← Profile
+          </Box>
         </Box>
 
         <GalleryManager userId={user.id} isOwnProfile={true} previewMode={false} />
-      </Container>
+      </Box>
     </>
   )
 }
-
