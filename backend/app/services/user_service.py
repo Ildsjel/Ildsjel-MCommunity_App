@@ -136,7 +136,12 @@ class UserService:
             onboarding_complete=user.get("onboarding_complete", False),
             profile_image_url=user.get("profile_image_url"),
             email_verified=user.get("email_verified", False),
-            is_active=user.get("is_active", False)
+            is_active=user.get("is_active", False),
+            role=user.get("role", "user"),
+            about_me=user.get("about_me"),
+            discoverable_by_name=user.get("discoverable_by_name", True),
+            discoverable_by_music=user.get("discoverable_by_music", True),
+            city_visible=user.get("city_visible", "city"),
         )
         
         return TokenResponse(
