@@ -25,6 +25,7 @@ const config: Config = {
         'muted-blue': '#346B8C',
       },
       fontFamily: {
+        fraktur: ['UnifrakturMaguntia', 'IM Fell DW Pica', 'Georgia', 'serif'],
         serif: ['IM Fell DW Pica', 'Georgia', 'serif'],
         sans: ['Roboto', 'Inter', 'Arial', 'sans-serif'],
       },

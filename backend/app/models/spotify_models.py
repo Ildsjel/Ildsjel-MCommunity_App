@@ -10,6 +10,7 @@ class SpotifyTokenRequest(BaseModel):
     """Request model for Spotify OAuth callback"""
     code: str
     state: Optional[str] = None
+    code_verifier: Optional[str] = None
 
 
 class SpotifyTokenResponse(BaseModel):
@@ -93,8 +94,6 @@ class SpotifyConnectionStatus(BaseModel):
     """User's Spotify connection status"""
     user_id: str
     is_connected: bool
-    access_token_expires_at: Optional[datetime] = None
-    scopes: List[str] = []
+    total_artists: int = 0
     last_sync_at: Optional[datetime] = None
-    total_plays: int = 0
 

@@ -1,37 +1,28 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import {
-  Card,
-  CardContent,
-  Typography,
-  List,
-  ListItem,
-  Box,
-  Chip,
-  CircularProgress,
-  Alert,
-  Divider,
-} from '@mui/material'
-import {
-  MusicNote,
-  EmojiEvents,
-} from '@mui/icons-material'
+import { Box, Typography, CircularProgress } from '@mui/material'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface TopArtist {
-  artist_id: string
-  artist_name: string
-  spotify_url: string | null
-  play_count: number
+  name: string
+  spotify_id: string | null
+  mbid: string | null
+  image_url: string | null
   rank: number
+  play_count: number
+  sources: string[]
 }
 
 interface TopArtistsProps {
   userId?: string
   isOwnProfile: boolean
+}
+
+const mono: React.CSSProperties = {
+  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
 }
 
 export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
@@ -44,176 +35,104 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
       setLoading(true)
       try {
         const token = localStorage.getItem('access_token')
-        const endpoint = isOwnProfile 
-          ? `${API_BASE}/api/v1/users/me/top-artists?limit=5`
-          : `${API_BASE}/api/v1/users/${userId}/top-artists?limit=5`
-        
-        const headers = isOwnProfile 
-          ? { Authorization: `Bearer ${token}` }
-          : {}
-
-        const response = await axios.get(endpoint, { headers })
-        setArtists(response.data)
-      } catch (err: any) {
-        console.error('Failed to load top artists:', err)
+        const response = await axios.get(
+          `${API_BASE}/api/v1/lastfm/top/artists?limit=5`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        setArtists(response.data.artists ?? [])
+      } catch {
         setError('Failed to load top artists')
       } finally {
         setLoading(false)
       }
     }
-
     fetchTopArtists()
   }, [userId, isOwnProfile])
 
-  const getMedalIcon = (rank: number) => {
-    if (rank === 1) return '🥇'
-    if (rank === 2) return '🥈'
-    if (rank === 3) return '🥉'
-    return null
-  }
+  if (loading) return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+      <CircularProgress size={16} sx={{ color: 'var(--accent, #c43a2a)' }} />
+    </Box>
+  )
 
-  const getMedalColor = (rank: number) => {
-    if (rank === 1) return '#FFD700' // Gold
-    if (rank === 2) return '#C0C0C0' // Silver
-    if (rank === 3) return '#CD7F32' // Bronze
-    return 'text.secondary'
-  }
+  if (error) return (
+    <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--muted)', letterSpacing: '0.1em' }}>
+      {error}
+    </Typography>
+  )
 
-  if (loading) {
-    return (
-      <Card>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardContent>
-          <Alert severity="error">{error}</Alert>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (artists.length === 0) {
-    return (
-      <Card>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-            <EmojiEvents color="primary" />
-            <Typography variant="h6">
-              Top 5 Artists
-            </Typography>
-          </Box>
-          <Alert severity="info">
-            {isOwnProfile 
-              ? 'No scrobbles yet. Connect your Spotify account and listen to music!'
-              : 'This user has no scrobbles yet.'}
-          </Alert>
-        </CardContent>
-      </Card>
-    )
-  }
+  if (artists.length === 0) return (
+    <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
+      {isOwnProfile
+        ? 'No top artists yet — connect Spotify or Last.fm to sync.'
+        : 'No top artists yet.'}
+    </Typography>
+  )
 
   return (
-    <Card>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <EmojiEvents color="primary" />
-          <Typography variant="h6">
-            Top 5 Artists
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+      {artists.map((artist, index) => (
+        <Box
+          key={artist.spotify_id ?? artist.name}
+          sx={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: 1.25,
+            py: '7px',
+            borderBottom: index < artists.length - 1 ? '1px solid rgba(216,207,184,0.07)' : 'none',
+          }}
+        >
+          <span style={{
+            ...mono,
+            fontSize: '0.5rem',
+            letterSpacing: '0.08em',
+            color: artist.rank === 1 ? 'var(--ink, #ece5d3)' : 'var(--muted, #7A756D)',
+            minWidth: 14,
+            textAlign: 'right',
+            flexShrink: 0,
+          }}>
+            {artist.rank}
+          </span>
+
+          <Typography sx={{
+            fontFamily: 'var(--font-serif)',
+            fontStyle: artist.rank === 1 ? 'italic' : 'normal',
+            fontSize: '0.8125rem',
+            color: artist.rank === 1 ? 'var(--ink, #ece5d3)' : 'rgba(236,229,211,0.75)',
+            flexGrow: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {artist.name}
           </Typography>
+
+          {artist.play_count > 0 && (
+            <span style={{
+              ...mono,
+              fontSize: '0.4375rem',
+              letterSpacing: '0.08em',
+              color: 'var(--muted, #7A756D)',
+              flexShrink: 0,
+            }}>
+              {artist.play_count.toLocaleString()}×
+            </span>
+          )}
         </Box>
+      ))}
 
-        <List sx={{ py: 0 }}>
-          {artists.map((artist, index) => (
-            <Box key={artist.artist_id}>
-              <ListItem
-                sx={{
-                  px: 0,
-                  py: 1.5,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                }}
-              >
-                {/* Rank */}
-                <Box
-                  sx={{
-                    minWidth: 40,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  {getMedalIcon(artist.rank) ? (
-                    <Typography variant="h5">
-                      {getMedalIcon(artist.rank)}
-                    </Typography>
-                  ) : (
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        color: 'text.secondary',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {artist.rank}
-                    </Typography>
-                  )}
-                </Box>
-
-                {/* Artist Info */}
-                <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                  <Typography
-                    variant="body1"
-                    fontWeight="bold"
-                    noWrap
-                    sx={{
-                      color: artist.rank <= 3 ? getMedalColor(artist.rank) : 'text.primary',
-                    }}
-                  >
-                    {artist.artist_name}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                    <MusicNote fontSize="small" sx={{ fontSize: 16, color: 'text.secondary' }} />
-                    <Typography variant="caption" color="text.secondary">
-                      {artist.play_count} {artist.play_count === 1 ? 'play' : 'plays'}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {/* Play Count Badge */}
-                <Chip
-                  label={artist.play_count}
-                  size="small"
-                  sx={{
-                    bgcolor: artist.rank <= 3 ? 'primary.main' : 'action.hover',
-                    color: artist.rank <= 3 ? 'primary.contrastText' : 'text.primary',
-                    fontWeight: 'bold',
-                  }}
-                />
-              </ListItem>
-              {index < artists.length - 1 && <Divider />}
-            </Box>
-          ))}
-        </List>
-
-        {artists.length > 0 && (
-          <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-            <Typography variant="caption" color="text.secondary" align="center" display="block">
-              Based on {artists.reduce((sum, a) => sum + a.play_count, 0)} plays
-            </Typography>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
+      <span style={{
+        ...mono,
+        fontSize: '0.4rem',
+        letterSpacing: '0.1em',
+        color: 'rgba(122,117,109,0.6)',
+        textTransform: 'uppercase',
+        display: 'block',
+        marginTop: 10,
+      }}>
+        via Spotify & Last.fm
+      </span>
+    </Box>
   )
 }
-

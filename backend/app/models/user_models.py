@@ -63,6 +63,7 @@ class UserResponse(UserBase):
     email_verified: bool = False
     is_active: bool = True
     about_me: Optional[str] = None
+    role: str = "user"
     # Privacy/Discoverability settings
     discoverable_by_name: bool = True
     discoverable_by_music: bool = True

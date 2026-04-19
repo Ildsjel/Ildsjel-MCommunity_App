@@ -47,32 +47,34 @@ export const theme = createTheme({
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
-      fontFamily: '"Playfair Display", serif',
-      fontWeight: 700,
+      fontFamily: '"UnifrakturMaguntia", "IM Fell DW Pica", Georgia, serif',
+      fontWeight: 400,
       fontSize: '3rem',
+      letterSpacing: '0.02em',
     },
     h2: {
-      fontFamily: '"Playfair Display", serif',
-      fontWeight: 700,
+      fontFamily: '"UnifrakturMaguntia", "IM Fell DW Pica", Georgia, serif',
+      fontWeight: 400,
       fontSize: '2.5rem',
+      letterSpacing: '0.02em',
     },
     h3: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: '"IM Fell DW Pica", Georgia, serif',
       fontWeight: 700,
       fontSize: '2rem',
     },
     h4: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: '"IM Fell DW Pica", Georgia, serif',
       fontWeight: 700,
       fontSize: '1.75rem',
     },
     h5: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: '"IM Fell DW Pica", Georgia, serif',
       fontWeight: 600,
       fontSize: '1.5rem',
     },
     h6: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: '"IM Fell DW Pica", Georgia, serif',
       fontWeight: 600,
       fontSize: '1.25rem',
     },

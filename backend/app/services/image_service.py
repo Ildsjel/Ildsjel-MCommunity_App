@@ -22,18 +22,24 @@ class ImageService:
     AVATAR_SIZE = (400, 400)
     GALLERY_SIZE = (1200, 1200)
     THUMBNAIL_SIZE = (300, 300)
-    
+    BAND_PHOTO_SIZE = (1200, 675)   # 16:9 banner
+    BAND_LOGO_SIZE = (400, 400)     # square
+
     def __init__(self, upload_dir: str = "/app/uploads"):
         """Initialize image service with upload directory"""
         self.upload_dir = Path(upload_dir)
         self.avatar_dir = self.upload_dir / "avatars"
         self.gallery_dir = self.upload_dir / "gallery"
         self.thumbnail_dir = self.upload_dir / "thumbnails"
-        
+        self.band_photo_dir = self.upload_dir / "bands" / "photos"
+        self.band_logo_dir = self.upload_dir / "bands" / "logos"
+
         # Create directories if they don't exist
         self.avatar_dir.mkdir(parents=True, exist_ok=True)
         self.gallery_dir.mkdir(parents=True, exist_ok=True)
         self.thumbnail_dir.mkdir(parents=True, exist_ok=True)
+        self.band_photo_dir.mkdir(parents=True, exist_ok=True)
+        self.band_logo_dir.mkdir(parents=True, exist_ok=True)
     
     def validate_image(self, file: UploadFile) -> None:
         """Validate image file"""
@@ -191,6 +197,57 @@ class ImageService:
         image.thumbnail(max_size, Image.Resampling.LANCZOS)
         return image
     
+    async def process_band_photo(self, file: UploadFile, band_id: str) -> Tuple[str, str]:
+        """Process and save a band photo (16:9). Returns (image_url, file_path)."""
+        self.validate_image(file)
+        content = await file.read()
+        if len(content) > self.MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail=f"File too large. Max size: {self.MAX_FILE_SIZE // 1024 // 1024}MB")
+        try:
+            image = Image.open(io.BytesIO(content))
+            image = self._to_rgb(image)
+            image = self._resize_and_crop(image, self.BAND_PHOTO_SIZE)
+            file_ext = Path(file.filename or "image.jpg").suffix.lower()
+            filename = f"{band_id}_photo_{uuid.uuid4().hex[:8]}{file_ext}"
+            file_path = self.band_photo_dir / filename
+            image.save(file_path, quality=88, optimize=True)
+            return f"/uploads/bands/photos/{filename}", str(file_path)
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to process image: {str(e)}")
+
+    async def process_band_logo(self, file: UploadFile, band_id: str) -> Tuple[str, str]:
+        """Process and save a band logo (square). Returns (image_url, file_path)."""
+        self.validate_image(file)
+        content = await file.read()
+        if len(content) > self.MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail=f"File too large. Max size: {self.MAX_FILE_SIZE // 1024 // 1024}MB")
+        try:
+            image = Image.open(io.BytesIO(content))
+            image = self._to_rgb(image)
+            image = self._resize_and_crop(image, self.BAND_LOGO_SIZE)
+            file_ext = Path(file.filename or "image.jpg").suffix.lower()
+            filename = f"{band_id}_logo_{uuid.uuid4().hex[:8]}{file_ext}"
+            file_path = self.band_logo_dir / filename
+            image.save(file_path, quality=88, optimize=True)
+            return f"/uploads/bands/logos/{filename}", str(file_path)
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to process image: {str(e)}")
+
+    def _to_rgb(self, image: Image.Image) -> Image.Image:
+        if image.mode in ('RGBA', 'LA', 'P'):
+            background = Image.new('RGB', image.size, (255, 255, 255))
+            if image.mode == 'P':
+                image = image.convert('RGBA')
+            background.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
+            return background
+        elif image.mode != 'RGB':
+            return image.convert('RGB')
+        return image
+
     def delete_image(self, file_path: str) -> bool:
         """Delete an image file"""
         try:

@@ -8,6 +8,9 @@
 /* IM Fell DW Pica for headings - fallback to Georgia */
 @import url('https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital,wght@0,400;0,700;1,400&display=swap');
 
+/* UnifrakturMaguntia - Blackletter/Fraktur for large display headings */
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap');
+
 :root {
   --foreground-rgb: 234, 234, 234;
   --background-start-rgb: 10, 10, 10;
@@ -43,8 +46,15 @@ body {
   background: #555555;
 }
 
-/* Heading styles with serif font */
-h1, h2, h3, h4, h5, h6 {
+/* Large display headings in Fraktur */
+h1, h2 {
+  font-family: 'UnifrakturMaguntia', 'IM Fell DW Pica', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* Smaller headings keep serif */
+h3, h4, h5, h6 {
   font-family: 'IM Fell DW Pica', Georgia, serif;
   font-weight: 700;
 }

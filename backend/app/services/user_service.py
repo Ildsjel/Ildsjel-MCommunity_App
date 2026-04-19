@@ -175,7 +175,8 @@ class UserService:
             about_me=user.get("about_me"),
             discoverable_by_name=user.get("discoverable_by_name", True),
             discoverable_by_music=user.get("discoverable_by_music", True),
-            city_visible=user.get("city_visible", "city")
+            city_visible=user.get("city_visible", "city"),
+            role=user.get("role", "user")
         )
     
     def update_user_profile(self, user_id: str, updates: Dict) -> Optional[UserResponse]:
