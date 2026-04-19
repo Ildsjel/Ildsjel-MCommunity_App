@@ -7,10 +7,10 @@ import axios from 'axios'
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface TopArtist {
-  artist_id: string
-  artist_name: string
-  spotify_url: string | null
-  play_count: number
+  name: string
+  spotify_id: string
+  genres: string[]
+  image_url: string | null
   rank: number
 }
 
@@ -33,12 +33,11 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
       setLoading(true)
       try {
         const token = localStorage.getItem('access_token')
-        const endpoint = isOwnProfile
-          ? `${API_BASE}/api/v1/users/me/top-artists?limit=5`
-          : `${API_BASE}/api/v1/users/${userId}/top-artists?limit=5`
-        const headers = isOwnProfile ? { Authorization: `Bearer ${token}` } : {}
-        const response = await axios.get(endpoint, { headers })
-        setArtists(response.data)
+        const response = await axios.get(
+          `${API_BASE}/api/v1/spotify/top/artists?limit=5`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        setArtists(response.data.artists ?? [])
       } catch (err: any) {
         setError('Failed to load top artists')
       } finally {
@@ -48,7 +47,7 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
     fetchTopArtists()
   }, [userId, isOwnProfile])
 
-  const totalPlays = artists.reduce((s, a) => s + a.play_count, 0)
+  const totalArtists = artists.length
 
   return (
     <Box sx={{
@@ -85,8 +84,8 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
       {!loading && !error && artists.length === 0 && (
         <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
           {isOwnProfile
-            ? 'No scrobbles yet — connect Spotify and start listening.'
-            : 'No scrobbles yet.'}
+            ? 'No top artists yet — connect Spotify to sync.'
+            : 'No top artists yet.'}
         </Typography>
       )}
 
@@ -94,7 +93,7 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
           {artists.map((artist, index) => (
             <Box
-              key={artist.artist_id}
+              key={artist.spotify_id}
               sx={{
                 display: 'flex',
                 alignItems: 'baseline',
@@ -128,19 +127,8 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}>
-                {artist.artist_name}
+                {artist.name}
               </Typography>
-
-              {/* Play count */}
-              <span style={{
-                ...mono,
-                fontSize: '0.4375rem',
-                letterSpacing: '0.08em',
-                color: 'var(--muted, #7A756D)',
-                flexShrink: 0,
-              }}>
-                {artist.play_count}×
-              </span>
             </Box>
           ))}
 
@@ -154,7 +142,7 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
             display: 'block',
             marginTop: 10,
           }}>
-            {totalPlays} total plays
+            via Spotify · 6 months
           </span>
         </Box>
       )}
