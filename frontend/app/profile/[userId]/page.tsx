@@ -12,6 +12,7 @@ import Navigation from '@/app/components/Navigation'
 import GalleryManager from '@/app/components/GalleryManager'
 import TopArtists from '@/app/components/TopArtists'
 import { friendsApi, FriendStatus } from '@/lib/friendsApi'
+import { messagesApi } from '@/lib/messagesApi'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -79,6 +80,18 @@ export default function UserProfilePage() {
   const [error, setError] = useState('')
   const [friendStatus, setFriendStatus] = useState<FriendStatus>('none')
   const [friendLoading, setFriendLoading] = useState(false)
+  const [msgLoading, setMsgLoading] = useState(false)
+
+  const handleMessage = async () => {
+    if (!profileUser) return
+    setMsgLoading(true)
+    try {
+      const conv = await messagesApi.startConversation(profileUser.id)
+      router.push(`/messages/${conv.id}`)
+    } catch { /* silent */ } finally {
+      setMsgLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!userId) return
@@ -268,9 +281,11 @@ export default function UserProfilePage() {
               {friendLoading ? '…' : '⚔ COMRADES — UNFRIEND'}
             </button>
           )}
-          <button style={btn()} disabled>
-            ☍ MESSAGE
-          </button>
+          {friendStatus === 'accepted' && (
+            <button style={{ ...btn(), cursor: 'pointer' }} onClick={handleMessage} disabled={msgLoading}>
+              {msgLoading ? '…' : '☍ MESSAGE'}
+            </button>
+          )}
         </Box>
 
         {/* Shared Devotion */}

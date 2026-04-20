@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Box, Avatar, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import { friendsApi, FriendUser, GlobeMarker } from '@/lib/friendsApi'
+import { messagesApi } from '@/lib/messagesApi'
 import GlobeWidget from '@/app/components/GlobeWidget'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -28,6 +29,17 @@ export default function FriendsPage() {
   const [loading, setLoading] = useState(true)
   const [pageLoading, setPageLoading] = useState(false)
   const [responding, setResponding] = useState<string | null>(null)
+  const [msgLoading, setMsgLoading] = useState<string | null>(null)
+
+  const handleMessage = async (friendId: string) => {
+    setMsgLoading(friendId)
+    try {
+      const conv = await messagesApi.startConversation(friendId)
+      router.push(`/messages/${conv.id}`)
+    } catch { /* silent */ } finally {
+      setMsgLoading(null)
+    }
+  }
 
   const loadPage = async (p: number) => {
     setPageLoading(true)
@@ -188,8 +200,8 @@ export default function FriendsPage() {
                           {friend.handle}
                         </span>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          <Box component="button" disabled sx={{ border: '1px solid rgba(216,207,184,0.12)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'default', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'rgba(216,207,184,0.2)' }}>
-                            MSG
+                          <Box component="button" onClick={() => handleMessage(friend.id)} disabled={msgLoading === friend.id} sx={{ border: '1px solid rgba(216,207,184,0.25)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { borderColor: 'rgba(216,207,184,0.5)', color: 'var(--ink)' } }}>
+                            {msgLoading === friend.id ? '…' : 'MSG'}
                           </Box>
                           <Box component="button" onClick={() => handleUnfriend(friend.id)} sx={{ border: '1px solid rgba(216,207,184,0.15)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--accent)', borderColor: 'rgba(196,58,42,0.3)' } }}>
                             REMOVE

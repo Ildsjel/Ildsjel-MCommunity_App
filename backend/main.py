@@ -10,7 +10,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from pathlib import Path
 from app.config.settings import settings
-from app.api.v1 import auth, users, spotify, lastfm, gallery, stats, search, comments, admin, bands, favourites, sigil, globe, friends
+from app.api.v1 import auth, users, spotify, lastfm, gallery, stats, search, comments, admin, bands, favourites, sigil, globe, friends, messages
 from app.db.neo4j_driver import neo4j_driver
 
 
@@ -91,6 +91,7 @@ app.include_router(favourites.router, prefix="/api/v1")
 app.include_router(sigil.router, prefix="/api/v1")
 app.include_router(globe.router, prefix="/api/v1")
 app.include_router(friends.router, prefix="/api/v1")
+app.include_router(messages.router, prefix="/api/v1")
 
 # Mount static files for uploads
 uploads_dir = Path("/app/uploads")
