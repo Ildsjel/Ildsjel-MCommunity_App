@@ -142,6 +142,20 @@ class BandRepository:
             "total": total_rec["n"] if total_rec else 0,
         }
 
+    def draft_count(self) -> int:
+        result = self.session.run("MATCH (b:Band {status: 'draft'}) RETURN count(b) AS n")
+        record = result.single()
+        return record["n"] if record else 0
+
+    def publish_all_drafts(self) -> int:
+        from datetime import datetime
+        result = self.session.run(
+            "MATCH (b:Band {status: 'draft'}) SET b.status = 'published', b.updated_at = $now RETURN count(b) AS n",
+            now=datetime.utcnow().isoformat(),
+        )
+        record = result.single()
+        return record["n"] if record else 0
+
     def update_band(self, band_id: str, data: dict, updated_by_id: str) -> Optional[dict]:
         genre_ids = data.pop("genre_ids", None)
         tag_ids = data.pop("tag_ids", None)

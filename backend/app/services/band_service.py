@@ -20,6 +20,12 @@ class BandService:
     def list_bands(self, status: Optional[str] = None, skip: int = 0, limit: int = 50, query: Optional[str] = None) -> dict:
         return self.repo.list_bands(status, skip, limit, query)
 
+    def draft_count(self) -> int:
+        return self.repo.draft_count()
+
+    def publish_all_drafts(self) -> int:
+        return self.repo.publish_all_drafts()
+
     def update_band(self, band_id: str, data: dict, updated_by_id: str) -> Optional[dict]:
         return self.repo.update_band(band_id, data, updated_by_id)
 

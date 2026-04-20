@@ -48,6 +48,8 @@ export const adminAPI = {
 
   // Bands
   listBands: (status?: string) => req<any[]>('GET', `/admin/bands${status ? `?status=${status}` : ''}`),
+  draftCount: () => req<{ count: number }>('GET', '/admin/bands/draft-count'),
+  publishAllDrafts: () => req<{ published: number }>('POST', '/admin/bands/publish-all-drafts'),
   createBand: (data: unknown) => req<any>('POST', '/admin/bands', data),
   updateBand: (id: string, data: unknown) => req<any>('PATCH', `/admin/bands/${id}`, data),
   deleteBand: (id: string) => req<void>('DELETE', `/admin/bands/${id}`),

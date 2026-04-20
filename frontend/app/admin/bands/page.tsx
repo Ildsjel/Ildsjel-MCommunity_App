@@ -27,13 +27,18 @@ export default function AdminBandsPage() {
   const [filter, setFilter] = useState<string>('all')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [publishingAll, setPublishingAll] = useState(false)
+  const [draftCount, setDraftCount] = useState(0)
 
   const load = async () => {
     setLoading(true)
     setError(null)
     try {
-      const data = await adminAPI.listBands(filter === 'all' ? undefined : filter)
+      const [data, countRes] = await Promise.all([
+        adminAPI.listBands(filter === 'all' ? undefined : filter),
+        adminAPI.draftCount(),
+      ])
       setBands(data)
+      setDraftCount(countRes.count)
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -57,14 +62,14 @@ export default function AdminBandsPage() {
   }
 
   const handlePublishAll = async () => {
-    const drafts = bands.filter((b) => b.status === 'draft')
-    if (drafts.length === 0) return
-    if (!confirm(`Publish all ${drafts.length} draft band${drafts.length === 1 ? '' : 's'}?`)) return
+    if (draftCount === 0) return
+    if (!confirm(`Publish all ${draftCount} draft band${draftCount === 1 ? '' : 's'}?`)) return
     setPublishingAll(true)
     try {
-      const updated = await Promise.all(drafts.map((b) => adminAPI.updateBand(b.id, { status: 'published' })))
-      const updatedMap = Object.fromEntries(updated.map((b) => [b.id, b]))
-      setBands((prev) => prev.map((b) => updatedMap[b.id] ?? b))
+      const res = await adminAPI.publishAllDrafts()
+      setDraftCount(0)
+      await load()
+      alert(`Published ${res.published} band${res.published === 1 ? '' : 's'}.`)
     } catch (e: any) {
       alert(e.message)
     } finally {
@@ -107,7 +112,7 @@ export default function AdminBandsPage() {
             </Box>
           ))}
         </Box>
-        {bands.some((b) => b.status === 'draft') && (
+        {draftCount > 0 && (
           <Box
             component="button"
             onClick={handlePublishAll}
@@ -123,7 +128,7 @@ export default function AdminBandsPage() {
               '&:hover:not(:disabled)': { borderColor: '#6a9a7a' },
             }}
           >
-            {publishingAll ? '…' : `↑ PUBLISH ALL DRAFTS (${bands.filter((b) => b.status === 'draft').length})`}
+            {publishingAll ? '…' : `↑ PUBLISH ALL DRAFTS (${draftCount})`}
           </Box>
         )}
       </Box>
