@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 from app.auth.jwt_handler import get_current_user
 from app.db.neo4j_driver import get_neo4j_session
 from app.services.friend_service import FriendService
@@ -81,10 +82,35 @@ async def unfriend(
 
 @router.get("/")
 async def list_friends(
+    skip: int = 0,
+    limit: int = 25,
     current_user: dict = Depends(get_current_user),
     session=Depends(get_neo4j_session),
 ):
-    friends = FriendService(session).list_friends(current_user["id"])
+    svc = FriendService(session)
+    friends = svc.list_friends(current_user["id"], skip, limit)
+    total = svc.count_friends(current_user["id"])
+    return {"friends": friends, "total": total}
+
+
+@router.get("/preview")
+async def list_friends_preview(
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_neo4j_session),
+):
+    """Top 3 friends for profile widget, ordered by most recently friended."""
+    friends = FriendService(session).list_friends(current_user["id"], skip=0, limit=3)
+    return friends
+
+
+@router.get("/of/{user_id}")
+async def list_user_friends_preview(
+    user_id: str,
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_neo4j_session),
+):
+    """Top 3 friends of another user — for profile preview."""
+    friends = FriendService(session).list_user_friends_preview(user_id, limit=3)
     return friends
 
 

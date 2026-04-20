@@ -26,6 +26,7 @@ import { useUser } from '@/app/context/UserContext'
 import { userAPI } from '@/lib/api'
 import { galleryAPI } from '@/lib/galleryApi'
 import { adminAPI } from '@/lib/adminAPI'
+import { friendsApi, FriendUser } from '@/lib/friendsApi'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -96,6 +97,7 @@ export default function ProfilePage() {
   const [lastFmConnected, setLastFmConnected] = useState(false)
   const [sigilData, setSigilData] = useState<{ genres: string[]; artists: string[] }>({ genres: [], artists: [] })
   const [fits, setFits] = useState<Array<{ user_id: string; handle: string; compatibility_score: number; profile_image_url?: string }>>([])
+  const [friendsPreview, setFriendsPreview] = useState<FriendUser[]>([])
 
 
   const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,7 +125,7 @@ export default function ProfilePage() {
       try {
         const token = localStorage.getItem('access_token')
         if (!token) { router.push('/auth/login'); return }
-        const [userData, lfmStatus, sigilRes, fitsRes] = await Promise.all([
+        const [userData, lfmStatus, sigilRes, fitsRes, friendsRes] = await Promise.all([
           userAPI.getMe(),
           axios.get(`${API_BASE}/api/v1/lastfm/status`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -134,6 +136,7 @@ export default function ProfilePage() {
           axios.get(`${API_BASE}/api/v1/search/random?limit=2`, {
             headers: { Authorization: `Bearer ${token}` },
           }).then(r => r.data.hits ?? []).catch(() => []),
+          friendsApi.listFriendsPreview().catch(() => [] as FriendUser[]),
         ])
         setUser(userData)
         setAboutMeText(userData.about_me || '')
@@ -142,6 +145,7 @@ export default function ProfilePage() {
         setLastFmConnected(lfmStatus.is_connected)
         setSigilData(sigilRes)
         setFits(fitsRes)
+        setFriendsPreview(friendsRes)
         if (userData.source_accounts.includes('spotify')) fetchTimeline(token)
       } catch (err: any) {
         setError('Failed to load profile')
@@ -248,12 +252,6 @@ export default function ProfilePage() {
         {/* Header row */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <span style={lbl}>ME</span>
-          <span
-            style={{ ...lbl, cursor: 'pointer' }}
-            onClick={() => setEditAboutMe(!editAboutMe)}
-          >
-            ⚙ EDIT
-          </span>
         </Box>
 
         {/* Sigil */}
@@ -325,7 +323,7 @@ export default function ProfilePage() {
         <div style={{ ...box, marginBottom: '12px' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75 }}>
             <span style={lbl}>ABOUT</span>
-            {editAboutMe && (
+            {editAboutMe ? (
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <span
                   style={{ ...lbl, cursor: 'pointer' }}
@@ -340,6 +338,13 @@ export default function ProfilePage() {
                   {aboutMeSaving ? '…' : '✓ SAVE'}
                 </span>
               </Box>
+            ) : (
+              <span
+                style={{ ...lbl, cursor: 'pointer' }}
+                onClick={() => setEditAboutMe(true)}
+              >
+                ⚙ EDIT
+              </span>
             )}
           </Box>
           {editAboutMe ? (
@@ -395,24 +400,56 @@ export default function ProfilePage() {
           ))}
         </Box>
 
-        {/* Globe View entry */}
-        <Box
-          onClick={() => router.push('/globe')}
-          sx={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
-            p: '9px 12px', mb: 2, cursor: 'pointer', backgroundColor: '#120e18',
-            '&:hover': { borderColor: 'rgba(216,207,184,0.3)' },
-            transition: 'border-color 0.15s',
-          }}
-        >
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-            <span style={{ ...lbl, color: 'var(--accent)' }}>◎ Globe View</span>
-            <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--muted)' }}>
-              {[user.city, user.country].filter(Boolean).join(', ') || 'Atlas of the Devoted'}
-            </Typography>
+        {/* Friends section */}
+        <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', p: '10px 12px', mb: 2, backgroundColor: '#120e18' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: friendsPreview.length > 0 ? 1.25 : 0 }}>
+            <span style={{ ...lbl, color: 'var(--accent)' }}>⚔ FRIENDS</span>
+            <span
+              style={{ ...lbl, fontSize: '0.5rem', cursor: 'pointer', color: 'var(--muted)' }}
+              onClick={() => router.push('/friends')}
+            >
+              VIEW ALL →
+            </span>
           </Box>
-          <span style={{ ...lbl, color: 'var(--muted)', fontSize: '0.625rem' }}>→</span>
+
+          {friendsPreview.length === 0 ? (
+            <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', pt: 0.5 }}>
+              No comrades yet.
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              {friendsPreview.map((friend) => (
+                <Box key={friend.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                  <Box
+                    onClick={() => router.push(`/profile/${friend.id}`)}
+                    sx={{
+                      width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                      backgroundColor: 'var(--ink)', cursor: 'pointer',
+                      overflow: 'hidden', border: '1px solid rgba(216,207,184,0.15)',
+                      backgroundImage: friend.profile_image_url ? `url(${API_BASE}${friend.profile_image_url})` : 'none',
+                      backgroundSize: 'cover', backgroundPosition: 'center',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    {!friend.profile_image_url && (
+                      <span style={{ ...lbl, fontSize: '0.6rem', color: 'var(--muted)' }}>
+                        {friend.handle.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </Box>
+                  <span
+                    style={{ ...lbl, flex: 1, color: 'var(--ink)', fontSize: '0.5625rem', cursor: 'pointer', letterSpacing: '0.1em' }}
+                    onClick={() => router.push(`/profile/${friend.id}`)}
+                  >
+                    {friend.handle}
+                  </span>
+                  <span style={{ ...lbl, fontSize: '0.4375rem', color: 'rgba(216,207,184,0.25)', letterSpacing: '0.1em' }}>
+                    MSG
+                  </span>
+                </Box>
+              ))}
+            </Box>
+          )}
         </Box>
 
         {/* Link Your Listening */}

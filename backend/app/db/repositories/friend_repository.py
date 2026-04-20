@@ -97,14 +97,43 @@ class FriendRepository:
         record = result.single()
         return bool(record and record["ok"])
 
-    def list_friends(self, my_id: str) -> List[dict]:
+    def list_friends(self, my_id: str, skip: int = 0, limit: int = 25) -> List[dict]:
         result = self.session.run(
             """
-            MATCH (me:User {id: $my_id})-[:FRIEND_REQUEST {status: 'accepted'}]-(friend:User)
-            RETURN friend.id AS id, friend.handle AS handle, friend.profile_image_url AS profile_image_url
-            ORDER BY friend.handle
+            MATCH (me:User {id: $my_id})-[r:FRIEND_REQUEST {status: 'accepted'}]-(friend:User)
+            RETURN friend.id AS id, friend.handle AS handle,
+                   friend.profile_image_url AS profile_image_url,
+                   coalesce(r.updated_at, r.created_at) AS since
+            ORDER BY since DESC
+            SKIP $skip
+            LIMIT $limit
             """,
+            my_id=my_id, skip=skip, limit=limit,
+        )
+        return [
+            {"id": r["id"], "handle": r["handle"], "profile_image_url": r["profile_image_url"], "since": r["since"]}
+            for r in result
+        ]
+
+    def count_friends(self, my_id: str) -> int:
+        result = self.session.run(
+            "MATCH (me:User {id: $my_id})-[:FRIEND_REQUEST {status: 'accepted'}]-(friend:User) RETURN count(friend) AS n",
             my_id=my_id,
+        )
+        record = result.single()
+        return record["n"] if record else 0
+
+    def list_user_friends_preview(self, user_id: str, limit: int = 3) -> List[dict]:
+        """Returns top N friends of any user — for profile preview widgets."""
+        result = self.session.run(
+            """
+            MATCH (u:User {id: $user_id})-[r:FRIEND_REQUEST {status: 'accepted'}]-(friend:User)
+            RETURN friend.id AS id, friend.handle AS handle,
+                   friend.profile_image_url AS profile_image_url
+            ORDER BY coalesce(r.updated_at, r.created_at) DESC
+            LIMIT $limit
+            """,
+            user_id=user_id, limit=limit,
         )
         return [{"id": r["id"], "handle": r["handle"], "profile_image_url": r["profile_image_url"]} for r in result]
 

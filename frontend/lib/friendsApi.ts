@@ -25,7 +25,12 @@ export interface FriendUser {
   id: string
   handle: string
   profile_image_url?: string
-  created_at?: string
+  since?: string
+}
+
+export interface FriendsPage {
+  friends: FriendUser[]
+  total: number
 }
 
 export interface GlobeMarker {
@@ -45,6 +50,9 @@ export const friendsApi = {
     req<{ message: string }>('POST', `/friends/respond/${requesterId}`, { action }),
   cancelRequest: (otherId: string) => req<void>('DELETE', `/friends/request/${otherId}`),
   unfriend: (friendId: string) => req<void>('DELETE', `/friends/${friendId}`),
-  listFriends: () => req<FriendUser[]>('GET', '/friends/'),
+  listFriends: (skip = 0, limit = 25) =>
+    req<FriendsPage>('GET', `/friends/?skip=${skip}&limit=${limit}`),
+  listFriendsPreview: () => req<FriendUser[]>('GET', '/friends/preview'),
+  listUserFriendsPreview: (userId: string) => req<FriendUser[]>('GET', `/friends/of/${userId}`),
   listPending: () => req<FriendUser[]>('GET', '/friends/pending'),
 }
