@@ -7,12 +7,11 @@ import {
   Typography,
   Avatar,
   CircularProgress,
-  Alert,
-  Button,
 } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import GalleryManager from '@/app/components/GalleryManager'
 import TopArtists from '@/app/components/TopArtists'
+import { friendsApi, FriendStatus } from '@/lib/friendsApi'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -55,6 +54,20 @@ const box: React.CSSProperties = {
   marginBottom: '8px',
 }
 
+const btn = (accent?: boolean, danger?: boolean): React.CSSProperties => ({
+  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+  fontSize: '0.5625rem',
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  border: `1.5px solid ${danger ? 'rgba(196,58,42,0.5)' : accent ? 'rgba(154,26,26,0.6)' : 'rgba(216,207,184,0.25)'}`,
+  borderRadius: '3px',
+  background: 'none',
+  cursor: 'pointer',
+  color: danger ? 'var(--accent)' : accent ? 'var(--accent)' : 'var(--muted)',
+  padding: '6px 12px',
+  flex: 1,
+})
+
 export default function UserProfilePage() {
   const params = useParams()
   const router = useRouter()
@@ -64,6 +77,8 @@ export default function UserProfilePage() {
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [friendStatus, setFriendStatus] = useState<FriendStatus>('none')
+  const [friendLoading, setFriendLoading] = useState(false)
 
   useEffect(() => {
     if (!userId) return
@@ -71,10 +86,14 @@ export default function UserProfilePage() {
       try {
         const token = localStorage.getItem('access_token')
         if (!token) { router.push('/auth/login'); return }
-        const res = await axios.get(`${API_BASE}/api/v1/users/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const [res, statusRes] = await Promise.all([
+          axios.get(`${API_BASE}/api/v1/users/${userId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          friendsApi.getStatus(userId).catch(() => ({ status: 'none' as FriendStatus })),
+        ])
         setUser(res.data)
+        setFriendStatus(statusRes.status)
         if (res.data.source_accounts.includes('spotify')) {
           try {
             const t = await axios.get(`${API_BASE}/api/v1/spotify/timeline/${userId}?limit=6`, {
@@ -92,6 +111,56 @@ export default function UserProfilePage() {
     fetchProfile()
   }, [userId, router])
 
+  const handleSendRequest = async () => {
+    setFriendLoading(true)
+    try {
+      await friendsApi.sendRequest(userId)
+      setFriendStatus('pending_sent')
+    } catch { /* silent */ } finally {
+      setFriendLoading(false)
+    }
+  }
+
+  const handleAccept = async () => {
+    setFriendLoading(true)
+    try {
+      await friendsApi.respond(userId, 'accept')
+      setFriendStatus('accepted')
+    } catch { /* silent */ } finally {
+      setFriendLoading(false)
+    }
+  }
+
+  const handleDecline = async () => {
+    setFriendLoading(true)
+    try {
+      await friendsApi.respond(userId, 'decline')
+      setFriendStatus('none')
+    } catch { /* silent */ } finally {
+      setFriendLoading(false)
+    }
+  }
+
+  const handleCancel = async () => {
+    setFriendLoading(true)
+    try {
+      await friendsApi.cancelRequest(userId)
+      setFriendStatus('none')
+    } catch { /* silent */ } finally {
+      setFriendLoading(false)
+    }
+  }
+
+  const handleUnfriend = async () => {
+    setFriendLoading(true)
+    try {
+      await friendsApi.unfriend(userId)
+      setFriendStatus('none')
+    } catch { /* silent */ } finally {
+      setFriendLoading(false)
+    }
+  }
+
   if (loading) return (
     <>
       <Navigation />
@@ -104,7 +173,9 @@ export default function UserProfilePage() {
   if (error || !user) return (
     <>
       <Navigation />
-      <Box sx={{ p: 2 }}><Alert severity="error">{error || 'User not found'}</Alert></Box>
+      <Box sx={{ p: 2 }}>
+        <span style={{ ...lbl, color: 'var(--accent)' }}>{error || 'User not found.'}</span>
+      </Box>
     </>
   )
 
@@ -116,7 +187,6 @@ export default function UserProfilePage() {
 
   const cityDisplay = getCityDisplay()
 
-  // Unique artists from timeline as "shared" proxy
   const timelineArtists = Array.from(new Set(timeline.map((t) => t.artist.name))).slice(0, 8)
   const topAlbums = timeline
     .filter((t) => t.album?.image_url)
@@ -130,10 +200,7 @@ export default function UserProfilePage() {
 
         {/* Nav row */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <span
-            style={{ ...lbl, cursor: 'pointer' }}
-            onClick={() => router.back()}
-          >
+          <span style={{ ...lbl, cursor: 'pointer' }} onClick={() => router.back()}>
             ← BACK
           </span>
           <span style={lbl}>⋯</span>
@@ -172,6 +239,38 @@ export default function UserProfilePage() {
             </Typography>
             <span style={{ ...lbl, fontSize: '0.4375rem' }}>COMPAT.</span>
           </Box>
+        </Box>
+
+        {/* Friendship CTA */}
+        <Box sx={{ display: 'flex', gap: 0.75, mb: 1.5 }}>
+          {friendStatus === 'none' && (
+            <button style={btn(true)} onClick={handleSendRequest} disabled={friendLoading}>
+              {friendLoading ? '…' : '✶ ADD COMRADE'}
+            </button>
+          )}
+          {friendStatus === 'pending_sent' && (
+            <button style={{ ...btn(), cursor: 'default' }} onClick={handleCancel} disabled={friendLoading}>
+              {friendLoading ? '…' : '⏳ REQUEST SENT — CANCEL'}
+            </button>
+          )}
+          {friendStatus === 'pending_received' && (
+            <>
+              <button style={btn(true)} onClick={handleAccept} disabled={friendLoading}>
+                {friendLoading ? '…' : '✔ ACCEPT'}
+              </button>
+              <button style={btn(false, true)} onClick={handleDecline} disabled={friendLoading}>
+                {friendLoading ? '…' : '✕ DECLINE'}
+              </button>
+            </>
+          )}
+          {friendStatus === 'accepted' && (
+            <button style={{ ...btn(), cursor: 'pointer' }} onClick={handleUnfriend} disabled={friendLoading}>
+              {friendLoading ? '…' : '⚔ COMRADES — UNFRIEND'}
+            </button>
+          )}
+          <button style={btn()} disabled>
+            ☍ MESSAGE
+          </button>
         </Box>
 
         {/* Shared Devotion */}
@@ -257,16 +356,6 @@ export default function UserProfilePage() {
             </Typography>
           </div>
         )}
-
-        {/* CTA buttons */}
-        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          <Button variant="contained" sx={{ flex: 1 }}>
-            ✶ THROW HORNS
-          </Button>
-          <Button variant="outlined" sx={{ flex: 1 }}>
-            ☍ MESSAGE
-          </Button>
-        </Box>
 
         {/* Gallery + Top Artists below */}
         <Box sx={{ mt: 3 }}>
