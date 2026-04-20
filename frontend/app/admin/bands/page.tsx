@@ -26,6 +26,7 @@ export default function AdminBandsPage() {
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('all')
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [publishingAll, setPublishingAll] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -55,6 +56,22 @@ export default function AdminBandsPage() {
     }
   }
 
+  const handlePublishAll = async () => {
+    const drafts = bands.filter((b) => b.status === 'draft')
+    if (drafts.length === 0) return
+    if (!confirm(`Publish all ${drafts.length} draft band${drafts.length === 1 ? '' : 's'}?`)) return
+    setPublishingAll(true)
+    try {
+      const updated = await Promise.all(drafts.map((b) => adminAPI.updateBand(b.id, { status: 'published' })))
+      const updatedMap = Object.fromEntries(updated.map((b) => [b.id, b]))
+      setBands((prev) => prev.map((b) => updatedMap[b.id] ?? b))
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setPublishingAll(false)
+    }
+  }
+
   const handlePublish = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'published' ? 'draft' : 'published'
     try {
@@ -81,13 +98,34 @@ export default function AdminBandsPage() {
         </Box>
       </Box>
 
-      {/* Filter tabs */}
-      <Box sx={{ display: 'flex', gap: 0.5, mb: 1.75 }}>
-        {['all', 'draft', 'published', 'archived'].map((f) => (
-          <Box key={f} component="button" onClick={() => setFilter(f)} sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: filter === f ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: filter === f ? '#120e18' : 'var(--muted)', transition: 'background 0.1s' }}>
-            {f}
+      {/* Filter tabs + bulk action */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.75 }}>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          {['all', 'draft', 'published', 'archived'].map((f) => (
+            <Box key={f} component="button" onClick={() => setFilter(f)} sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: filter === f ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: filter === f ? '#120e18' : 'var(--muted)', transition: 'background 0.1s' }}>
+              {f}
+            </Box>
+          ))}
+        </Box>
+        {bands.some((b) => b.status === 'draft') && (
+          <Box
+            component="button"
+            onClick={handlePublishAll}
+            disabled={publishingAll}
+            sx={{
+              border: '1.5px solid rgba(106,154,122,0.5)',
+              borderRadius: '3px', px: 1.25, height: 22,
+              display: 'inline-flex', alignItems: 'center',
+              background: 'none', cursor: publishingAll ? 'default' : 'pointer',
+              fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              color: publishingAll ? 'rgba(106,154,122,0.4)' : '#6a9a7a',
+              '&:hover:not(:disabled)': { borderColor: '#6a9a7a' },
+            }}
+          >
+            {publishingAll ? '…' : `↑ PUBLISH ALL DRAFTS (${bands.filter((b) => b.status === 'draft').length})`}
           </Box>
-        ))}
+        )}
       </Box>
 
       {loading && <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress size={20} sx={{ color: 'var(--accent)' }} /></Box>}
