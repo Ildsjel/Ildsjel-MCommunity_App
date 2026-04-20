@@ -8,6 +8,8 @@ import SpotifyConnection from '@/app/components/SpotifyConnection'
 import { useUser } from '@/app/context/UserContext'
 import { userAPI } from '@/lib/api'
 import { adminAPI } from '@/lib/adminAPI'
+import { profileAPI } from '@/lib/profileAPI'
+import { getErrorMessage } from '@/lib/types/apiError'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -115,15 +117,11 @@ export default function SettingsPage() {
     setAccountSaving(true)
     setAccountMsg(null)
     try {
-      const updated = await axios.patch(
-        `${API_BASE}/api/v1/users/me`,
-        { handle },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
-      )
-      setCtxUser(updated.data)
+      const updated = await profileAPI.updateMe({ handle })
+      setCtxUser(updated)
       setAccountMsg({ ok: true, text: 'Account updated' })
-    } catch (e: any) {
-      setAccountMsg({ ok: false, text: e.response?.data?.detail || e.message })
+    } catch (e: unknown) {
+      setAccountMsg({ ok: false, text: getErrorMessage(e) })
     } finally {
       setAccountSaving(false)
     }
@@ -135,8 +133,8 @@ export default function SettingsPage() {
     try {
       await axios.post(`${API_BASE}/api/v1/auth/request-password-reset`, { email })
       setPwMsg({ ok: true, text: 'Password reset email sent — check your inbox' })
-    } catch (e: any) {
-      setPwMsg({ ok: false, text: e.response?.data?.detail || e.message })
+    } catch (e: unknown) {
+      setPwMsg({ ok: false, text: getErrorMessage(e) })
     } finally {
       setPwSending(false)
     }
@@ -146,15 +144,11 @@ export default function SettingsPage() {
     setLocationSaving(true)
     setLocationMsg(null)
     try {
-      const updated = await axios.patch(
-        `${API_BASE}/api/v1/users/me`,
-        { city, country },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
-      )
-      setCtxUser(updated.data)
+      const updated = await profileAPI.updateMe({ city, country })
+      setCtxUser(updated)
       setLocationMsg({ ok: true, text: 'Location updated' })
-    } catch (e: any) {
-      setLocationMsg({ ok: false, text: e.response?.data?.detail || e.message })
+    } catch (e: unknown) {
+      setLocationMsg({ ok: false, text: getErrorMessage(e) })
     } finally {
       setLocationSaving(false)
     }
@@ -172,8 +166,8 @@ export default function SettingsPage() {
       // Refresh user so role updates in context
       const fresh = await userAPI.getMe()
       setCtxUser(fresh)
-    } catch (e: any) {
-      setRedeemMsg({ ok: false, text: e.message })
+    } catch (e: unknown) {
+      setRedeemMsg({ ok: false, text: getErrorMessage(e) })
     } finally {
       setRedeemLoading(false)
     }

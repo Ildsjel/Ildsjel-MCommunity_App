@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography, TextField } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
+import { getErrorMessage } from '@/lib/types/apiError'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -51,8 +52,8 @@ export default function NewBandPage() {
         tag_ids: [],
       })
       router.push(`/admin/bands/${band.id}/edit`)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(getErrorMessage(err))
     } finally {
       setSaving(false)
     }

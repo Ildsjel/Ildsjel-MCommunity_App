@@ -38,7 +38,7 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
           { headers: { Authorization: `Bearer ${token}` } }
         )
         setArtists(response.data.artists ?? [])
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError('Failed to load top artists')
       } finally {
         setLoading(false)

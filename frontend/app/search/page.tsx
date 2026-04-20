@@ -11,6 +11,7 @@ import {
 } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import axios from 'axios'
+import { getErrorMessage } from '@/lib/types/apiError'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -83,8 +84,8 @@ export default function SearchPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       setResults(res.data.hits); setTotal(res.data.total)
-    } catch (e: any) {
-      setError(e.response?.data?.detail || 'Failed to load users')
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to load users'))
     } finally { setLoading(false) }
   }
 
@@ -100,8 +101,8 @@ export default function SearchPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       setResults(res.data.hits); setTotal(res.data.total)
-    } catch (e: any) {
-      setError(e.response?.data?.detail || 'Search failed')
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Search failed'))
     } finally { setLoading(false) }
   }
 

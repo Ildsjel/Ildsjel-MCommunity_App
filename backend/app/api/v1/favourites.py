@@ -1,9 +1,14 @@
 """
 Favourites — explicit + auto-favourites for artists and albums
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from app.db.neo4j_driver import get_neo4j_session
 from app.auth.jwt_handler import get_current_user
+from app.models.favourites_models import (
+    FavouriteArtistRequest,
+    FavouriteAlbumRequest,
+    VisibilityUpdateRequest,
+)
 
 router = APIRouter(prefix="/favourites", tags=["Favourites"])
 
@@ -85,13 +90,10 @@ async def get_favourites(
 
 @router.post("/artist")
 async def add_favourite_artist(
-    body: dict,
+    body: FavouriteArtistRequest,
     session=Depends(get_neo4j_session),
     current_user: dict = Depends(get_current_user),
 ):
-    name_norm = body.get("name_norm")
-    if not name_norm:
-        raise HTTPException(status_code=400, detail="Missing name_norm")
     session.run(
         """
         MATCH (u:User {id: $uid}), (a:Artist {name_normalized: $name_norm})
@@ -100,7 +102,7 @@ async def add_favourite_artist(
         OPTIONAL MATCH (u)-[uf:UNFAVOURITE_ARTIST]->(a)
         DELETE uf
         """,
-        uid=current_user["id"], name_norm=name_norm,
+        uid=current_user["id"], name_norm=body.name_norm,
     )
     return {"ok": True}
 
@@ -126,13 +128,10 @@ async def remove_favourite_artist(
 
 @router.post("/album")
 async def add_favourite_album(
-    body: dict,
+    body: FavouriteAlbumRequest,
     session=Depends(get_neo4j_session),
     current_user: dict = Depends(get_current_user),
 ):
-    album_id = body.get("album_id")
-    if not album_id:
-        raise HTTPException(status_code=400, detail="Missing album_id")
     session.run(
         """
         MATCH (u:User {id: $uid}), (a:Album {id: $album_id})
@@ -141,7 +140,7 @@ async def add_favourite_album(
         OPTIONAL MATCH (u)-[uf:UNFAVOURITE_ALBUM]->(a)
         DELETE uf
         """,
-        uid=current_user["id"], album_id=album_id,
+        uid=current_user["id"], album_id=body.album_id,
     )
     return {"ok": True}
 
@@ -186,7 +185,7 @@ async def get_visibility(
 
 @router.patch("/visibility")
 async def update_visibility(
-    body: dict,
+    body: VisibilityUpdateRequest,
     session=Depends(get_neo4j_session),
     current_user: dict = Depends(get_current_user),
 ):
@@ -198,8 +197,8 @@ async def update_visibility(
             u.vis_favourites  = $favourites
         """,
         uid=current_user["id"],
-        top_artists=body.get("top_artists", True),
-        top_albums=body.get("top_albums", True),
-        favourites=body.get("favourites", True),
+        top_artists=body.top_artists,
+        top_albums=body.top_albums,
+        favourites=body.favourites,
     )
     return {"ok": True}
