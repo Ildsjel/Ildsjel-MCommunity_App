@@ -28,8 +28,18 @@ export interface FriendUser {
   created_at?: string
 }
 
+export interface GlobeMarker {
+  id: string
+  handle: string
+  lat: number
+  lon: number
+  city: string
+  country: string
+}
+
 export const friendsApi = {
   getStatus: (otherId: string) => req<{ status: FriendStatus }>('GET', `/friends/status/${otherId}`),
+  getGlobeData: () => req<GlobeMarker[]>('GET', '/friends/globe'),
   sendRequest: (targetId: string) => req<{ message: string }>('POST', `/friends/request/${targetId}`),
   respond: (requesterId: string, action: 'accept' | 'decline') =>
     req<{ message: string }>('POST', `/friends/respond/${requesterId}`, { action }),

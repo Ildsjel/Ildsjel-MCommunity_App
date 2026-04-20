@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Avatar, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
-import { friendsApi, FriendUser } from '@/lib/friendsApi'
+import { friendsApi, FriendUser, GlobeMarker } from '@/lib/friendsApi'
+import GlobeWidget from '@/app/components/GlobeWidget'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -20,15 +21,21 @@ export default function FriendsPage() {
   const router = useRouter()
   const [friends, setFriends] = useState<FriendUser[]>([])
   const [pending, setPending] = useState<FriendUser[]>([])
+  const [globeMarkers, setGlobeMarkers] = useState<GlobeMarker[]>([])
   const [loading, setLoading] = useState(true)
   const [responding, setResponding] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
     try {
-      const [f, p] = await Promise.all([friendsApi.listFriends(), friendsApi.listPending()])
+      const [f, p, g] = await Promise.all([
+        friendsApi.listFriends(),
+        friendsApi.listPending(),
+        friendsApi.getGlobeData().catch(() => [] as GlobeMarker[]),
+      ])
       setFriends(f)
       setPending(p)
+      setGlobeMarkers(g)
     } catch { /* silent */ } finally {
       setLoading(false)
     }
@@ -79,6 +86,14 @@ export default function FriendsPage() {
         {loading && (
           <Box sx={{ textAlign: 'center', py: 4 }}>
             <CircularProgress size={20} sx={{ color: 'var(--accent)' }} />
+          </Box>
+        )}
+
+        {/* Globe */}
+        {!loading && (
+          <Box sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', backgroundColor: '#120e18', px: 1.5, py: 1.5, mb: 2.5 }}>
+            <span style={{ ...lbl, display: 'block', marginBottom: 12, color: 'var(--accent)' }}>◆ COMRADES ON THE ATLAS</span>
+            <GlobeWidget markers={globeMarkers} />
           </Box>
         )}
 
