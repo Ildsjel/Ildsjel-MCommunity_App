@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { getErrorMessage } from '@/lib/types/apiError';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -21,8 +22,8 @@ export default function ResetPasswordPage() {
       const response = await api.post('/auth/request-password-reset', { email });
       setMessage(response.data.message);
       setEmail('');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Ein Fehler ist aufgetreten');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Ein Fehler ist aufgetreten'));
     } finally {
       setLoading(false);
     }

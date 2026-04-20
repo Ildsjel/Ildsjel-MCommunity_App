@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import {
   AppBar,
   Toolbar,
@@ -11,9 +11,6 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  Paper,
-  BottomNavigation,
-  BottomNavigationAction,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
@@ -21,47 +18,20 @@ import {
   Person as PersonIcon,
   MusicNote as MusicNoteIcon,
   Logout as LogoutIcon,
-  Search as SearchIcon,
   AdminPanelSettings as AdminIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material'
 import { useUser } from '@/app/context/UserContext'
 import { useNotifications } from '@/app/context/NotificationContext'
 import UserAvatar from './UserAvatar'
-
-interface BottomTab {
-  label: string
-  glyph: string
-  path: string
-  matchPaths?: string[]
-}
-
-const BOTTOM_TABS: BottomTab[] = [
-  { label: 'Feed',     glyph: '◉', path: '/feed',          matchPaths: ['/feed'] },
-  { label: 'Discover', glyph: '⌕', path: '/search',        matchPaths: ['/search'] },
-  { label: 'Bands',    glyph: '◆', path: '/bands',         matchPaths: ['/bands'] },
-  { label: 'Alerts',   glyph: '◈', path: '/notifications', matchPaths: ['/notifications'] },
-  { label: 'Me',       glyph: '✶', path: '/profile',       matchPaths: ['/profile', '/gallery'] },
-]
-
-function getBottomTabValue(pathname: string, tabs: BottomTab[]): number {
-  // Exact match first
-  const exact = tabs.findIndex((t) => t.path === pathname)
-  if (exact >= 0) return exact
-  // Prefix match
-  const prefix = tabs.findIndex((t) =>
-    t.matchPaths?.some((p) => pathname.startsWith(p))
-  )
-  return prefix >= 0 ? prefix : -1
-}
+import DesktopNav from './DesktopNav'
+import BottomNav from './BottomNav'
 
 export default function Navigation() {
   const router   = useRouter()
-  const pathname = usePathname()
   const theme    = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { user, setUser } = useUser()
-
   const { unreadCount } = useNotifications()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const isAuthenticated = !!user
@@ -76,26 +46,11 @@ export default function Navigation() {
     router.push('/')
   }
 
-  const bottomTabValue = getBottomTabValue(pathname ?? '/', BOTTOM_TABS)
-
-  // Desktop nav items
-  const desktopNavItems = isAuthenticated
-    ? [
-        { label: 'Feed',     path: '/feed' },
-        { label: 'Discover', path: '/search' },
-        { label: 'Bands',    path: '/bands' },
-        { label: 'Sigil',    path: '/sigil' },
-        { label: 'Gather',   path: '/events' },
-      ]
-    : []
-
   return (
     <>
-      {/* ── AppBar ─────────────────────────────────────────── */}
       <AppBar position="sticky" elevation={0}>
         <Toolbar sx={{ minHeight: { xs: 52, md: 56 } }}>
 
-          {/* Logo */}
           <Typography
             component="div"
             onClick={() => router.push(isAuthenticated ? '/feed' : '/')}
@@ -115,46 +70,10 @@ export default function Navigation() {
             Grimr
           </Typography>
 
-          {/* Desktop inline nav */}
-          {!isMobile && isAuthenticated && (
-            <Box sx={{ display: 'flex', gap: 0.5, flexGrow: 1, alignItems: 'center' }}>
-              {desktopNavItems.map((item) => {
-                const active = pathname === item.path
-                return (
-                  <Box
-                    key={item.label}
-                    component="button"
-                    onClick={() => router.push(item.path)}
-                    sx={{
-                      background:     'none',
-                      border:         'none',
-                      color:          active ? 'primary.main' : 'text.secondary',
-                      fontFamily:     '"JetBrains Mono", monospace',
-                      fontWeight:     400,
-                      fontSize:       '0.625rem',
-                      letterSpacing:  '0.14em',
-                      textTransform:  'uppercase',
-                      cursor:         'pointer',
-                      px:             1.5,
-                      py:             0.75,
-                      borderRadius:   '3px',
-                      borderBottom:   active ? '1.5px solid' : '1.5px solid transparent',
-                      borderBottomColor: active ? 'primary.main' : 'transparent',
-                      transition:     'color 0.12s, border-color 0.12s',
-                      '&:hover':      { color: 'text.primary' },
-                      minHeight:      '36px',
-                    }}
-                  >
-                    {item.label}
-                  </Box>
-                )
-              })}
-            </Box>
-          )}
+          {!isMobile && isAuthenticated && <DesktopNav />}
 
           {(isMobile || !isAuthenticated) && <Box sx={{ flexGrow: 1 }} />}
 
-          {/* Right side — login link or avatar */}
           {!isAuthenticated && (
             <Box
               component="button"
@@ -278,68 +197,7 @@ export default function Navigation() {
         </Toolbar>
       </AppBar>
 
-      {/* ── Mobile Bottom Navigation ────────────────────────── */}
-      {isMobile && isAuthenticated && (
-        <Paper
-          elevation={0}
-          sx={{
-            position:     'fixed',
-            bottom:       0,
-            left:         0,
-            right:        0,
-            zIndex:       1200,
-            bgcolor:      '#1a1424',
-            borderTop:    '1.5px solid rgba(216,207,184,0.2)',
-            paddingBottom: 'env(safe-area-inset-bottom)',
-          }}
-        >
-          <BottomNavigation
-            value={bottomTabValue}
-            onChange={(_, idx) => {
-              const tab = BOTTOM_TABS[idx]
-              if (tab) router.push(tab.path)
-            }}
-            showLabels
-          >
-            {BOTTOM_TABS.map((tab) => (
-              <BottomNavigationAction
-                key={tab.label}
-                label={tab.label}
-                icon={
-                  <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                    <Box
-                      sx={{
-                        fontFamily:    '"Archivo Black", sans-serif',
-                        fontSize:      tab.label === 'Sigil' ? '1.35rem' : '1rem',
-                        lineHeight:    1,
-                        color:         'inherit',
-                        transition:    'transform 0.15s',
-                        '.Mui-selected &': { transform: tab.label === 'Sigil' ? 'scale(1.2)' : 'scale(1.05)' },
-                      }}
-                    >
-                      {tab.glyph}
-                    </Box>
-                    {tab.label === 'Alerts' && unreadCount > 0 && (
-                      <Box sx={{
-                        position: 'absolute', top: -3, right: -5,
-                        minWidth: 14, height: 14, borderRadius: '7px',
-                        backgroundColor: 'var(--accent, #c43a2a)',
-                        border: '1.5px solid #1a1424',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: '"JetBrains Mono", monospace',
-                        fontSize: '0.4rem', color: '#ece5d3',
-                        px: '2px',
-                      }}>
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </Box>
-                    )}
-                  </Box>
-                }
-              />
-            ))}
-          </BottomNavigation>
-        </Paper>
-      )}
+      {isMobile && isAuthenticated && <BottomNav />}
     </>
   )
 }

@@ -1,3 +1,22 @@
+import type {
+  AdminBand,
+  AdminBandCreate,
+  AdminBandUpdate,
+  AdminGenre,
+  AdminGenreCreate,
+  AdminGenreUpdate,
+  AdminMessageResponse,
+  AdminRelease,
+  AdminReleaseCreate,
+  AdminTag,
+  AdminTagCreate,
+  AdminTagUpdate,
+  AdminToken,
+  AdminTokenCreateResponse,
+  AdminUser,
+  ImageUploadResponse,
+} from './types/admin'
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 function authHeaders() {
@@ -35,37 +54,54 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
   return res.json()
 }
 
-// ── Admin tokens ──────────────────────────────────────────────────────────────
-
 export const adminAPI = {
-  generateToken: (note?: string) => req<{ id: string; token: string; note?: string; expires_at: string }>('POST', '/admin/tokens', { note }),
-  listTokens: () => req<any[]>('GET', '/admin/tokens'),
-  redeemToken: (token: string) => req<{ message: string }>('POST', '/admin/tokens/redeem', { token }),
+  // Tokens
+  generateToken: (note?: string) =>
+    req<AdminTokenCreateResponse>('POST', '/admin/tokens', { note }),
+  listTokens: () => req<AdminToken[]>('GET', '/admin/tokens'),
+  redeemToken: (token: string) =>
+    req<AdminMessageResponse>('POST', '/admin/tokens/redeem', { token }),
 
   // Users
-  listUsers: () => req<any[]>('GET', '/admin/users'),
-  setUserRole: (userId: string, role: string) => req<{ message: string }>('PATCH', `/admin/users/${userId}/role`, { role }),
+  listUsers: () => req<AdminUser[]>('GET', '/admin/users'),
+  setUserRole: (userId: string, role: string) =>
+    req<AdminMessageResponse>('PATCH', `/admin/users/${userId}/role`, { role }),
 
   // Bands
-  listBands: (status?: string) => req<any[]>('GET', `/admin/bands${status ? `?status=${status}` : ''}`),
-  createBand: (data: unknown) => req<any>('POST', '/admin/bands', data),
-  updateBand: (id: string, data: unknown) => req<any>('PATCH', `/admin/bands/${id}`, data),
+  listBands: (status?: string) =>
+    req<AdminBand[]>('GET', `/admin/bands${status ? `?status=${status}` : ''}`),
+  draftCount: () => req<{ count: number }>('GET', '/admin/bands/draft-count'),
+  publishAllDrafts: () =>
+    req<{ published: number }>('POST', '/admin/bands/publish-all-drafts'),
+  createBand: (data: AdminBandCreate) => req<AdminBand>('POST', '/admin/bands', data),
+  updateBand: (id: string, data: AdminBandUpdate) =>
+    req<AdminBand>('PATCH', `/admin/bands/${id}`, data),
   deleteBand: (id: string) => req<void>('DELETE', `/admin/bands/${id}`),
-  uploadBandPhoto: (id: string, file: File) => uploadFile<any>(`/admin/bands/${id}/image`, file),
-  uploadBandLogo: (id: string, file: File) => uploadFile<any>(`/admin/bands/${id}/logo`, file),
-  createRelease: (bandId: string, data: unknown) => req<any>('POST', `/admin/bands/${bandId}/releases`, data),
+  uploadBandPhoto: (id: string, file: File) =>
+    uploadFile<ImageUploadResponse>(`/admin/bands/${id}/image`, file),
+  uploadBandLogo: (id: string, file: File) =>
+    uploadFile<ImageUploadResponse>(`/admin/bands/${id}/logo`, file),
+  createRelease: (bandId: string, data: AdminReleaseCreate) =>
+    req<AdminRelease>('POST', `/admin/bands/${bandId}/releases`, data),
   deleteRelease: (releaseId: string) => req<void>('DELETE', `/admin/releases/${releaseId}`),
 
   // Genres
-  listGenres: () => req<any[]>('GET', '/admin/genres'),
-  createGenre: (data: unknown) => req<any>('POST', '/admin/genres', data),
-  updateGenre: (id: string, data: unknown) => req<any>('PATCH', `/admin/genres/${id}`, data),
+  listGenres: () => req<AdminGenre[]>('GET', '/admin/genres'),
+  createGenre: (data: AdminGenreCreate) => req<AdminGenre>('POST', '/admin/genres', data),
+  updateGenre: (id: string, data: AdminGenreUpdate) =>
+    req<AdminGenre>('PATCH', `/admin/genres/${id}`, data),
   deleteGenre: (id: string) => req<void>('DELETE', `/admin/genres/${id}`),
 
   // Tags
-  listTags: (category?: string) => req<any[]>('GET', `/admin/tags${category ? `?category=${category}` : ''}`),
-  createTag: (data: unknown) => req<any>('POST', '/admin/tags', data),
-  updateTag: (id: string, data: unknown) => req<any>('PATCH', `/admin/tags/${id}`, data),
+  listTags: (category?: string) =>
+    req<AdminTag[]>('GET', `/admin/tags${category ? `?category=${category}` : ''}`),
+  createTag: (data: AdminTagCreate) => req<AdminTag>('POST', '/admin/tags', data),
+  updateTag: (id: string, data: AdminTagUpdate) =>
+    req<AdminTag>('PATCH', `/admin/tags/${id}`, data),
   deleteTag: (id: string) => req<void>('DELETE', `/admin/tags/${id}`),
-  mergeTags: (sourceId: string, targetId: string) => req<{ message: string }>('POST', '/admin/tags/merge', { source_id: sourceId, target_id: targetId }),
+  mergeTags: (sourceId: string, targetId: string) =>
+    req<AdminMessageResponse>('POST', '/admin/tags/merge', {
+      source_id: sourceId,
+      target_id: targetId,
+    }),
 }

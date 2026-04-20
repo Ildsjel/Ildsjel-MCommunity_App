@@ -101,17 +101,17 @@ async def sync_sigil(
     sources: list[str] = []
     if user_rec:
         if user_rec["has_lfm"] and user_rec["lfm_user"]:
-            from app.api.v1.lastfm import _sync_lastfm_top_artists_bg
+            from app.services.lastfm_sync_service import sync_top_artists as sync_lastfm_artists
             background_tasks.add_task(
-                _sync_lastfm_top_artists_bg,
+                sync_lastfm_artists,
                 user_id=uid,
                 lastfm_username=user_rec["lfm_user"],
             )
             sources.append("lastfm")
         if user_rec["has_spotify"] and user_rec["spotify_token"]:
-            from app.api.v1.spotify import _sync_top_artists_bg
+            from app.services.spotify_sync_service import sync_top_artists as sync_spotify_artists
             background_tasks.add_task(
-                _sync_top_artists_bg,
+                sync_spotify_artists,
                 user_id=uid,
                 access_token=user_rec["spotify_token"],
             )

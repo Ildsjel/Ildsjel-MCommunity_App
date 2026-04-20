@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.user_models import UserResponse, UserUpdate
 from app.services.user_service import UserService
 from app.db.neo4j_driver import get_neo4j_session
-from app.auth.security import get_current_user
+from app.auth.jwt_handler import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -29,7 +29,7 @@ async def get_current_user_profile(
         HTTPException: If user not found
     """
     user_service = UserService(session)
-    user_profile = user_service.get_user_profile(current_user["sub"])
+    user_profile = user_service.get_user_profile(current_user["id"])
     
     if not user_profile:
         raise HTTPException(
@@ -101,7 +101,7 @@ async def update_current_user_profile(
             detail="No fields to update"
         )
     
-    updated_user = user_service.update_user_profile(current_user["sub"], updates)
+    updated_user = user_service.update_user_profile(current_user["id"], updates)
     
     if not updated_user:
         raise HTTPException(

@@ -40,9 +40,9 @@ export default function RegisterPage() {
       await authAPI.register(formData)
       setSuccessOpen(true)
       setTimeout(() => router.push('/auth/login'), 2000)
-    } catch (err: any) {
-      const detail = err.response?.data?.detail
-      if (Array.isArray(detail)) setError(detail.map((e: any) => e.msg).join(', '))
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
+      if (Array.isArray(detail)) setError(detail.map((e: { msg: string }) => e.msg).join(', '))
       else if (typeof detail === 'string') setError(detail)
       else setError('Registration failed')
     } finally {
