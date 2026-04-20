@@ -248,12 +248,6 @@ export default function ProfilePage() {
         {/* Header row */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <span style={lbl}>ME</span>
-          <span
-            style={{ ...lbl, cursor: 'pointer' }}
-            onClick={() => setEditAboutMe(!editAboutMe)}
-          >
-            ⚙ EDIT
-          </span>
         </Box>
 
         {/* Sigil */}
@@ -325,7 +319,7 @@ export default function ProfilePage() {
         <div style={{ ...box, marginBottom: '12px' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75 }}>
             <span style={lbl}>ABOUT</span>
-            {editAboutMe && (
+            {editAboutMe ? (
               <Box sx={{ display: 'flex', gap: 1.5 }}>
                 <span
                   style={{ ...lbl, cursor: 'pointer' }}
@@ -340,6 +334,13 @@ export default function ProfilePage() {
                   {aboutMeSaving ? '…' : '✓ SAVE'}
                 </span>
               </Box>
+            ) : (
+              <span
+                style={{ ...lbl, cursor: 'pointer' }}
+                onClick={() => setEditAboutMe(true)}
+              >
+                ⚙ EDIT
+              </span>
             )}
           </Box>
           {editAboutMe ? (
