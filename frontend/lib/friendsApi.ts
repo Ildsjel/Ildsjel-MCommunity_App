@@ -42,9 +42,14 @@ export interface GlobeMarker {
   country: string
 }
 
+export interface GlobeData {
+  markers: GlobeMarker[]
+  my_location: { lat: number; lon: number } | null
+}
+
 export const friendsApi = {
   getStatus: (otherId: string) => req<{ status: FriendStatus }>('GET', `/friends/status/${otherId}`),
-  getGlobeData: () => req<GlobeMarker[]>('GET', '/friends/globe'),
+  getGlobeData: () => req<GlobeData>('GET', '/friends/globe'),
   sendRequest: (targetId: string) => req<{ message: string }>('POST', `/friends/request/${targetId}`),
   respond: (requesterId: string, action: 'accept' | 'decline') =>
     req<{ message: string }>('POST', `/friends/respond/${requesterId}`, { action }),

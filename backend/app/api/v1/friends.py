@@ -120,6 +120,19 @@ async def friends_globe(
     session=Depends(get_neo4j_session),
 ):
     from app.api.v1.globe import _resolve_coords
+
+    # User's own location
+    me_result = session.run(
+        "MATCH (u:User {id: $id}) RETURN u.city AS city, u.city_visible AS city_visible",
+        id=current_user["id"],
+    )
+    me_rec = me_result.single()
+    my_location = None
+    if me_rec and me_rec["city"] and me_rec["city_visible"] != "hidden":
+        coords = _resolve_coords(me_rec["city"])
+        if coords:
+            my_location = {"lat": coords["lat"], "lon": coords["lon"]}
+
     result = session.run(
         """
         MATCH (me:User {id: $my_id})-[:FRIEND_REQUEST {status: 'accepted'}]-(friend:User)
@@ -141,7 +154,7 @@ async def friends_globe(
                 "lat": coords["lat"],
                 "lon": coords["lon"],
             })
-    return markers
+    return {"markers": markers, "my_location": my_location}
 
 
 @router.get("/pending")

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Avatar, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
-import { friendsApi, FriendUser, GlobeMarker } from '@/lib/friendsApi'
+import { friendsApi, FriendUser, GlobeMarker, GlobeData } from '@/lib/friendsApi'
 import { messagesApi } from '@/lib/messagesApi'
 import GlobeWidget from '@/app/components/GlobeWidget'
 
@@ -26,6 +26,7 @@ export default function FriendsPage() {
   const [page, setPage] = useState(0)
   const [pending, setPending] = useState<FriendUser[]>([])
   const [globeMarkers, setGlobeMarkers] = useState<GlobeMarker[]>([])
+  const [myLocation, setMyLocation] = useState<{ lat: number; lon: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [pageLoading, setPageLoading] = useState(false)
   const [responding, setResponding] = useState<string | null>(null)
@@ -59,13 +60,14 @@ export default function FriendsPage() {
       const [result, p, g] = await Promise.all([
         friendsApi.listFriends(0, PAGE_SIZE),
         friendsApi.listPending(),
-        friendsApi.getGlobeData().catch(() => [] as GlobeMarker[]),
+        friendsApi.getGlobeData().catch(() => ({ markers: [], my_location: null } as GlobeData)),
       ])
       setFriends(result.friends)
       setTotal(result.total)
       setPage(0)
       setPending(p)
-      setGlobeMarkers(g)
+      setGlobeMarkers(g.markers)
+      setMyLocation(g.my_location)
     } catch { /* silent */ } finally {
       setLoading(false)
     }
@@ -124,9 +126,8 @@ export default function FriendsPage() {
 
         {/* Globe — always visible at top */}
         {!loading && (
-          <Box sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', backgroundColor: '#120e18', px: 1.5, py: 1.5, mb: 2.5 }}>
-            <span style={{ ...lbl, display: 'block', marginBottom: 12, color: 'var(--accent)' }}>◆ COMRADES ON THE ATLAS</span>
-            <GlobeWidget markers={globeMarkers} />
+          <Box sx={{ mb: 2.5 }}>
+            <GlobeWidget markers={globeMarkers} myLat={myLocation?.lat} myLon={myLocation?.lon} totalFriends={total} />
           </Box>
         )}
 
