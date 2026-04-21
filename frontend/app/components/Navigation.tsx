@@ -185,6 +185,13 @@ export default function Navigation() {
                   Spotify
                 </MenuItem>
                 <MenuItem
+                  onClick={() => { router.push('/lastfm/connect'); handleProfileMenuClose() }}
+                  sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                >
+                  <ListItemIcon><MusicNoteIcon fontSize="small" /></ListItemIcon>
+                  Last.fm
+                </MenuItem>
+                <MenuItem
                   onClick={handleLogout}
                   sx={{ color: 'primary.main', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.6875rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
                 >

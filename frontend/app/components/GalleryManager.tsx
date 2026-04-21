@@ -6,8 +6,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Button,
-  Grid,
   IconButton,
   Dialog,
   DialogTitle,
@@ -15,13 +13,11 @@ import {
   DialogActions,
   TextField,
   CircularProgress,
-  Alert,
   ImageList,
   ImageListItem,
   ImageListItemBar,
 } from '@mui/material'
 import {
-  Add,
   Delete,
   Edit,
   Close,
@@ -34,8 +30,16 @@ import { getErrorMessage } from '@/lib/types/apiError'
 interface GalleryManagerProps {
   userId?: string
   isOwnProfile: boolean
-  previewMode?: boolean // Show only 3 images preview
-  onViewAll?: () => void // Callback for "View All" button
+  previewMode?: boolean
+  onViewAll?: () => void
+}
+
+const lbl: React.CSSProperties = {
+  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+  fontSize: '0.5625rem',
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  color: 'var(--muted, #7A756D)',
 }
 
 export default function GalleryManager({ userId, isOwnProfile, previewMode = false, onViewAll }: GalleryManagerProps) {
@@ -74,19 +78,18 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
 
     const file = files[0]
 
-    // Validate
     if (!file.type.startsWith('image/')) {
-      alert('Bitte wähle eine Bilddatei aus')
+      alert('Please select an image file.')
       return
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('Datei zu groß. Maximale Größe: 10MB')
+      alert('File too large. Maximum size: 10 MB.')
       return
     }
 
     if (images.length >= 10) {
-      alert('Galerie ist voll. Maximale Anzahl: 10 Bilder')
+      alert('Gallery is full. Maximum: 10 images.')
       return
     }
 
@@ -102,7 +105,7 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
   }
 
   const handleDelete = async (imageId: string) => {
-    if (!confirm('Bild wirklich löschen?')) return
+    if (!confirm('Delete this image?')) return
 
     try {
       await galleryAPI.deleteGalleryImage(imageId)
@@ -149,13 +152,10 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
 
   const displayImages = previewMode ? images.slice(0, 3) : images
 
-  // Use Carousel for preview mode
   if (previewMode) {
     const handleCarouselEditCaption = (imageId: string, caption: string) => {
       const image = images.find(img => img.id === imageId)
-      if (image) {
-        handleEditCaption(image)
-      }
+      if (image) handleEditCaption(image)
     }
 
     return (
@@ -188,39 +188,69 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
       <Card>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-            <Typography variant="h6">
-              {previewMode ? `Galerie (${images.length}/10)` : `Galerie (${images.length}/10)`}
-            </Typography>
+            <span style={lbl}>Gallery ({images.length}/10)</span>
             <Box sx={{ display: 'flex', gap: 1 }}>
               {isOwnProfile && (
-                <Button
-                  variant="contained"
-                  startIcon={uploading ? <CircularProgress size={20} /> : <Add />}
+                <Box
+                  component="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading || images.length >= 10}
-                  size={previewMode ? "small" : "medium"}
+                  sx={{
+                    background: 'none',
+                    border: '1.5px solid',
+                    borderColor: uploading || images.length >= 10 ? 'rgba(216,207,184,0.1)' : 'rgba(196,58,42,0.45)',
+                    borderRadius: '3px',
+                    px: 1.25,
+                    py: 0.5,
+                    cursor: uploading || images.length >= 10 ? 'default' : 'pointer',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.5rem',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: uploading || images.length >= 10 ? 'rgba(216,207,184,0.25)' : 'var(--accent)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    '&:hover:not(:disabled)': { borderColor: 'var(--accent)' },
+                  }}
                 >
-                  Bild hinzufügen
-                </Button>
+                  {uploading ? <CircularProgress size={10} /> : '+'} Add image
+                </Box>
               )}
-              {previewMode && images.length > 3 && (
-                <Button
-                  variant="outlined"
+              {previewMode && images.length > 3 && onViewAll && (
+                <Box
+                  component="button"
                   onClick={onViewAll}
-                  size="small"
+                  sx={{
+                    background: 'none',
+                    border: '1.5px solid rgba(216,207,184,0.2)',
+                    borderRadius: '3px',
+                    px: 1.25,
+                    py: 0.5,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.5rem',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'var(--ink)',
+                    '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
+                  }}
                 >
-                  Alle ansehen
-                </Button>
+                  View all
+                </Box>
               )}
             </Box>
           </Box>
 
           {images.length === 0 ? (
-            <Alert severity="info">
+            <Typography sx={{
+              fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+              fontSize: '0.8125rem', color: 'var(--muted)', textAlign: 'center', mt: 3,
+            }}>
               {isOwnProfile
-                ? 'Noch keine Bilder in deiner Galerie. Füge bis zu 10 Bilder hinzu!'
-                : 'Dieser User hat noch keine Bilder in der Galerie.'}
-            </Alert>
+                ? 'No images yet. Add up to 10 images.'
+                : 'This user hasn\'t added any images yet.'}
+            </Typography>
           ) : (
             <ImageList cols={3} gap={8}>
               {displayImages.map((image) => (
@@ -292,7 +322,7 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">{selectedImage?.caption || 'Bild'}</Typography>
+            <Typography variant="h6">{selectedImage?.caption || 'Image'}</Typography>
             <IconButton onClick={() => setViewerOpen(false)}>
               <Close />
             </IconButton>
@@ -312,7 +342,7 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
                 </Typography>
               )}
               <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                Hochgeladen am {new Date(selectedImage.uploaded_at).toLocaleDateString('de-DE')}
+                Uploaded {new Date(selectedImage.uploaded_at).toLocaleDateString('en-GB')}
               </Typography>
             </Box>
           )}
@@ -321,7 +351,7 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
 
       {/* Caption Edit Dialog */}
       <Dialog open={captionDialogOpen} onClose={() => setCaptionDialogOpen(false)}>
-        <DialogTitle>Bildunterschrift bearbeiten</DialogTitle>
+        <DialogTitle>Edit caption</DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
@@ -329,19 +359,54 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
             rows={3}
             value={editingCaption}
             onChange={(e) => setEditingCaption(e.target.value.slice(0, 500))}
-            placeholder="Bildunterschrift (optional)"
-            helperText={`${editingCaption.length}/500 Zeichen`}
+            placeholder="Caption (optional)"
+            helperText={`${editingCaption.length}/500`}
             sx={{ mt: 2 }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCaptionDialogOpen(false)}>Abbrechen</Button>
-          <Button onClick={handleSaveCaption} variant="contained">
-            Speichern
-          </Button>
+          <Box
+            component="button"
+            onClick={() => setCaptionDialogOpen(false)}
+            sx={{
+              background: 'none',
+              border: '1.5px solid rgba(216,207,184,0.2)',
+              borderRadius: '3px',
+              px: 1.5,
+              py: 0.75,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.5rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--ink)',
+              '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
+            }}
+          >
+            Cancel
+          </Box>
+          <Box
+            component="button"
+            onClick={handleSaveCaption}
+            sx={{
+              background: 'none',
+              border: '1.5px solid rgba(196,58,42,0.45)',
+              borderRadius: '3px',
+              px: 1.5,
+              py: 0.75,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.5rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--accent)',
+              '&:hover': { borderColor: 'var(--accent)' },
+            }}
+          >
+            Save
+          </Box>
         </DialogActions>
       </Dialog>
     </>
   )
 }
-

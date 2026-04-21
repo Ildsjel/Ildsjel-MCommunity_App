@@ -69,7 +69,7 @@ def _resolve_coords(city: str | None):
 
 
 @router.get("/data")
-async def list_metalhead_locations(
+async def get_globe_data(
     session=Depends(get_neo4j_session),
     current_user: dict = Depends(get_current_user),
 ):

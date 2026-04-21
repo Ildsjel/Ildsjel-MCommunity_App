@@ -7,13 +7,14 @@ from typing import List, Optional
 router = APIRouter(prefix="/bands", tags=["Bands"])
 
 
-@router.get("", response_model=List[BandResponse])
+@router.get("")
 async def list_bands(
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    limit: int = Query(25, ge=1, le=100),
+    q: Optional[str] = Query(None, description="Search by band name"),
     session=Depends(get_neo4j_session),
 ):
-    return BandService(session).list_bands(status="published", skip=skip, limit=limit)
+    return BandService(session).list_bands(status="published", skip=skip, limit=limit, query=q or None)
 
 
 @router.get("/genres", response_model=List[GenreResponse])

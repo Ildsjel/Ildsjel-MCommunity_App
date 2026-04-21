@@ -28,17 +28,17 @@ async def get_spotify_auth_url(
 ):
     """
     Get Spotify authorization URL for OAuth flow
-    
+
     Returns URL with PKCE challenge for secure OAuth
     """
     import secrets
-    
+
     # Generate state for CSRF protection
     state = secrets.token_urlsafe(32)
-    
+
     # Generate PKCE pair
     code_verifier, code_challenge = SpotifyClient.generate_pkce_pair()
-    
+
     # Keep a server-side copy as fallback (non-persistent, best-effort)
     _pkce_storage[state] = {
         "code_verifier": code_verifier,
@@ -65,7 +65,7 @@ async def spotify_auth_callback(
 ):
     """
     Handle Spotify OAuth callback
-    
+
     Exchange authorization code for tokens and save to database
     """
     state = token_request.state
@@ -85,7 +85,7 @@ async def spotify_auth_callback(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Missing code_verifier — please try connecting again",
         )
-    
+
     # Exchange code for tokens
     client = SpotifyClient()
     try:
@@ -93,7 +93,7 @@ async def spotify_auth_callback(
             code=token_request.code,
             code_verifier=code_verifier
         )
-        
+
         # Log granted scopes for debugging
         import logging
         logging.getLogger(__name__).info(
@@ -103,7 +103,7 @@ async def spotify_auth_callback(
         # Get Spotify user profile
         client.access_token = token_data["access_token"]
         profile = await client.get_current_user_profile()
-        
+
         # Save tokens to database
         repository = SpotifyRepository(session)
         repository.save_spotify_tokens(
@@ -115,19 +115,24 @@ async def spotify_auth_callback(
             spotify_user_id=profile.get("id")
         )
 
-        # Sync top artists in background
+        # Sync top artists and albums in background
         background_tasks.add_task(
             spotify_sync_service.sync_top_artists,
             user_id=current_user["id"],
             access_token=token_data["access_token"]
         )
-        
+        background_tasks.add_task(
+            _sync_top_albums_bg,
+            user_id=current_user["id"],
+            access_token=token_data["access_token"]
+        )
+
         return {
             "message": "Spotify connected successfully",
             "spotify_user_id": profile.get("id"),
             "display_name": profile.get("display_name")
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -174,7 +179,7 @@ async def disconnect_spotify(
 ):
     """
     Disconnect Spotify account and delete all Spotify data (DSGVO Art. 17)
-    
+
     This will:
     1. Delete OAuth tokens immediately
     2. Schedule deletion of all Spotify plays within 24h
@@ -194,20 +199,20 @@ async def disconnect_spotify(
         u.source_accounts = [x IN u.source_accounts WHERE x <> 'spotify']
     RETURN u
     """
-    
+
     result = session.run(query_tokens, user_id=current_user["id"])
     if not result.single():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+
     # 2. Schedule data deletion in background (DSGVO: within 24h)
     background_tasks.add_task(
         spotify_sync_service.delete_spotify_data,
         user_id=current_user["id"]
     )
-    
+
     return {
         "message": "Spotify disconnected. All data will be deleted within 24 hours.",
         "deleted_immediately": ["tokens", "connection_status"],
@@ -224,27 +229,27 @@ async def trigger_backfill(
 ):
     """
     Manually trigger backfill of recently played tracks
-    
+
     Fetches last 50 plays from Spotify and imports them
     """
     repository = SpotifyRepository(session)
     tokens = repository.get_spotify_tokens(current_user["id"])
-    
+
     if not tokens:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Spotify not connected"
         )
-    
+
     # Check if token expired
     from datetime import timezone
     now = datetime.now(timezone.utc)
     expires_at = tokens["expires_at"]
-    
+
     # Make expires_at timezone-aware if it isn't
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
-    
+
     if expires_at < now:
         # Refresh token
         client = SpotifyClient()
@@ -260,7 +265,7 @@ async def trigger_backfill(
             await client.close()
     else:
         access_token = tokens["access_token"]
-    
+
     # Run backfill synchronously (immediate execution)
     try:
         return await spotify_sync_service.run_backfill(
@@ -287,13 +292,13 @@ async def debug_recently_played(
     """
     repository = SpotifyRepository(session)
     tokens = repository.get_spotify_tokens(current_user["id"])
-    
+
     if not tokens:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Spotify not connected"
         )
-    
+
     client = SpotifyClient(access_token=tokens["access_token"])
     try:
         recently_played = await client.get_recently_played(limit=10)
@@ -314,7 +319,7 @@ async def get_listening_timeline(
 ):
     """
     Get user's listening timeline (recent scrobbles)
-    
+
     Returns chronological list of played tracks
     """
     query = """
@@ -338,9 +343,9 @@ async def get_listening_timeline(
            al.name as album_name,
            al.image_url as album_image
     """
-    
+
     result = session.run(query, user_id=current_user["id"], offset=offset, limit=limit)
-    
+
     timeline = []
     for record in result:
         timeline.append({
@@ -363,7 +368,7 @@ async def get_listening_timeline(
                 "image_url": record["album_image"]
             } if record["album_id"] else None
         })
-    
+
     return {
         "timeline": timeline,
         "count": len(timeline),
@@ -382,7 +387,7 @@ async def get_user_listening_timeline(
 ):
     """
     Get another user's listening timeline (public)
-    
+
     Returns chronological list of played tracks for any user
     """
     cypher_query = """
@@ -406,9 +411,9 @@ async def get_user_listening_timeline(
            al.name as album_name,
            al.image_url as album_image
     """
-    
+
     result = session.run(cypher_query, user_id=user_id, offset=offset, limit=limit)
-    
+
     timeline = []
     for record in result:
         timeline.append({
@@ -431,7 +436,7 @@ async def get_user_listening_timeline(
                 "image_url": record["album_image"]
             } if record["album_id"] else None
         })
-    
+
     return {
         "timeline": timeline,
         "count": len(timeline),
@@ -448,7 +453,7 @@ async def get_listening_stats(
     """Get user's listening statistics"""
     scrobble_service = SpotifyScrobbleService(session)
     stats = scrobble_service.get_user_listening_stats(current_user["id"])
-    
+
     return stats
 
 
@@ -482,3 +487,70 @@ async def get_top_artists(
         for r in result
     ]
     return {"artists": artists}
+
+
+# ============= Background Tasks =============
+
+async def _sync_top_albums_bg(user_id: str, access_token: str):
+    """Derive top albums from Spotify top tracks and sync to Neo4j"""
+    print(f"💿 Syncing Spotify top albums for user {user_id}")
+    from app.db.neo4j_driver import neo4j_driver
+    from collections import defaultdict
+
+    client = SpotifyClient(access_token=access_token)
+    try:
+        # Use long_term for the broadest picture of favourite albums
+        data = await client.get_user_top_tracks(time_range="long_term", limit=50)
+        tracks = data.get("items", [])
+
+        # Aggregate tracks by album_id — count = proxy for how much the user plays that album
+        album_counts: dict = defaultdict(lambda: {"count": 0, "album": None})
+        for track in tracks:
+            album = track.get("album", {})
+            album_id = album.get("id")
+            if not album_id:
+                continue
+            if album_counts[album_id]["album"] is None:
+                album_counts[album_id]["album"] = album
+            album_counts[album_id]["count"] += 1
+
+        sorted_albums = sorted(
+            album_counts.items(),
+            key=lambda x: x[1]["count"],
+            reverse=True,
+        )
+
+        with neo4j_driver.get_driver().session() as db:
+            db.run(
+                "MATCH (u:User {id: $uid})-[r:TOP_ALBUM {source: 'spotify'}]->() DELETE r",
+                uid=user_id,
+            )
+            for rank, (album_id, info) in enumerate(sorted_albums[:50], 1):
+                album = info["album"]
+                name = album["name"]
+                artist_name = (album.get("artists") or [{}])[0].get("name", "")
+                name_norm = f"{artist_name.lower().strip()}::{name.lower().strip()}"
+                image_url = album["images"][0]["url"] if album.get("images") else None
+                track_count = info["count"]
+
+                db.run(
+                    """
+                    MERGE (a:Album {spotify_id: $spotify_id})
+                    ON CREATE SET a.id = randomUUID(), a.created_at = datetime()
+                    SET a.name = $name, a.artist_name = $artist_name,
+                        a.name_normalized = $name_norm,
+                        a.image_url = $image_url, a.updated_at = datetime()
+                    WITH a
+                    MATCH (u:User {id: $uid})
+                    CREATE (u)-[:TOP_ALBUM {rank: $rank, play_count: $pc,
+                                            source: 'spotify', period: 'long_term'}]->(a)
+                    """,
+                    spotify_id=album_id, name=name, artist_name=artist_name,
+                    name_norm=name_norm, image_url=image_url,
+                    uid=user_id, rank=rank, pc=track_count,
+                )
+        print(f"✅ Spotify album sync complete — {len(sorted_albums)} albums for user {user_id}")
+    except Exception as e:
+        print(f"❌ Spotify album sync failed for user {user_id}: {e}")
+    finally:
+        await client.close()

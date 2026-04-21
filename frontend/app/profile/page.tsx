@@ -22,6 +22,8 @@ import Sigil from '@/app/components/Sigil'
 import { useUser } from '@/app/context/UserContext'
 import { galleryAPI } from '@/lib/galleryApi'
 import { adminAPI } from '@/lib/adminAPI'
+import { friendsApi, FriendUser } from '@/lib/friendsApi'
+import { messagesApi } from '@/lib/messagesApi'
 import { profileAPI } from '@/lib/profileAPI'
 import { getErrorMessage } from '@/lib/types/apiError'
 import LinkListeningCard from './LinkListeningCard'
@@ -70,10 +72,27 @@ export default function ProfilePage() {
   const [redeemToken, setRedeemToken] = useState('')
   const [redeemLoading, setRedeemLoading] = useState(false)
   const [redeemMsg, setRedeemMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [friendsPreview, setFriendsPreview] = useState<FriendUser[]>([])
+  const [msgLoading, setMsgLoading] = useState<string | null>(null)
+
+  const handleMessage = async (friendId: string) => {
+    setMsgLoading(friendId)
+    try {
+      const conv = await messagesApi.startConversation(friendId)
+      router.push(`/messages/${conv.id}`)
+    } catch { /* silent */ } finally {
+      setMsgLoading(null)
+    }
+  }
 
   useEffect(() => {
     if (user) setAboutMeText(user.about_me || '')
   }, [user])
+
+  // Load friends preview separately
+  useEffect(() => {
+    friendsApi.listFriendsPreview().then(setFriendsPreview).catch(() => {})
+  }, [])
 
   const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -308,6 +327,62 @@ export default function ProfilePage() {
           ))}
         </Box>
 
+        {/* Friends section */}
+        <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', p: '10px 12px', mb: 2, backgroundColor: '#120e18' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: friendsPreview.length > 0 ? 1.25 : 0 }}>
+            <span style={{ ...lbl, color: 'var(--accent)' }}>⚔ FRIENDS</span>
+            <span
+              style={{ ...lbl, fontSize: '0.5rem', cursor: 'pointer', color: 'var(--muted)' }}
+              onClick={() => router.push('/friends')}
+            >
+              VIEW ALL →
+            </span>
+          </Box>
+
+          {friendsPreview.length === 0 ? (
+            <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', pt: 0.5 }}>
+              No comrades yet.
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              {friendsPreview.map((friend) => (
+                <Box key={friend.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                  <Box
+                    onClick={() => router.push(`/profile/${friend.id}`)}
+                    sx={{
+                      width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                      backgroundColor: 'var(--ink)', cursor: 'pointer',
+                      overflow: 'hidden', border: '1px solid rgba(216,207,184,0.15)',
+                      backgroundImage: friend.profile_image_url ? `url(${API_BASE}${friend.profile_image_url})` : 'none',
+                      backgroundSize: 'cover', backgroundPosition: 'center',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    {!friend.profile_image_url && (
+                      <span style={{ ...lbl, fontSize: '0.6rem', color: 'var(--muted)' }}>
+                        {friend.handle.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </Box>
+                  <span
+                    style={{ ...lbl, flex: 1, color: 'var(--ink)', fontSize: '0.5625rem', cursor: 'pointer', letterSpacing: '0.1em' }}
+                    onClick={() => router.push(`/profile/${friend.id}`)}
+                  >
+                    {friend.handle}
+                  </span>
+                  <span
+                    style={{ ...lbl, fontSize: '0.4375rem', color: msgLoading === friend.id ? 'rgba(216,207,184,0.25)' : 'var(--muted)', letterSpacing: '0.1em', cursor: 'pointer' }}
+                    onClick={() => handleMessage(friend.id)}
+                  >
+                    {msgLoading === friend.id ? '…' : 'MSG'}
+                  </span>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+
+        {/* Globe View */}
         <Box
           onClick={() => router.push('/globe')}
           sx={{
@@ -339,6 +414,7 @@ export default function ProfilePage() {
           onViewAll={() => router.push('/gallery')}
         />
 
+        {/* Music Profile */}
         <Box sx={{ mt: 2 }}>
           <MusicProfile userId={user.id} isOwnProfile={true} />
         </Box>
