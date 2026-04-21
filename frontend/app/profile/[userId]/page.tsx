@@ -83,10 +83,10 @@ export default function UserProfilePage() {
   const [msgLoading, setMsgLoading] = useState(false)
 
   const handleMessage = async () => {
-    if (!profileUser) return
+    if (!user) return
     setMsgLoading(true)
     try {
-      const conv = await messagesApi.startConversation(profileUser.id)
+      const conv = await messagesApi.startConversation(user.id)
       router.push(`/messages/${conv.id}`)
     } catch { /* silent */ } finally {
       setMsgLoading(false)

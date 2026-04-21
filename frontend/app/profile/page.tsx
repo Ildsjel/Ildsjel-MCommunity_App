@@ -27,6 +27,7 @@ import { userAPI } from '@/lib/api'
 import { galleryAPI } from '@/lib/galleryApi'
 import { adminAPI } from '@/lib/adminAPI'
 import { friendsApi, FriendUser } from '@/lib/friendsApi'
+import { messagesApi } from '@/lib/messagesApi'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -98,7 +99,17 @@ export default function ProfilePage() {
   const [sigilData, setSigilData] = useState<{ genres: string[]; artists: string[] }>({ genres: [], artists: [] })
   const [fits, setFits] = useState<Array<{ user_id: string; handle: string; compatibility_score: number; profile_image_url?: string }>>([])
   const [friendsPreview, setFriendsPreview] = useState<FriendUser[]>([])
+  const [msgLoading, setMsgLoading] = useState<string | null>(null)
 
+  const handleMessage = async (friendId: string) => {
+    setMsgLoading(friendId)
+    try {
+      const conv = await messagesApi.startConversation(friendId)
+      router.push(`/messages/${conv.id}`)
+    } catch { /* silent */ } finally {
+      setMsgLoading(null)
+    }
+  }
 
   const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -443,8 +454,11 @@ export default function ProfilePage() {
                   >
                     {friend.handle}
                   </span>
-                  <span style={{ ...lbl, fontSize: '0.4375rem', color: 'rgba(216,207,184,0.25)', letterSpacing: '0.1em' }}>
-                    MSG
+                  <span
+                    style={{ ...lbl, fontSize: '0.4375rem', color: msgLoading === friend.id ? 'rgba(216,207,184,0.25)' : 'var(--muted)', letterSpacing: '0.1em', cursor: 'pointer' }}
+                    onClick={() => handleMessage(friend.id)}
+                  >
+                    {msgLoading === friend.id ? '…' : 'MSG'}
                   </span>
                 </Box>
               ))}

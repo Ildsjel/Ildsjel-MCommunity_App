@@ -65,7 +65,7 @@ export default function ConversationPage() {
       setTotal(page.total)
       await messagesApi.markRead(convId).catch(() => {})
     } catch {
-      router.push('/messages')
+      router.back()
     } finally {
       setLoading(false)
     }
@@ -122,8 +122,8 @@ export default function ConversationPage() {
 
         {/* Header */}
         <Box sx={{ px: 2, pt: 2, pb: 1.5, borderBottom: '1.5px solid rgba(216,207,184,0.15)', flexShrink: 0 }}>
-          <Box component="button" onClick={() => router.push('/messages')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 0.5, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
-            ← CORRESPONDENCES
+          <Box component="button" onClick={() => router.back()} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 0.5, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+            ← BACK
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             {otherUser && (
