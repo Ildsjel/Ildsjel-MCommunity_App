@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
+import { getErrorMessage } from '@/lib/types/apiError'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -91,8 +92,8 @@ export default function SpotifyConnectPage() {
       )
       await fetchStatus(token)
       window.history.replaceState({}, '', '/spotify/connect')
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to complete Spotify connection')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to complete Spotify connection'))
       setLoading(false)
     } finally {
       setProcessing(false)
@@ -111,8 +112,8 @@ export default function SpotifyConnectPage() {
       const url = new URL(res.data.auth_url)
       url.searchParams.set('state', packed)
       window.location.href = url.toString()
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to start Spotify authorization')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to start Spotify authorization'))
     }
   }
 
@@ -124,8 +125,8 @@ export default function SpotifyConnectPage() {
       })
       setConfirmDisconnect(false)
       await fetchStatus(token!)
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to disconnect')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to disconnect'))
     }
   }
 

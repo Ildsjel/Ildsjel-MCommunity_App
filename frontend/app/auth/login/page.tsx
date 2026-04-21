@@ -37,10 +37,10 @@ export default function LoginPage() {
       localStorage.setItem('access_token', res.access_token)
       setUser(res.user)
       router.push('/profile')
-    } catch (err: any) {
-      const detail = err.response?.data?.detail
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
       let msg = 'Login failed'
-      if (Array.isArray(detail))      msg = detail.map((e: any) => e.msg).join(', ')
+      if (Array.isArray(detail))      msg = detail.map((e: { msg: string }) => e.msg).join(', ')
       else if (typeof detail === 'string') msg = detail
       if (msg.includes('verify your email')) msg = 'Please verify your email address first. Check your inbox.'
       else if (msg.includes('inactive'))     msg = 'Your account is inactive. Please contact support.'
@@ -69,9 +69,9 @@ export default function LoginPage() {
         <Typography
           component={Link}
           href="/"
-          className="grimr-glow"
+          className="grimr-glow grimr-wordmark"
           sx={{
-            fontFamily: '"Archivo Black", sans-serif',
+            fontFamily: 'var(--font-medieval, "UnifrakturCook", serif)',
             fontSize: { xs: '2.8rem', md: '3.5rem' },
             letterSpacing: '0.04em',
             color: 'text.primary',

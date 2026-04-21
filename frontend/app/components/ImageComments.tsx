@@ -66,7 +66,7 @@ export default function ImageComments({ imageId, imageOwnerId }: ImageCommentsPr
       const response = await getCommentsForImage(imageId)
       setComments(response.comments)
       setError('')
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to load comments')
       console.error('Load comments error:', err)
     } finally {
@@ -86,7 +86,7 @@ export default function ImageComments({ imageId, imageOwnerId }: ImageCommentsPr
       setComments([comment, ...comments])
       setNewComment('')
       setError('')
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to post comment')
       console.error('Create comment error:', err)
     } finally {
@@ -106,7 +106,7 @@ export default function ImageComments({ imageId, imageOwnerId }: ImageCommentsPr
       setEditingCommentId(null)
       setEditContent('')
       setError('')
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to update comment')
       console.error('Update comment error:', err)
     }
@@ -124,7 +124,7 @@ export default function ImageComments({ imageId, imageOwnerId }: ImageCommentsPr
       setDeleteDialogOpen(false)
       setCommentToDelete(null)
       setError('')
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to delete comment')
       console.error('Delete comment error:', err)
     }

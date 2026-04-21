@@ -14,53 +14,27 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  List,
-  ListItem,
 } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import GalleryManager from '@/app/components/GalleryManager'
 import MusicProfile from '@/app/components/MusicProfile'
-import SpotifyConnection from '@/app/components/SpotifyConnection'
 import Sigil from '@/app/components/Sigil'
 import { useUser } from '@/app/context/UserContext'
-import { userAPI } from '@/lib/api'
 import { galleryAPI } from '@/lib/galleryApi'
 import { adminAPI } from '@/lib/adminAPI'
 import { friendsApi, FriendUser } from '@/lib/friendsApi'
 import { messagesApi } from '@/lib/messagesApi'
-import axios from 'axios'
+import { profileAPI } from '@/lib/profileAPI'
+import { getErrorMessage } from '@/lib/types/apiError'
+import LinkListeningCard from './LinkListeningCard'
+import FitsRow from './FitsRow'
+import { useProfileData } from './useProfileData'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-// Prepend API base for relative paths (same logic as UserAvatar)
 const getAvatarUrl = (url?: string | null): string | null => {
   if (!url) return null
   return url.startsWith('/') ? `${API_BASE}${url}` : url
-}
-
-interface User {
-  id: string
-  handle: string
-  email: string
-  country?: string
-  city?: string
-  created_at: string
-  source_accounts: string[]
-  is_pro: boolean
-  onboarding_complete: boolean
-  profile_image_url?: string
-  about_me?: string
-  discoverable_by_name: boolean
-  discoverable_by_music: boolean
-  city_visible: string
-}
-
-interface TimelineItem {
-  play_id: string
-  played_at: string
-  track: { id: string; name: string; uri: string; duration_ms: number; progress_ms: number }
-  artist: { id: string; name: string }
-  album?: { id: string; name: string; image_url?: string }
 }
 
 const lbl: React.CSSProperties = {
@@ -80,12 +54,15 @@ const box: React.CSSProperties = {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user: ctxUser, updateAvatar, setUser: setCtxUser } = useUser()
-  const [user, setUser] = useState<User | null>(null)
-  const [timeline, setTimeline] = useState<TimelineItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [timelineLoading, setTimelineLoading] = useState(false)
-  const [error, setError] = useState('')
+  const { updateAvatar, setUser: setCtxUser } = useUser()
+  const {
+    user, setUser, timeline, timelineLoading,
+    loading, error, lastFmConnected, sigilData, fits,
+  } = useProfileData((u) => {
+    setCtxUser(u)
+    updateAvatar(u.profile_image_url || '')
+  })
+
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false)
   const [editAboutMe, setEditAboutMe] = useState(false)
   const [aboutMeText, setAboutMeText] = useState('')
@@ -95,9 +72,6 @@ export default function ProfilePage() {
   const [redeemToken, setRedeemToken] = useState('')
   const [redeemLoading, setRedeemLoading] = useState(false)
   const [redeemMsg, setRedeemMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [lastFmConnected, setLastFmConnected] = useState(false)
-  const [sigilData, setSigilData] = useState<{ genres: string[]; artists: string[] }>({ genres: [], artists: [] })
-  const [fits, setFits] = useState<Array<{ user_id: string; handle: string; compatibility_score: number; profile_image_url?: string }>>([])
   const [friendsPreview, setFriendsPreview] = useState<FriendUser[]>([])
   const [msgLoading, setMsgLoading] = useState<string | null>(null)
 
@@ -111,6 +85,15 @@ export default function ProfilePage() {
     }
   }
 
+  useEffect(() => {
+    if (user) setAboutMeText(user.about_me || '')
+  }, [user])
+
+  // Load friends preview separately
+  useEffect(() => {
+    friendsApi.listFriendsPreview().then(setFriendsPreview).catch(() => {})
+  }, [])
+
   const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -123,92 +106,32 @@ export default function ProfilePage() {
         setUser(prev => prev ? { ...prev, profile_image_url: result.image_url } : prev)
         updateAvatar(result.image_url!)
       }
-    } catch (err: any) {
-      alert(`Upload failed: ${err.response?.data?.detail || err.message}`)
+    } catch (err: unknown) {
+      alert(`Upload failed: ${getErrorMessage(err)}`)
     } finally {
       setAvatarUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem('access_token')
-        if (!token) { router.push('/auth/login'); return }
-        const [userData, lfmStatus, sigilRes, fitsRes, friendsRes] = await Promise.all([
-          userAPI.getMe(),
-          axios.get(`${API_BASE}/api/v1/lastfm/status`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }).then(r => r.data).catch(() => ({ is_connected: false })),
-          axios.get(`${API_BASE}/api/v1/sigil`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }).then(r => r.data).catch(() => ({ genres: [], artists: [] })),
-          axios.get(`${API_BASE}/api/v1/search/random?limit=2`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }).then(r => r.data.hits ?? []).catch(() => []),
-          friendsApi.listFriendsPreview().catch(() => [] as FriendUser[]),
-        ])
-        setUser(userData)
-        setAboutMeText(userData.about_me || '')
-        setCtxUser(userData)
-        updateAvatar(userData.profile_image_url || '')
-        setLastFmConnected(lfmStatus.is_connected)
-        setSigilData(sigilRes)
-        setFits(fitsRes)
-        setFriendsPreview(friendsRes)
-        if (userData.source_accounts.includes('spotify')) fetchTimeline(token)
-      } catch (err: any) {
-        setError('Failed to load profile')
-        if (err.response?.status === 401) {
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('user')
-          router.push('/auth/login')
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchProfile()
-  }, [router])
-
-  const fetchTimeline = async (token?: string) => {
-    setTimelineLoading(true)
-    try {
-      const t = token || localStorage.getItem('access_token')
-      const res = await axios.get(`${API_BASE}/api/v1/spotify/timeline?limit=20`, {
-        headers: { Authorization: `Bearer ${t}` },
-      })
-      setTimeline(res.data.timeline)
-    } catch { /* silent */ } finally {
-      setTimelineLoading(false)
-    }
-  }
-
   const handleDisconnect = async () => {
     try {
-      const token = localStorage.getItem('access_token')
-      await axios.post(`${API_BASE}/api/v1/spotify/disconnect`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      await profileAPI.disconnectSpotify()
       setDisconnectDialogOpen(false)
       window.location.reload()
-    } catch (err: any) {
-      alert(err.response?.data?.detail || 'Could not disconnect')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Could not disconnect'))
     }
   }
 
   const handleSaveAboutMe = async () => {
     setAboutMeSaving(true)
     try {
-      const token = localStorage.getItem('access_token')
-      const res = await axios.patch(`${API_BASE}/api/v1/users/me`, { about_me: aboutMeText }, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setUser(res.data)
+      const updated = await profileAPI.updateMe({ about_me: aboutMeText })
+      setUser(updated)
       setEditAboutMe(false)
-    } catch (err: any) {
-      alert(err.response?.data?.detail || 'Could not save')
+    } catch (err: unknown) {
+      alert(getErrorMessage(err, 'Could not save'))
     } finally {
       setAboutMeSaving(false)
     }
@@ -223,8 +146,8 @@ export default function ProfilePage() {
       const result = await adminAPI.redeemToken(redeemToken.trim())
       setRedeemMsg({ ok: true, text: result.message })
       setRedeemToken('')
-    } catch (err: any) {
-      setRedeemMsg({ ok: false, text: err.message })
+    } catch (err: unknown) {
+      setRedeemMsg({ ok: false, text: getErrorMessage(err) })
     } finally {
       setRedeemLoading(false)
     }
@@ -260,12 +183,10 @@ export default function ProfilePage() {
       <Navigation />
       <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 4 }}>
 
-        {/* Header row */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <span style={lbl}>ME</span>
         </Box>
 
-        {/* Sigil */}
         <Box sx={{ height: 160, display: 'flex', justifyContent: 'center', mb: 0 }}>
           <Sigil
             size={200}
@@ -277,7 +198,6 @@ export default function ProfilePage() {
           />
         </Box>
 
-        {/* Avatar circle — overlaps bottom of sigil, click to upload */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: '-28px', mb: 2, position: 'relative', zIndex: 2 }}>
           <Box
             onClick={() => fileInputRef.current?.click()}
@@ -312,12 +232,10 @@ export default function ProfilePage() {
         </Box>
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarSelect} />
 
-        {/* Handle */}
         <Typography variant="h4" sx={{ textAlign: 'center', fontSize: '1.25rem', mb: 0.5 }}>
           {user.handle}
         </Typography>
 
-        {/* Location + join date */}
         <Typography sx={{
           textAlign: 'center',
           fontFamily: 'var(--font-serif, "EB Garamond", serif)',
@@ -330,7 +248,6 @@ export default function ProfilePage() {
           {user.created_at ? ` · since ${formatJoined(user.created_at)}` : ''}
         </Typography>
 
-        {/* About box */}
         <div style={{ ...box, marginBottom: '12px' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75 }}>
             <span style={lbl}>ABOUT</span>
@@ -390,7 +307,6 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* 3 stats */}
         <Box sx={{ display: 'flex', gap: 0.75, mb: 2 }}>
           {([
             ['SCROBBLES', timelineLoading ? '—' : timeline.length > 0 ? `${timeline.length}+` : '—'],
@@ -466,137 +382,30 @@ export default function ProfilePage() {
           )}
         </Box>
 
-        {/* Link Your Listening */}
-        <div style={{ ...box, marginBottom: '16px' }}>
-          <span style={{ ...lbl, color: 'var(--accent)', display: 'block', marginBottom: 10 }}>
-            ◉ LINK YOUR LISTENING
-          </span>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {/* Spotify */}
-            <Box
-              onClick={() => router.push('/spotify/connect')}
-              sx={{
-                flex: 1, border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
-                backgroundColor: '#0d0b12', p: '10px 12px', cursor: 'pointer',
-                display: 'flex', flexDirection: 'column', gap: 0.75,
-                '&:hover': { borderColor: 'rgba(216,207,184,0.35)' },
-                transition: 'border-color 0.15s',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink)' }}>
-                  Spotify
-                </span>
-                <Box sx={{
-                  width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-                  backgroundColor: hasSpotify ? '#6a9a7a' : 'rgba(216,207,184,0.2)',
-                  ...(hasSpotify ? {
-                    animation: 'pulse 2s infinite',
-                    '@keyframes pulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } },
-                  } : {}),
-                }} />
-              </Box>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em', color: hasSpotify ? '#6a9a7a' : 'var(--muted)', textTransform: 'uppercase' }}>
-                {hasSpotify ? 'Connected' : 'Not connected'}
-              </span>
-            </Box>
-
-            {/* Last.fm */}
-            <Box
-              onClick={() => router.push('/lastfm/connect')}
-              sx={{
-                flex: 1, border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
-                backgroundColor: '#0d0b12', p: '10px 12px', cursor: 'pointer',
-                display: 'flex', flexDirection: 'column', gap: 0.75,
-                '&:hover': { borderColor: 'rgba(216,207,184,0.35)' },
-                transition: 'border-color 0.15s',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink)' }}>
-                  Last.fm
-                </span>
-                <Box sx={{
-                  width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-                  backgroundColor: hasLastFm ? '#6a9a7a' : 'rgba(216,207,184,0.2)',
-                  ...(hasLastFm ? {
-                    animation: 'pulse 2s infinite',
-                    '@keyframes pulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } },
-                  } : {}),
-                }} />
-              </Box>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em', color: hasLastFm ? '#6a9a7a' : 'var(--muted)', textTransform: 'uppercase' }}>
-                {hasLastFm ? 'Connected' : 'Not connected'}
-              </span>
-            </Box>
+        {/* Globe View */}
+        <Box
+          onClick={() => router.push('/globe')}
+          sx={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
+            p: '9px 12px', mb: 2, cursor: 'pointer', backgroundColor: '#120e18',
+            '&:hover': { borderColor: 'rgba(216,207,184,0.3)' },
+            transition: 'border-color 0.15s',
+          }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+            <span style={{ ...lbl, color: 'var(--accent)' }}>◎ Globe View</span>
+            <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--muted)' }}>
+              {[user.city, user.country].filter(Boolean).join(', ') || 'Atlas of the Devoted'}
+            </Typography>
           </Box>
-        </div>
+          <span style={{ ...lbl, color: 'var(--muted)', fontSize: '0.625rem' }}>→</span>
+        </Box>
 
-        {/* Fits */}
-        <div style={{ ...box, marginBottom: '16px' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <span style={{ ...lbl, color: 'var(--accent)' }}>✶ FITS</span>
-            <span style={{ ...lbl, fontSize: '0.5rem' }}>MUTUAL</span>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {fits.slice(0, 2).map((fit) => (
-              <Box
-                key={fit.user_id}
-                onClick={() => router.push(`/profile/${fit.user_id}`)}
-                sx={{
-                  flex: 1, border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
-                  backgroundColor: '#08060a', p: 1, cursor: 'pointer', textAlign: 'center',
-                  '&:hover': { borderColor: 'var(--accent)' }, transition: 'border-color 0.1s',
-                }}
-              >
-                <Box sx={{
-                  width: 40, height: 40, mx: 'auto', mb: 0.75,
-                  border: '1.5px solid var(--accent, #c43a2a)', borderRadius: '3px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--font-display)', fontSize: '1rem', color: '#ece5d3',
-                  backgroundColor: '#1a1424', overflow: 'hidden',
-                }}>
-                  {fit.profile_image_url
-                    ? <img src={fit.profile_image_url} alt={fit.handle} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : fit.handle[0].toUpperCase()
-                  }
-                </Box>
-                <span style={{ ...lbl, color: 'var(--ink)', display: 'block', marginBottom: 2 }}>
-                  {fit.handle.toUpperCase()}
-                </span>
-                <span style={{ ...lbl, color: 'var(--accent)', fontSize: '0.5rem' }}>
-                  {Math.round((fit.compatibility_score ?? 0) * 100)}% COMPAT
-                </span>
-              </Box>
-            ))}
-            {fits.length === 0 && (
-              <Box sx={{
-                flex: 2, border: '1.5px dashed rgba(216,207,184,0.12)', borderRadius: '3px',
-                backgroundColor: 'transparent', p: 1, display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--muted)', textAlign: 'center', lineHeight: 1.4 }}>
-                  Connect music to find your Fits
-                </Typography>
-              </Box>
-            )}
-            <Box
-              onClick={() => router.push('/search')}
-              sx={{
-                flex: 1, border: '1.5px dashed rgba(216,207,184,0.12)', borderRadius: '3px',
-                backgroundColor: 'transparent', p: 1, display: 'flex',
-                alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                '&:hover': { borderColor: 'rgba(216,207,184,0.3)' }, transition: 'border-color 0.15s',
-              }}
-            >
-              <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--muted)', textAlign: 'center', lineHeight: 1.4 }}>
-                Find more in Discover
-              </Typography>
-            </Box>
-          </Box>
-        </div>
+        <LinkListeningCard hasSpotify={hasSpotify} hasLastFm={hasLastFm} />
 
-        {/* Gallery */}
+        <FitsRow fits={fits} />
+
         <span style={{ ...lbl, display: 'block', marginBottom: 8 }}>◉ GALLERY</span>
         <GalleryManager
           userId={user.id}

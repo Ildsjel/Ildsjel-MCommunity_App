@@ -43,9 +43,9 @@ async def lifespan(app: FastAPI):
     # Start Spotify polling service
     from app.services.spotify_polling_service import polling_service
     await polling_service.start()
-    
+
     yield
-    
+
     # Shutdown
     print("🛑 Shutting down Grimr API...")
     from app.services.spotify_polling_service import polling_service
@@ -115,7 +115,7 @@ async def root():
 async def health_check():
     """Detailed health check"""
     neo4j_healthy = neo4j_driver.verify_connectivity()
-    
+
     return {
         "status": "healthy" if neo4j_healthy else "degraded",
         "database": "connected" if neo4j_healthy else "disconnected",
@@ -130,4 +130,3 @@ if __name__ == "__main__":
         port=8000,
         reload=True
     )
-

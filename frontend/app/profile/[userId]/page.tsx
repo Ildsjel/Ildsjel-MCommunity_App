@@ -115,8 +115,9 @@ export default function UserProfilePage() {
             setTimeline(t.data.timeline)
           } catch { /* silent */ }
         }
-      } catch (err: any) {
-        setError(err.response?.status === 404 ? 'User not found' : 'Failed to load profile')
+      } catch (err: unknown) {
+        const status = (err as { response?: { status?: number } }).response?.status
+        setError(status === 404 ? 'User not found' : 'Failed to load profile')
       } finally {
         setLoading(false)
       }

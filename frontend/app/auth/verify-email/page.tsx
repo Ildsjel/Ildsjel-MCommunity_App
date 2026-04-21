@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { getErrorMessage } from '@/lib/types/apiError';
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
@@ -29,12 +30,9 @@ export default function VerifyEmailPage() {
         setTimeout(() => {
           router.push('/auth/login');
         }, 3000);
-      } catch (error: any) {
+      } catch (error: unknown) {
         setStatus('error');
-        setMessage(
-          error.response?.data?.detail || 
-          'Verifikation fehlgeschlagen. Token ungültig oder abgelaufen.'
-        );
+        setMessage(getErrorMessage(error, 'Verifikation fehlgeschlagen. Token ungültig oder abgelaufen.'));
       }
     };
 
