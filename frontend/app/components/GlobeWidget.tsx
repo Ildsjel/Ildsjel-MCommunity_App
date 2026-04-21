@@ -54,17 +54,103 @@ function project(lat: number, lon: number, cLat: number, cLon: number) {
   }
 }
 
-// Build an SVG path from [lat,lon] point array, breaking on hemisphere edge
-function buildPath(pts: [number, number][], cLat: number, cLon: number, R: number): string {
+// Binary-search the t∈[0,1] where the edge crosses cosC=0.
+function horizonT(
+  lat0: number, lon0: number, lat1: number, lon1: number,
+  cLat: number, cLon: number,
+): number {
+  let lo = 0, hi = 1
+  for (let i = 0; i < 16; i++) {
+    const t = (lo + hi) / 2
+    if (project(lat0 + t * (lat1 - lat0), lon0 + t * (lon1 - lon0), cLat, cLon).visible) lo = t
+    else hi = t
+  }
+  return (lo + hi) / 2
+}
+
+// SVG path for open lines (graticule) — visible segments only, no fill closure.
+function buildLinePath(pts: [number, number][], cLat: number, cLon: number, R: number): string {
   const parts: string[] = []
   let penDown = false
   for (const [lat, lon] of pts) {
     const { x, y, visible } = project(lat, lon, cLat, cLon)
-    if (!visible) { penDown = false; continue }
-    const sx = (x * R).toFixed(1), sy = (y * R).toFixed(1)
-    parts.push(penDown ? `L${sx},${sy}` : `M${sx},${sy}`)
-    penDown = true
+    if (visible) {
+      const px = (x * R).toFixed(1), py = (y * R).toFixed(1)
+      parts.push(penDown ? `L${px},${py}` : `M${px},${py}`)
+      penDown = true
+    } else {
+      penDown = false
+    }
   }
+  return parts.join('')
+}
+
+// SVG path for closed polygon rings.
+// Builds a single closed path per ring: visible edges connected at the horizon
+// by CCW arcs along the globe boundary — no chord artifacts.
+function buildPolygonPath(pts: [number, number][], cLat: number, cLon: number, R: number): string {
+  const n = pts.length
+  if (n === 0) return ''
+
+  const projs = pts.map(([lat, lon]) => project(lat, lon, cLat, cLon))
+  if (!projs.some(p => p.visible)) return ''
+
+  // All visible: simple closed polygon, no clipping needed.
+  if (projs.every(p => p.visible)) {
+    return projs.map(({ x, y }, i) =>
+      (i === 0 ? 'M' : 'L') + (x * R).toFixed(1) + ',' + (y * R).toFixed(1)
+    ).join('') + 'Z'
+  }
+
+  // Collect all horizon crossings on each edge.
+  type Crossing = { type: 'entry' | 'exit'; fromIdx: number; x: number; y: number }
+  const crossings: Crossing[] = []
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n
+    if (projs[i].visible !== projs[j].visible) {
+      const [lat0, lon0] = pts[i], [lat1, lon1] = pts[j]
+      const t  = horizonT(lat0, lon0, lat1, lon1, cLat, cLon)
+      const hp = project(lat0 + t * (lat1 - lat0), lon0 + t * (lon1 - lon0), cLat, cLon)
+      crossings.push({ type: projs[i].visible ? 'exit' : 'entry', fromIdx: i, x: hp.x * R, y: hp.y * R })
+    }
+  }
+
+  if (crossings.length === 0 || crossings.length % 2 !== 0) return ''
+
+  // Reorder so we start with an ENTRY crossing.
+  const fi = crossings.findIndex(c => c.type === 'entry')
+  if (fi < 0) return ''
+  const ord = [...crossings.slice(fi), ...crossings.slice(0, fi)]
+
+  const Rs = R.toFixed(1)
+  const parts: string[] = []
+  const e0 = ord[0]
+
+  parts.push(`M${e0.x.toFixed(1)},${e0.y.toFixed(1)}`)
+
+  for (let ci = 0; ci < ord.length; ci += 2) {
+    const entry = ord[ci], exit = ord[ci + 1]
+
+    // Arc from previous exit to this entry along globe boundary (CCW, short arc).
+    if (ci > 0) {
+      parts.push(`A${Rs},${Rs},0,0,0,${entry.x.toFixed(1)},${entry.y.toFixed(1)}`)
+    }
+
+    // Draw visible polygon vertices from entry+1 through exit.fromIdx inclusive.
+    for (let k = (entry.fromIdx + 1) % n, iter = 0; iter < n; k = (k + 1) % n, iter++) {
+      const { x, y } = projs[k]
+      parts.push(`L${(x * R).toFixed(1)},${(y * R).toFixed(1)}`)
+      if (k === exit.fromIdx) break
+    }
+
+    // Line to the exit horizon point.
+    parts.push(`L${exit.x.toFixed(1)},${exit.y.toFixed(1)}`)
+  }
+
+  // Arc from last exit back to first entry (M point), then close.
+  parts.push(`A${Rs},${Rs},0,0,0,${e0.x.toFixed(1)},${e0.y.toFixed(1)}`)
+  parts.push('Z')
+
   return parts.join('')
 }
 
@@ -73,13 +159,13 @@ function buildGraticule(cLat: number, cLon: number, R: number) {
   for (const lat of [-60, -30, 0, 30, 60]) {
     const pts: [number, number][] = []
     for (let lon = -180; lon <= 180; lon += 2) pts.push([lat, lon])
-    const d = buildPath(pts, cLat, cLon, R)
+    const d = buildLinePath(pts, cLat, cLon, R)
     if (d) regular.push(d)
   }
   for (let lon = -180; lon < 180; lon += 30) {
     const pts: [number, number][] = []
     for (let lat = -88; lat <= 88; lat += 2) pts.push([lat, lon])
-    const d = buildPath(pts, cLat, cLon, R)
+    const d = buildLinePath(pts, cLat, cLon, R)
     if (d) regular.push(d)
   }
   return regular
@@ -214,9 +300,9 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
 
   const graticule = buildGraticule(cLat, cLon, R)
 
-  // Land paths — data is [lon, lat], buildPath wants [lat, lon]
+  // Land paths — data is [lon, lat], buildPolygonPath wants [lat, lon]
   const landPaths: string[] = land.map(ring =>
-    buildPath(ring.map(([lon, lat]) => [lat, lon] as [number, number]), cLat, cLon, R)
+    buildPolygonPath(ring.map(([lon, lat]) => [lat, lon] as [number, number]), cLat, cLon, R)
   ).filter(Boolean)
 
   const projected = markers.map(m => {
