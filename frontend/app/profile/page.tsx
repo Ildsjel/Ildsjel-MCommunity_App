@@ -382,25 +382,7 @@ export default function ProfilePage() {
           )}
         </Box>
 
-        {/* Globe View */}
-        <Box
-          onClick={() => router.push('/globe')}
-          sx={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
-            p: '9px 12px', mb: 2, cursor: 'pointer', backgroundColor: '#120e18',
-            '&:hover': { borderColor: 'rgba(216,207,184,0.3)' },
-            transition: 'border-color 0.15s',
-          }}
-        >
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-            <span style={{ ...lbl, color: 'var(--accent)' }}>◎ Globe View</span>
-            <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--muted)' }}>
-              {[user.city, user.country].filter(Boolean).join(', ') || 'Atlas of the Devoted'}
-            </Typography>
-          </Box>
-          <span style={{ ...lbl, color: 'var(--muted)', fontSize: '0.625rem' }}>→</span>
-        </Box>
+
 
         <LinkListeningCard hasSpotify={hasSpotify} hasLastFm={hasLastFm} />
 
