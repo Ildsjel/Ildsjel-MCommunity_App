@@ -85,9 +85,17 @@ function buildLinePath(pts: [number, number][], cLat: number, cLon: number, R: n
   return parts.join('')
 }
 
+// In SVG (y-down), sweep=0 is CCW visually. The CCW arc from (x1,y1) to (x2,y2)
+// spans ((atan2(y1,x1) - atan2(y2,x2)) + 2π) % 2π. When that's > π the CCW
+// arc is the LARGE arc, so we need large-arc=1.
+function ccwLargeArc(x1: number, y1: number, x2: number, y2: number): 0 | 1 {
+  const sweep = (Math.atan2(y1, x1) - Math.atan2(y2, x2) + 2 * Math.PI) % (2 * Math.PI)
+  return sweep > Math.PI ? 1 : 0
+}
+
 // SVG path for closed polygon rings.
 // Builds a single closed path per ring: visible edges connected at the horizon
-// by CCW arcs along the globe boundary — no chord artifacts.
+// by CCW arcs along the globe boundary — no chord artifacts, correct winding.
 function buildPolygonPath(pts: [number, number][], cLat: number, cLon: number, R: number): string {
   const n = pts.length
   if (n === 0) return ''
@@ -131,9 +139,11 @@ function buildPolygonPath(pts: [number, number][], cLat: number, cLon: number, R
   for (let ci = 0; ci < ord.length; ci += 2) {
     const entry = ord[ci], exit = ord[ci + 1]
 
-    // Arc from previous exit to this entry along globe boundary (CCW, short arc).
+    // CCW arc from previous exit to this entry. large-arc depends on arc span.
     if (ci > 0) {
-      parts.push(`A${Rs},${Rs},0,0,0,${entry.x.toFixed(1)},${entry.y.toFixed(1)}`)
+      const prevExit = ord[ci - 1]
+      const lf = ccwLargeArc(prevExit.x, prevExit.y, entry.x, entry.y)
+      parts.push(`A${Rs},${Rs},0,${lf},0,${entry.x.toFixed(1)},${entry.y.toFixed(1)}`)
     }
 
     // Draw visible polygon vertices from entry+1 through exit.fromIdx inclusive.
@@ -147,8 +157,10 @@ function buildPolygonPath(pts: [number, number][], cLat: number, cLon: number, R
     parts.push(`L${exit.x.toFixed(1)},${exit.y.toFixed(1)}`)
   }
 
-  // Arc from last exit back to first entry (M point), then close.
-  parts.push(`A${Rs},${Rs},0,0,0,${e0.x.toFixed(1)},${e0.y.toFixed(1)}`)
+  // CCW arc from last exit back to first entry (M point), then close.
+  const lastExit = ord[ord.length - 1]
+  const lf0 = ccwLargeArc(lastExit.x, lastExit.y, e0.x, e0.y)
+  parts.push(`A${Rs},${Rs},0,${lf0},0,${e0.x.toFixed(1)},${e0.y.toFixed(1)}`)
   parts.push('Z')
 
   return parts.join('')
