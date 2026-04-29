@@ -34,6 +34,9 @@ class BandService:
     def get_release(self, release_id: str) -> Optional[dict]:
         return self.repo.get_release(release_id)
 
+    def get_release_by_slug(self, band_slug: str, release_slug: str) -> Optional[dict]:
+        return self.repo.get_release_by_slug(band_slug, release_slug)
+
     def delete_release(self, release_id: str) -> bool:
         return self.repo.delete_release(release_id)
 

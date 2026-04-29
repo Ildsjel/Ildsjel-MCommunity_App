@@ -1,10 +1,11 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
-import { getBandBySlug } from '@/lib/mockBands'
-import type { Release } from '@/lib/mockBands'
+import { getBand } from '@/lib/bandsApi'
+import type { Band, Release } from '@/lib/bandsApi'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -94,7 +95,26 @@ function ReleaseCard({ release, bandSlug, onClick }: { release: Release; bandSlu
 export default function BandPage({ params }: { params: { slug: string } }) {
   const { slug } = params
   const router = useRouter()
-  const band = getBandBySlug(slug)
+  const [band, setBand] = useState<Band | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getBand(slug).then((b) => {
+      setBand(b)
+      setLoading(false)
+    })
+  }, [slug])
+
+  if (loading) {
+    return (
+      <>
+        <Navigation />
+        <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 4, textAlign: 'center' }}>
+          <span style={{ ...lbl, color: 'var(--muted)' }}>loading…</span>
+        </Box>
+      </>
+    )
+  }
 
   if (!band) {
     return (
@@ -159,13 +179,13 @@ export default function BandPage({ params }: { params: { slug: string } }) {
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.75 }}>
               {band.genres.map((g) => (
-                <Box key={g} sx={{
+                <Box key={g.id} sx={{
                   border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px',
                   px: 0.75, height: 18, display: 'inline-flex', alignItems: 'center',
                   fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
                   letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)',
                 }}>
-                  {g}
+                  {g.name}
                 </Box>
               ))}
             </Box>
@@ -176,18 +196,20 @@ export default function BandPage({ params }: { params: { slug: string } }) {
         </Box>
 
         {/* Bio */}
-        <Box sx={{
-          border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
-          backgroundColor: '#120e18', px: 1.5, py: 1.25, mb: 2.5,
-        }}>
-          <span style={{ ...lbl, display: 'block', marginBottom: 8 }}>ABOUT</span>
-          <Typography sx={{
-            fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-            fontSize: '0.8125rem', lineHeight: 1.6, color: 'var(--muted)',
+        {band.bio && (
+          <Box sx={{
+            border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
+            backgroundColor: '#120e18', px: 1.5, py: 1.25, mb: 2.5,
           }}>
-            {band.bio}
-          </Typography>
-        </Box>
+            <span style={{ ...lbl, display: 'block', marginBottom: 8 }}>ABOUT</span>
+            <Typography sx={{
+              fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+              fontSize: '0.8125rem', lineHeight: 1.6, color: 'var(--muted)',
+            }}>
+              {band.bio}
+            </Typography>
+          </Box>
+        )}
 
         {/* Discography — LPs */}
         {lps.length > 0 && (
@@ -227,6 +249,12 @@ export default function BandPage({ params }: { params: { slug: string } }) {
               ))}
             </Box>
           </>
+        )}
+
+        {band.releases.length === 0 && (
+          <Box sx={{ textAlign: 'center', pt: 3 }}>
+            <span style={{ ...lbl, color: 'var(--muted)' }}>no releases yet</span>
+          </Box>
         )}
       </Box>
     </>

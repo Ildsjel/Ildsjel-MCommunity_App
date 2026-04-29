@@ -133,3 +133,17 @@ class TagResponse(TagBase):
 class TagMerge(BaseModel):
     source_id: str
     target_id: str
+
+
+class BandSummaryResponse(BaseModel):
+    id: str
+    slug: str
+    name: str
+    country: str
+    country_code: str
+    formed: int
+
+
+class ReleaseDetailResponse(BaseModel):
+    band: BandSummaryResponse
+    release: ReleaseResponse
