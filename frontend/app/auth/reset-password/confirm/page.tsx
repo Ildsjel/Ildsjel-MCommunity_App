@@ -43,7 +43,10 @@ export default function ResetPasswordConfirmPage() {
       alert('Passwort erfolgreich zurückgesetzt!');
       router.push('/auth/login');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Reset fehlgeschlagen. Token ungültig oder abgelaufen.');
+      const data = err.response?.data;
+      setError(
+        data?.error || data?.detail || 'Reset fehlgeschlagen. Token ungültig oder abgelaufen.'
+      );
     } finally {
       setLoading(false);
     }
