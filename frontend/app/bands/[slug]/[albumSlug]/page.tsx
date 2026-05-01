@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
-import { getRelease } from '@/lib/mockBands'
+import { getRelease } from '@/lib/bandsApi'
+import type { ReleaseDetail } from '@/lib/bandsApi'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -30,8 +31,27 @@ export default function AlbumPage({
 }) {
   const { slug, albumSlug } = params
   const router = useRouter()
-  const result = getRelease(slug, albumSlug)
+  const [result, setResult] = useState<ReleaseDetail | null>(null)
+  const [loading, setLoading] = useState(true)
   const [expandedTrack, setExpandedTrack] = useState<number | null>(null)
+
+  useEffect(() => {
+    getRelease(slug, albumSlug).then((r) => {
+      setResult(r)
+      setLoading(false)
+    })
+  }, [slug, albumSlug])
+
+  if (loading) {
+    return (
+      <>
+        <Navigation />
+        <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 4, textAlign: 'center' }}>
+          <span style={{ ...lbl, color: 'var(--muted)' }}>loading…</span>
+        </Box>
+      </>
+    )
+  }
 
   if (!result) {
     return (
@@ -135,7 +155,10 @@ export default function AlbumPage({
             {band.name}
           </Typography>
           <span style={{ ...lbl, fontSize: '0.5rem' }}>
-            {release.year} · {release.label} · {release.tracks.length} tracks · {totalMins}:{String(totalSecs).padStart(2, '0')}
+            {release.year}
+            {release.label ? ` · ${release.label}` : ''}
+            {` · ${release.tracks.length} track${release.tracks.length !== 1 ? 's' : ''}`}
+            {` · ${totalMins}:${String(totalSecs).padStart(2, '0')}`}
           </span>
         </Box>
 
@@ -181,7 +204,7 @@ export default function AlbumPage({
                       <Typography sx={{
                         fontFamily: 'var(--font-serif)', fontStyle: 'italic',
                         fontSize: '0.875rem', lineHeight: 1.3,
-                        color: isExpanded ? 'var(--ink)' : 'var(--ink)',
+                        color: 'var(--ink)',
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                       }}>
                         {track.title}

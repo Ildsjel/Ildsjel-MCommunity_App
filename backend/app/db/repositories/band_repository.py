@@ -60,16 +60,22 @@ class BandRepository:
         result = self.session.run(
             """
             MATCH (b:Band {id: $id})
-            OPTIONAL MATCH (b)-[:HAS_RELEASE]->(r:Release)
-            OPTIONAL MATCH (r)-[:HAS_TRACK]->(t:Track)
             OPTIONAL MATCH (b)-[:TAGGED_WITH]->(g:Genre)
             OPTIONAL MATCH (b)-[:TAGGED_WITH]->(tag:Tag)
-            RETURN b,
-                   collect(DISTINCT {id: r.id, slug: r.slug, title: r.title, type: r.type,
-                                     year: r.year, label: r.label, status: r.status,
-                                     band_id: r.band_id}) AS releases,
-                   collect(DISTINCT {id: g.id, slug: g.slug, name: g.name}) AS genres,
-                   collect(DISTINCT {id: tag.id, slug: tag.slug, name: tag.name, category: tag.category}) AS tags
+            WITH b,
+                 collect(DISTINCT CASE WHEN g IS NOT NULL THEN {id: g.id, slug: g.slug, name: g.name} END) AS genres,
+                 collect(DISTINCT CASE WHEN tag IS NOT NULL THEN {id: tag.id, slug: tag.slug, name: tag.name, category: tag.category} END) AS tags
+            OPTIONAL MATCH (b)-[:HAS_RELEASE]->(r:Release)
+            WITH b, genres, tags, r
+            OPTIONAL MATCH (r)-[:HAS_TRACK]->(t:Track)
+            WITH b, genres, tags, r,
+                 collect(CASE WHEN t IS NOT NULL THEN {id: t.id, number: t.number, title: t.title, duration: t.duration, lyrics: t.lyrics} END) AS tracks
+            WITH b, genres, tags,
+                 collect(CASE WHEN r IS NOT NULL THEN {id: r.id, slug: r.slug, title: r.title, type: r.type,
+                                                       year: r.year, label: r.label, status: r.status,
+                                                       band_id: r.band_id, tracks: tracks}
+                         END) AS releases
+            RETURN b, genres, tags, releases
             """,
             id=band_id,
         )
@@ -82,16 +88,22 @@ class BandRepository:
         result = self.session.run(
             """
             MATCH (b:Band {slug: $slug})
-            OPTIONAL MATCH (b)-[:HAS_RELEASE]->(r:Release)
-            OPTIONAL MATCH (r)-[:HAS_TRACK]->(t:Track)
             OPTIONAL MATCH (b)-[:TAGGED_WITH]->(g:Genre)
             OPTIONAL MATCH (b)-[:TAGGED_WITH]->(tag:Tag)
-            RETURN b,
-                   collect(DISTINCT {id: r.id, slug: r.slug, title: r.title, type: r.type,
-                                     year: r.year, label: r.label, status: r.status,
-                                     band_id: r.band_id}) AS releases,
-                   collect(DISTINCT {id: g.id, slug: g.slug, name: g.name}) AS genres,
-                   collect(DISTINCT {id: tag.id, slug: tag.slug, name: tag.name, category: tag.category}) AS tags
+            WITH b,
+                 collect(DISTINCT CASE WHEN g IS NOT NULL THEN {id: g.id, slug: g.slug, name: g.name} END) AS genres,
+                 collect(DISTINCT CASE WHEN tag IS NOT NULL THEN {id: tag.id, slug: tag.slug, name: tag.name, category: tag.category} END) AS tags
+            OPTIONAL MATCH (b)-[:HAS_RELEASE]->(r:Release)
+            WITH b, genres, tags, r
+            OPTIONAL MATCH (r)-[:HAS_TRACK]->(t:Track)
+            WITH b, genres, tags, r,
+                 collect(CASE WHEN t IS NOT NULL THEN {id: t.id, number: t.number, title: t.title, duration: t.duration, lyrics: t.lyrics} END) AS tracks
+            WITH b, genres, tags,
+                 collect(CASE WHEN r IS NOT NULL THEN {id: r.id, slug: r.slug, title: r.title, type: r.type,
+                                                       year: r.year, label: r.label, status: r.status,
+                                                       band_id: r.band_id, tracks: tracks}
+                         END) AS releases
+            RETURN b, genres, tags, releases
             """,
             slug=slug,
         )
@@ -246,8 +258,8 @@ class BandRepository:
             """
             MATCH (r:Release {id: $id})
             OPTIONAL MATCH (r)-[:HAS_TRACK]->(t:Track)
-            RETURN r, collect(t {.id, .number, .title, .duration, .lyrics}) AS tracks
-            ORDER BY t.number
+            WITH r, t ORDER BY t.number
+            RETURN r, collect(CASE WHEN t IS NOT NULL THEN {id: t.id, number: t.number, title: t.title, duration: t.duration, lyrics: t.lyrics} END) AS tracks
             """,
             id=release_id,
         )
@@ -255,6 +267,32 @@ class BandRepository:
         if not record:
             return None
         return self._release_record_to_dict(record)
+
+    def get_release_by_slug(self, band_slug: str, release_slug: str) -> Optional[dict]:
+        result = self.session.run(
+            """
+            MATCH (b:Band {slug: $band_slug})-[:HAS_RELEASE]->(r:Release {slug: $release_slug})
+            OPTIONAL MATCH (r)-[:HAS_TRACK]->(t:Track)
+            WITH b, r, t ORDER BY t.number
+            WITH b, r,
+                 collect(CASE WHEN t IS NOT NULL THEN {id: t.id, number: t.number, title: t.title, duration: t.duration, lyrics: t.lyrics} END) AS tracks
+            RETURN b, r, tracks
+            """,
+            band_slug=band_slug, release_slug=release_slug,
+        )
+        record = result.single()
+        if not record:
+            return None
+        b = dict(record["b"])
+        r = dict(record["r"])
+        tracks = sorted(
+            [dict(t) for t in (record.get("tracks") or []) if t and t.get("id")],
+            key=lambda x: x.get("number", 0),
+        )
+        return {
+            "band": b,
+            "release": {**r, "tracks": tracks},
+        }
 
     def delete_release(self, release_id: str) -> bool:
         result = self.session.run(
@@ -404,9 +442,19 @@ class BandRepository:
         releases_raw = record.get("releases", []) or []
         genres_raw = record.get("genres", []) or []
         tags_raw = record.get("tags", []) or []
-        releases = [r for r in releases_raw if r.get("id")]
-        genres = [g for g in genres_raw if g.get("id")]
-        tags = [t for t in tags_raw if t.get("id")]
+        releases = []
+        for r in releases_raw:
+            if not r or not r.get("id"):
+                continue
+            r_dict = dict(r)
+            tracks_raw = r_dict.pop("tracks", []) or []
+            tracks = sorted(
+                [dict(t) for t in tracks_raw if t and t.get("id")],
+                key=lambda x: x.get("number", 0),
+            )
+            releases.append({**r_dict, "tracks": tracks})
+        genres = [dict(g) for g in genres_raw if g and g.get("id")]
+        tags = [dict(t) for t in tags_raw if t and t.get("id")]
         return {**b, "releases": releases, "genres": genres, "tags": tags}
 
     def _release_record_to_dict(self, record) -> dict:

@@ -7,6 +7,7 @@ from app.auth.jwt_handler import get_current_user
 from app.models.favourites_models import (
     FavouriteArtistRequest,
     FavouriteAlbumRequest,
+    FavouriteBandRequest,
     VisibilityUpdateRequest,
 )
 
@@ -160,6 +161,82 @@ async def remove_favourite_album(
         MERGE (u)-[:UNFAVOURITE_ALBUM]->(a)
         """,
         uid=current_user["id"], album_id=album_id,
+    )
+    return {"ok": True}
+
+
+# ── Band Favourites ──────────────────────────────────────────────────────────
+
+@router.get("/bands")
+async def get_favourite_bands(
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    uid = current_user["id"]
+    records = session.run(
+        """
+        MATCH (u:User {id: $uid})-[:FAVOURITE_BAND]->(b:Band)
+        OPTIONAL MATCH (b)-[:TAGGED_WITH]->(g:Genre)
+        WITH b, collect(DISTINCT CASE WHEN g IS NOT NULL
+             THEN {id: g.id, slug: g.slug, name: g.name} END) AS genres
+        RETURN b, genres
+        ORDER BY b.name
+        """,
+        uid=uid,
+    )
+    bands = []
+    for r in records:
+        b = dict(r["b"])
+        genres = [dict(g) for g in (r.get("genres") or []) if g and g.get("id")]
+        bands.append({**b, "genres": genres, "releases": []})
+    return bands
+
+
+@router.get("/band/{band_id}")
+async def get_favourite_band_status(
+    band_id: str,
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    rec = session.run(
+        """
+        MATCH (u:User {id: $uid}), (b:Band {id: $band_id})
+        OPTIONAL MATCH (u)-[f:FAVOURITE_BAND]->(b)
+        RETURN f IS NOT NULL AS is_favourite
+        """,
+        uid=current_user["id"], band_id=band_id,
+    ).single()
+    return {"is_favourite": bool(rec["is_favourite"]) if rec else False}
+
+
+@router.post("/band")
+async def add_favourite_band(
+    body: FavouriteBandRequest,
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    session.run(
+        """
+        MATCH (u:User {id: $uid}), (b:Band {id: $band_id})
+        MERGE (u)-[:FAVOURITE_BAND]->(b)
+        """,
+        uid=current_user["id"], band_id=body.band_id,
+    )
+    return {"ok": True}
+
+
+@router.delete("/band/{band_id}")
+async def remove_favourite_band(
+    band_id: str,
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    session.run(
+        """
+        MATCH (u:User {id: $uid})-[f:FAVOURITE_BAND]->(b:Band {id: $band_id})
+        DELETE f
+        """,
+        uid=current_user["id"], band_id=band_id,
     )
     return {"ok": True}
 
