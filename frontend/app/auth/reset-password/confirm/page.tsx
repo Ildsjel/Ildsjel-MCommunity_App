@@ -18,18 +18,18 @@ export default function ResetPasswordConfirmPage() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwörter stimmen nicht überein');
+      setError('Passwords do not match');
       return;
     }
 
     if (password.length < 8) {
-      setError('Passwort muss mindestens 8 Zeichen lang sein');
+      setError('Password must be at least 8 characters long');
       return;
     }
 
     const token = searchParams.get('token');
     if (!token) {
-      setError('Kein Reset-Token gefunden');
+      setError('No reset token found');
       return;
     }
 
@@ -41,10 +41,10 @@ export default function ResetPasswordConfirmPage() {
         new_password: password
       });
       
-      alert('Passwort erfolgreich zurückgesetzt!');
+      alert('Password reset successfully!');
       router.push('/auth/login');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Reset fehlgeschlagen. Token ungültig oder abgelaufen.'));
+      setError(getErrorMessage(err, 'Reset failed. Token invalid or expired.'));
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ export default function ResetPasswordConfirmPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-red-900 p-4">
       <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-2xl p-8 border border-red-800">
         <h1 className="text-3xl font-bold text-center mb-6 text-red-500">
-          Neues Passwort setzen
+          Set New Password
         </h1>
 
         {error && (
@@ -66,7 +66,7 @@ export default function ResetPasswordConfirmPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-              Neues Passwort
+              New password
             </label>
             <input
               id="password"
@@ -75,16 +75,16 @@ export default function ResetPasswordConfirmPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              placeholder="Mindestens 8 Zeichen"
+              placeholder="At least 8 characters"
             />
             <p className="mt-1 text-xs text-gray-400">
-              Mindestens 8 Zeichen, mit Groß- und Kleinbuchstaben, Zahlen und Sonderzeichen
+              At least 8 characters with upper- and lowercase letters, numbers, and special characters
             </p>
           </div>
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
-              Passwort bestätigen
+              Confirm password
             </label>
             <input
               id="confirmPassword"
@@ -93,7 +93,7 @@ export default function ResetPasswordConfirmPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              placeholder="Passwort wiederholen"
+              placeholder="Repeat password"
             />
           </div>
 
@@ -102,7 +102,7 @@ export default function ResetPasswordConfirmPage() {
             disabled={loading}
             className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Wird gespeichert...' : 'Passwort zurücksetzen'}
+            {loading ? 'Saving...' : 'Reset password'}
           </button>
         </form>
       </div>

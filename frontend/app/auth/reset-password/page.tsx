@@ -23,7 +23,7 @@ export default function ResetPasswordPage() {
       setMessage(response.data.message);
       setEmail('');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Ein Fehler ist aufgetreten'));
+      setError(getErrorMessage(err, 'An error occurred'));
     } finally {
       setLoading(false);
     }
@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-red-900 p-4">
       <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-2xl p-8 border border-red-800">
         <h1 className="text-3xl font-bold text-center mb-6 text-red-500">
-          Passwort zurücksetzen
+          Reset Password
         </h1>
 
         {message && (
@@ -51,7 +51,7 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-              E-Mail-Adresse
+              Email address
             </label>
             <input
               id="email"
@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              placeholder="deine@email.com"
+              placeholder="your@email.com"
             />
           </div>
 
@@ -69,7 +69,7 @@ export default function ResetPasswordPage() {
             disabled={loading}
             className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Wird gesendet...' : 'Reset-Link senden'}
+            {loading ? 'Sending...' : 'Send reset link'}
           </button>
         </form>
 
@@ -78,7 +78,7 @@ export default function ResetPasswordPage() {
             onClick={() => router.push('/auth/login')}
             className="text-red-400 hover:text-red-300 text-sm"
           >
-            Zurück zum Login
+            Back to login
           </button>
         </div>
       </div>
