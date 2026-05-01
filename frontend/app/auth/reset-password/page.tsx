@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/types/apiError';
+
+const RATE_LIMIT_COOLDOWN_SECONDS = 60;
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -11,9 +13,23 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (cooldownUntil === null) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const cooldownRemaining = cooldownUntil
+    ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000))
+    : 0;
+  const isCoolingDown = cooldownRemaining > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCoolingDown) return;
     setLoading(true);
     setError('');
     setMessage('');
@@ -23,7 +39,23 @@ export default function ResetPasswordPage() {
       setMessage(response.data.message);
       setEmail('');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Ein Fehler ist aufgetreten'));
+      const e = err as {
+        response?: { status?: number; headers?: Record<string, string> };
+      };
+      if (e.response?.status === 429) {
+        const retryAfterHeader = e.response?.headers?.['retry-after'];
+        const retryAfterSeconds = Number.parseInt(retryAfterHeader ?? '', 10);
+        const cooldownSec = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+          ? retryAfterSeconds
+          : RATE_LIMIT_COOLDOWN_SECONDS;
+        setCooldownUntil(Date.now() + cooldownSec * 1000);
+        setNow(Date.now());
+        setError(
+          'Zu viele Versuche. Aus Sicherheitsgründen sind nur 3 Anfragen pro Stunde erlaubt — bitte später erneut probieren.'
+        );
+      } else {
+        setError(getErrorMessage(err, 'Ein Fehler ist aufgetreten'));
+      }
     } finally {
       setLoading(false);
     }
@@ -66,10 +98,14 @@ export default function ResetPasswordPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || isCoolingDown}
             className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Wird gesendet...' : 'Reset-Link senden'}
+            {loading
+              ? 'Wird gesendet...'
+              : isCoolingDown
+                ? `Erneut versuchen in ${cooldownRemaining}s`
+                : 'Reset-Link senden'}
           </button>
         </form>
 
