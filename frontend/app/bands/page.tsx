@@ -93,9 +93,23 @@ export default function BandsPage() {
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <span style={lbl}>◆ BANDS</span>
-          <span style={{ ...lbl, fontSize: '0.5rem' }}>
-            {bandsLoading ? '…' : `${total} IN CATALOGUE`}
-          </span>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              component="button"
+              onClick={() => router.push('/bands/favourites')}
+              sx={{
+                background: 'none', border: 'none', cursor: 'pointer', p: 0,
+                fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                letterSpacing: '0.12em', color: 'var(--muted)',
+                '&:hover': { color: 'var(--accent, #c43a2a)' }, transition: 'color 0.1s',
+              }}
+            >
+              ♥ MY BANDS
+            </Box>
+            <span style={{ ...lbl, fontSize: '0.5rem' }}>
+              {bandsLoading ? '…' : `${total} IN CATALOGUE`}
+            </span>
+          </Box>
         </Box>
 
         {/* Search */}
