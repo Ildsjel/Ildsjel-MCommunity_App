@@ -40,7 +40,7 @@ export default function AdminBandsPage() {
       ])
       const bandsArray: any[] = Array.isArray(rawData)
         ? rawData
-        : (rawData as any)?.bands ?? []
+        : (rawData as any)?.items ?? (rawData as any)?.bands ?? []
       setBands(bandsArray)
       setDraftCount(countRes.count)
     } catch (e: any) {

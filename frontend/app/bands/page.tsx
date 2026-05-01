@@ -61,7 +61,7 @@ export default function BandsPage() {
           setBands(data)
           setTotal(data.length)
         } else {
-          setBands(data.bands ?? [])
+          setBands(data.items ?? data.bands ?? [])
           setTotal(data.total ?? 0)
         }
       })
