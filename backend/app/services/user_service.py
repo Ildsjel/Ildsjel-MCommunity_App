@@ -4,7 +4,7 @@ User Service - Business logic for user management
 from typing import Optional, Dict
 from datetime import datetime, timedelta
 from app.db.repositories.user_repository import UserRepository
-from app.auth.security import hash_password, verify_password
+from app.auth.security import hash_password, constant_time_verify_password
 from app.auth.jwt_handler import create_access_token
 from app.models.user_models import UserCreate, UserLogin, TokenResponse, UserResponse
 from app.services.email_service import EmailService
@@ -17,38 +17,54 @@ class UserService:
     def __init__(self, session):
         self.repository = UserRepository(session)
     
-    async def register_user(self, user_data: UserCreate) -> Dict:
+    async def register_user(self, user_data: UserCreate) -> Optional[Dict]:
         """
-        Register a new user with email verification
-        
+        Register a new user with email verification.
+
+        Returns ``None`` when the email is already registered. The endpoint
+        returns the same generic 202 response in that case so an attacker
+        cannot tell the difference between a fresh and an existing email.
+        A collision-notification email is sent to the address out-of-band so
+        the legitimate owner is informed.
+
         Args:
             user_data: User registration data
-        
+
         Returns:
-            Created user data
-        
+            Created user data, or ``None`` if the email already exists.
+
         Raises:
-            ValueError: If email already exists or validation fails
+            ValueError: If the requested handle is already taken (handles are
+                public, so this is not a privacy concern).
         """
-        # Check if email already exists
         existing_user = self.repository.get_user_by_email(user_data.email)
+
+        # Always hash the password to keep timing constant. Without this, the
+        # collision branch would skip the ~100ms bcrypt step and re-introduce
+        # a timing oracle on the register endpoint.
+        password_hash = hash_password(user_data.password)
+
         if existing_user:
-            raise ValueError("Email already registered")
-        
+            try:
+                await EmailService.send_register_collision_email(
+                    email=user_data.email,
+                    handle=existing_user.get("handle", "")
+                )
+            except Exception as e:
+                print(f"❌ Failed to send register collision email: {e}")
+            return None
+
         # Check if handle already exists
         existing_handle = self.repository.get_user_by_handle(user_data.handle)
         if existing_handle:
             raise ValueError("Handle already taken")
-        
-        # Hash password
-        password_hash = hash_password(user_data.password)
-        
+
         # Generate verification token
         verification_token = EmailService.generate_verification_token()
         verification_expires = datetime.utcnow() + timedelta(
             hours=settings.EMAIL_VERIFICATION_EXPIRE_HOURS
         )
-        
+
         # Create user
         user = self.repository.create_user(
             handle=user_data.handle,
@@ -59,7 +75,7 @@ class UserService:
             country=user_data.country,
             city=user_data.city
         )
-        
+
         # Send verification email
         try:
             await EmailService.send_verification_email(
@@ -70,42 +86,50 @@ class UserService:
         except Exception as e:
             print(f"❌ Failed to send verification email: {e}")
             # Don't fail registration if email fails
-        
+
         return user
     
     def authenticate_user(self, login_data: UserLogin) -> Optional[Dict]:
         """
-        Authenticate user and return user data if valid
-        
+        Authenticate user and return user data if valid.
+
+        The ordering here matters for security:
+
+        1. Always run bcrypt verify (against a dummy hash if the user is
+           missing) so response times are identical for known/unknown emails.
+        2. Only after the password is proven correct do we surface
+           email-verified / account-active errors. Raising those before the
+           password check would let an attacker enumerate accounts even
+           without a valid password.
+
         Args:
             login_data: Login credentials
-        
+
         Returns:
-            User data if authentication successful, None otherwise
-        
+            User data if authentication successful, None otherwise.
+
         Raises:
-            ValueError: If account is not verified or inactive
+            ValueError: If the password was correct but the account is not
+                verified or inactive.
         """
         user = self.repository.get_user_by_email(login_data.email)
-        
-        if not user:
+
+        password_hash = user.get("password_hash") if user else None
+        password_ok = constant_time_verify_password(login_data.password, password_hash)
+
+        if not user or not password_ok:
             return None
-        
-        # Check if email is verified
+
+        # Password proven correct → safe to expose UX feedback now.
         if not user.get("email_verified", False):
             raise ValueError("Please verify your email before logging in")
-        
-        # Check if account is active
+
         if not user.get("is_active", False):
             raise ValueError("Account is inactive. Please contact support.")
-        
-        # Verify password
-        if not verify_password(login_data.password, user["password_hash"]):
-            return None
-        
+
         # Update last login
         self.repository.update_last_login(user["id"])
-        
+
         return user
     
     def create_token_response(self, user: Dict) -> TokenResponse:

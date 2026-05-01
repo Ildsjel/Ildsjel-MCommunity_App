@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Box,
@@ -14,7 +13,6 @@ import {
   Link as MuiLink,
   InputAdornment,
   IconButton,
-  Snackbar,
   Divider,
 } from '@mui/material'
 import {
@@ -23,14 +21,13 @@ import {
 import { authAPI } from '@/lib/api'
 
 export default function RegisterPage() {
-  const router = useRouter()
   const [formData, setFormData] = useState({
     handle: '', email: '', password: '', country: '', city: '',
   })
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [showPw, setShowPw]     = useState(false)
-  const [successOpen, setSuccessOpen] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,8 +35,10 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       await authAPI.register(formData)
-      setSuccessOpen(true)
-      setTimeout(() => router.push('/auth/login'), 2000)
+      // Backend always returns 202 with a generic message — both new and
+      // already-registered emails take this path. The real status is
+      // delivered via email, so we always show the same success view.
+      setSubmitted(true)
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
       if (Array.isArray(detail)) setError(detail.map((e: { msg: string }) => e.msg).join(', '))
@@ -104,6 +103,24 @@ export default function RegisterPage() {
       {/* Form card */}
       <Card>
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+          {submitted ? (
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Typography variant="h6" sx={{ mb: 1.5, fontFamily: 'Georgia, serif' }}>
+                Check your inbox
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3, lineHeight: 1.6 }}>
+                If this email isn't already registered, you'll receive a confirmation link
+                shortly. The link expires in 24 hours.
+              </Typography>
+              <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mb: 2 }}>
+                Already have an account? You'll get a sign-in reminder instead.
+              </Typography>
+              <Divider sx={{ my: 2 }} />
+              <MuiLink component={Link} href="/auth/login" color="primary" underline="hover">
+                Back to login
+              </MuiLink>
+            </Box>
+          ) : (
           <Box component="form" onSubmit={handleSubmit}>
             {error && (
               <Alert severity="error" sx={{ mb: 2.5, fontSize: '0.875rem' }}>
@@ -212,6 +229,7 @@ export default function RegisterPage() {
               </MuiLink>
             </Typography>
           </Box>
+          )}
         </CardContent>
       </Card>
 
@@ -220,14 +238,6 @@ export default function RegisterPage() {
           ← Back to Home
         </MuiLink>
       </Box>
-
-      <Snackbar
-        open={successOpen}
-        autoHideDuration={5000}
-        onClose={() => setSuccessOpen(false)}
-        message="Account created! Please check your email to verify."
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
     </Box>
   )
 }

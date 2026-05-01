@@ -88,6 +88,7 @@ app.include_router(search.router, prefix="/api/v1")
 app.include_router(comments.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(bands.router, prefix="/api/v1")
+
 app.include_router(favourites.router, prefix="/api/v1")
 app.include_router(sigil.router, prefix="/api/v1")
 app.include_router(globe.router, prefix="/api/v1")
