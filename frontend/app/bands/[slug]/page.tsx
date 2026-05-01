@@ -100,6 +100,8 @@ export default function BandPage({ params }: { params: { slug: string } }) {
   const [loading, setLoading] = useState(true)
   const [isFavourite, setIsFavourite] = useState(false)
   const [favLoading, setFavLoading] = useState(false)
+  /** Non-null for a few seconds after a successful match against Spotify/Last.fm */
+  const [matchNotice, setMatchNotice] = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -121,9 +123,19 @@ export default function BandPage({ params }: { params: { slug: string } }) {
       if (isFavourite) {
         await bandFavouritesApi.remove(band.id)
         setIsFavourite(false)
+        setMatchNotice(null)
       } else {
-        await bandFavouritesApi.add(band.id)
+        const result = await bandFavouritesApi.add(band.id)
         setIsFavourite(true)
+        if (result?.matched_external && result.matched_artist_name) {
+          const src = result.matched_source === 'spotify'
+            ? 'Spotify'
+            : result.matched_source === 'lastfm'
+            ? 'Last.fm'
+            : 'Spotify & Last.fm'
+          setMatchNotice(`Matched from your ${src} library`)
+          setTimeout(() => setMatchNotice(null), 4000)
+        }
       }
     } catch {
       // silently ignore — user might not be logged in
@@ -202,6 +214,29 @@ export default function BandPage({ params }: { params: { slug: string } }) {
             {isFavourite ? '♥ FAVOURITED' : '♡ FAVOURITE'}
           </Box>
         </Box>
+
+        {/* Library-match notice — appears briefly after a Spotify/Last.fm match */}
+        {matchNotice && (
+          <Box sx={{
+            mb: 1.5,
+            border: '1px solid rgba(196,58,42,0.35)',
+            borderRadius: '3px',
+            backgroundColor: 'rgba(196,58,42,0.08)',
+            px: 1.25, py: 0.75,
+            display: 'flex', alignItems: 'center', gap: 0.75,
+          }}>
+            <span style={{ fontSize: '0.75rem', lineHeight: 1 }}>◈</span>
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.5rem',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'rgba(236,229,211,0.7)',
+            }}>
+              {matchNotice}
+            </span>
+          </Box>
+        )}
 
         {/* Band header */}
         <Box sx={{ display: 'flex', gap: 2, mb: 2.5, alignItems: 'flex-start' }}>
