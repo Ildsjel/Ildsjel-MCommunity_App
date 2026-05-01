@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Box, Typography, CircularProgress } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
 import AdminGuard from '@/app/components/AdminGuard'
+import LoadingState from '@/app/components/LoadingState'
 import { useUser } from '@/app/context/UserContext'
+import { getErrorMessage } from '@/lib/types/apiError'
+import type { AdminUser } from '@/lib/types/admin'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -24,7 +27,7 @@ const ROLE_COLORS: Record<string, string> = {
 function UsersContent() {
   const router = useRouter()
   const { user: me } = useUser()
-  const [users, setUsers] = useState<any[]>([])
+  const [users, setUsers] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
@@ -32,16 +35,16 @@ function UsersContent() {
   useEffect(() => {
     adminAPI.listUsers()
       .then(setUsers)
-      .catch((e) => setError(e.message))
+      .catch((e: unknown) => setError(getErrorMessage(e)))
       .finally(() => setLoading(false))
   }, [])
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
+  const handleRoleChange = async (userId: string, newRole: AdminUser['role']) => {
     setUpdating(userId)
     try {
       await adminAPI.setUserRole(userId, newRole)
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)))
-    } catch (e: any) { alert(e.message) }
+    } catch (e: unknown) { alert(getErrorMessage(e)) }
     finally { setUpdating(null) }
   }
 
@@ -52,7 +55,7 @@ function UsersContent() {
       </Box>
       <span style={{ ...lbl, color: 'var(--accent)', display: 'block', marginBottom: 20 }}>☍ USERS</span>
 
-      {loading && <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress size={20} sx={{ color: 'var(--accent)' }} /></Box>}
+      {loading && <LoadingState />}
       {error && <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--accent)' }}>{error}</Typography>}
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -68,7 +71,7 @@ function UsersContent() {
                   {u.role} (you)
                 </Box>
               ) : (
-                <Box component="select" value={u.role || 'user'} onChange={(e: any) => handleRoleChange(u.id, e.target.value)} disabled={updating === u.id} sx={{ background: '#1a1424', border: `1px solid ${ROLE_COLORS[u.role || 'user'] || 'rgba(216,207,184,0.2)'}`, borderRadius: '2px', color: ROLE_COLORS[u.role || 'user'] || 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', px: 0.75, height: 24, cursor: 'pointer', '&:disabled': { opacity: 0.4 } }}>
+                <Box component="select" value={u.role || 'user'} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleRoleChange(u.id, e.target.value as AdminUser['role'])} disabled={updating === u.id} sx={{ background: '#1a1424', border: `1px solid ${ROLE_COLORS[u.role || 'user'] || 'rgba(216,207,184,0.2)'}`, borderRadius: '2px', color: ROLE_COLORS[u.role || 'user'] || 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', px: 0.75, height: 24, cursor: 'pointer', '&:disabled': { opacity: 0.4 } }}>
                   <option value="user">user</option>
                   <option value="admin">admin</option>
                   <option value="superadmin">superadmin</option>

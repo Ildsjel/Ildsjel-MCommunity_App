@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
+import { getErrorMessage } from '@/lib/types/apiError'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -74,8 +75,8 @@ export default function LastFmConnectPage() {
       )
       await fetchStatus(authToken)
       window.history.replaceState({}, '', '/lastfm/connect')
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to complete Last.fm connection')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to complete Last.fm connection'))
       setLoading(false)
     } finally {
       setProcessing(false)
@@ -90,8 +91,8 @@ export default function LastFmConnectPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       window.location.href = res.data.auth_url
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to start Last.fm authorization')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to start Last.fm authorization'))
     }
   }
 
@@ -103,8 +104,8 @@ export default function LastFmConnectPage() {
       })
       setConfirmDisconnect(false)
       await fetchStatus(token!)
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to disconnect')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to disconnect'))
     }
   }
 

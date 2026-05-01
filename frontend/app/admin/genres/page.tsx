@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Box, Typography, TextField, CircularProgress } from '@mui/material'
+import { Box, Typography, TextField } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
+import LoadingState from '@/app/components/LoadingState'
+import { getErrorMessage } from '@/lib/types/apiError'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -36,7 +38,7 @@ export default function AdminGenresPage() {
     setLoading(true)
     try {
       setGenres(await adminAPI.listGenres())
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(getErrorMessage(e)) }
     finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -56,7 +58,7 @@ export default function AdminGenresPage() {
       const genre = await adminAPI.createGenre({ ...form, parent_id: form.parent_id || null })
       setGenres((prev) => [...prev, genre])
       setForm({ name: '', slug: '', description: '', parent_id: '' })
-    } catch (err: any) { setError(err.message) }
+    } catch (err: unknown) { setError(getErrorMessage(err)) }
     finally { setSaving(false) }
   }
 
@@ -66,7 +68,7 @@ export default function AdminGenresPage() {
       const updated = await adminAPI.updateGenre(id, { ...editForm, parent_id: editForm.parent_id || null })
       setGenres((prev) => prev.map((g) => (g.id === id ? updated : g)))
       setEditId(null)
-    } catch (err: any) { setError(err.message) }
+    } catch (err: unknown) { setError(getErrorMessage(err)) }
     finally { setSaving(false) }
   }
 
@@ -75,7 +77,7 @@ export default function AdminGenresPage() {
     try {
       await adminAPI.deleteGenre(id)
       setGenres((prev) => prev.filter((g) => g.id !== id))
-    } catch (err: any) { alert(err.message) }
+    } catch (err: unknown) { alert(getErrorMessage(err)) }
   }
 
   // Separate roots from children for hierarchy display
@@ -109,7 +111,7 @@ export default function AdminGenresPage() {
         </Box>
       </Box>
 
-      {loading && <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress size={20} sx={{ color: 'var(--accent)' }} /></Box>}
+      {loading && <LoadingState />}
 
       {/* Hierarchy view */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>

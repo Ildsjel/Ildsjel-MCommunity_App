@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from app.db.neo4j_driver import get_neo4j_session
 from app.services.band_service import BandService
-from app.models.band_models import BandResponse, GenreResponse, TagResponse
+from app.models.band_models import BandResponse, GenreResponse, TagResponse, ReleaseDetailResponse
 from typing import List, Optional
 
 router = APIRouter(prefix="/bands", tags=["Bands"])
@@ -28,6 +28,14 @@ async def list_tags(
     session=Depends(get_neo4j_session),
 ):
     return BandService(session).list_tags(category)
+
+
+@router.get("/{slug}/releases/{release_slug}", response_model=ReleaseDetailResponse)
+async def get_release_by_slug(slug: str, release_slug: str, session=Depends(get_neo4j_session)):
+    result = BandService(session).get_release_by_slug(slug, release_slug)
+    if not result:
+        raise HTTPException(status_code=404, detail="Release not found")
+    return result
 
 
 @router.get("/{slug}", response_model=BandResponse)

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { getErrorMessage } from '@/lib/types/apiError';
 
 const RATE_LIMIT_COOLDOWN_SECONDS = 60;
 
@@ -37,12 +38,13 @@ export default function ResetPasswordPage() {
       const response = await api.post('/auth/request-password-reset', { email });
       setMessage(response.data.message);
       setEmail('');
-    } catch (err: any) {
-      const status = err.response?.status;
-      const data = err.response?.data;
-      if (status === 429) {
-        const retryAfterHeader = err.response?.headers?.['retry-after'];
-        const retryAfterSeconds = Number.parseInt(retryAfterHeader, 10);
+    } catch (err: unknown) {
+      const e = err as {
+        response?: { status?: number; headers?: Record<string, string> };
+      };
+      if (e.response?.status === 429) {
+        const retryAfterHeader = e.response?.headers?.['retry-after'];
+        const retryAfterSeconds = Number.parseInt(retryAfterHeader ?? '', 10);
         const cooldownSec = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
           ? retryAfterSeconds
           : RATE_LIMIT_COOLDOWN_SECONDS;
@@ -52,7 +54,7 @@ export default function ResetPasswordPage() {
           'Zu viele Versuche. Aus Sicherheitsgründen sind nur 3 Anfragen pro Stunde erlaubt — bitte später erneut probieren.'
         );
       } else {
-        setError(data?.error || data?.detail || 'Ein Fehler ist aufgetreten');
+        setError(getErrorMessage(err, 'Ein Fehler ist aufgetreten'));
       }
     } finally {
       setLoading(false);

@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Box, Typography, TextField, CircularProgress } from '@mui/material'
+import { Box, Typography, TextField } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
 import AdminGuard from '@/app/components/AdminGuard'
+import LoadingState from '@/app/components/LoadingState'
+import { getErrorMessage } from '@/lib/types/apiError'
+import type { AdminToken } from '@/lib/types/admin'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -25,7 +28,7 @@ const inputSx = {
 
 function TokensContent() {
   const router = useRouter()
-  const [tokens, setTokens] = useState<any[]>([])
+  const [tokens, setTokens] = useState<AdminToken[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [note, setNote] = useState('')
@@ -36,7 +39,7 @@ function TokensContent() {
   const load = async () => {
     setLoading(true)
     try { setTokens(await adminAPI.listTokens()) }
-    catch (e: any) { setError(e.message) }
+    catch (e: unknown) { setError(getErrorMessage(e)) }
     finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -51,7 +54,7 @@ function TokensContent() {
       setNewToken(token.token)
       setNote('')
       await load()
-    } catch (err: any) { setError(err.message) }
+    } catch (err: unknown) { setError(getErrorMessage(err)) }
     finally { setGenerating(false) }
   }
 
@@ -100,7 +103,7 @@ function TokensContent() {
       )}
 
       {/* Token list */}
-      {loading && <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress size={20} sx={{ color: 'var(--accent)' }} /></Box>}
+      {loading && <LoadingState />}
 
       {!loading && tokens.length > 0 && (
         <Box>

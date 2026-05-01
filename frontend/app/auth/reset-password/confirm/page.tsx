@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { getErrorMessage } from '@/lib/types/apiError';
 
 export default function ResetPasswordConfirmPage() {
   const searchParams = useSearchParams();
@@ -42,11 +43,8 @@ export default function ResetPasswordConfirmPage() {
       
       alert('Passwort erfolgreich zurückgesetzt!');
       router.push('/auth/login');
-    } catch (err: any) {
-      const data = err.response?.data;
-      setError(
-        data?.error || data?.detail || 'Reset fehlgeschlagen. Token ungültig oder abgelaufen.'
-      );
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Reset fehlgeschlagen. Token ungültig oder abgelaufen.'));
     } finally {
       setLoading(false);
     }

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Box, Typography, CircularProgress } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
+import LoadingState from '@/app/components/LoadingState'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -133,7 +134,7 @@ export default function AdminBandsPage() {
         )}
       </Box>
 
-      {loading && <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress size={20} sx={{ color: 'var(--accent)' }} /></Box>}
+      {loading && <LoadingState />}
       {error && <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--accent)', letterSpacing: '0.1em' }}>{error}</Typography>}
 
       {!loading && !error && bands.length === 0 && (

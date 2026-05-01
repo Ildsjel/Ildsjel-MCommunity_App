@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography, TextField, CircularProgress } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
+import type { ReleaseType } from '@/lib/types/admin'
+import { getErrorMessage } from '@/lib/types/apiError'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -153,8 +155,8 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
     try {
       const updated = await adminAPI.updateBand(id, { ...form, formed: parseInt(form.formed), tag_ids: selectedTagIds })
       setBand(updated)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(getErrorMessage(err))
     } finally {
       setSaving(false)
     }
@@ -167,8 +169,8 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
       const updated = await adminAPI.uploadBandPhoto(id, file)
       setBand(updated)
       setImageMsg('Photo updated')
-    } catch (err: any) {
-      setImageMsg(err.message)
+    } catch (err: unknown) {
+      setImageMsg(getErrorMessage(err))
     } finally {
       setPhotoUploading(false)
     }
@@ -181,8 +183,8 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
       const updated = await adminAPI.uploadBandLogo(id, file)
       setBand(updated)
       setImageMsg('Logo updated')
-    } catch (err: any) {
-      setImageMsg(err.message)
+    } catch (err: unknown) {
+      setImageMsg(getErrorMessage(err))
     } finally {
       setLogoUploading(false)
     }
@@ -192,14 +194,14 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
     e.preventDefault()
     setSaving(true)
     try {
-      await adminAPI.createRelease(id, { ...relForm, year: parseInt(relForm.year), tracks: [] })
+      await adminAPI.createRelease(id, { ...relForm, type: relForm.type as ReleaseType, year: parseInt(relForm.year), tracks: [] })
       const bands = await adminAPI.listBands()
       const updated = bands.find((b: any) => b.id === id)
       if (updated) setBand(updated)
       setRelForm({ title: '', slug: '', type: 'LP', year: '', label: '' })
       setShowRelease(false)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(getErrorMessage(err))
     } finally {
       setSaving(false)
     }
@@ -210,8 +212,8 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
     try {
       await adminAPI.deleteRelease(releaseId)
       setBand((prev: any) => ({ ...prev, releases: prev.releases.filter((r: any) => r.id !== releaseId) }))
-    } catch (err: any) {
-      alert(err.message)
+    } catch (err: unknown) {
+      alert(getErrorMessage(err))
     }
   }
 

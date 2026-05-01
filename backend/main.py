@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from pathlib import Path
 from app.config.settings import settings
 
-from app.api.v1 import auth, users, spotify, lastfm, gallery, stats, search, comments, admin, bands, curation, favourites, sigil, globe
+from app.api.v1 import auth, users, spotify, lastfm, gallery, stats, search, comments, admin, bands, favourites, sigil, globe, friends, messages
 from app.db.neo4j_driver import neo4j_driver
 
 
@@ -44,9 +44,9 @@ async def lifespan(app: FastAPI):
     # Start Spotify polling service
     from app.services.spotify_polling_service import polling_service
     await polling_service.start()
-    
+
     yield
-    
+
     # Shutdown
     print("🛑 Shutting down Grimr API...")
     from app.services.spotify_polling_service import polling_service
@@ -88,11 +88,11 @@ app.include_router(search.router, prefix="/api/v1")
 app.include_router(comments.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(bands.router, prefix="/api/v1")
-
-app.include_router(curation.router, prefix="/api/v1")
 app.include_router(favourites.router, prefix="/api/v1")
 app.include_router(sigil.router, prefix="/api/v1")
 app.include_router(globe.router, prefix="/api/v1")
+app.include_router(friends.router, prefix="/api/v1")
+app.include_router(messages.router, prefix="/api/v1")
 
 # Mount static files for uploads
 uploads_dir = Path("/app/uploads")
@@ -116,7 +116,7 @@ async def root():
 async def health_check():
     """Detailed health check"""
     neo4j_healthy = neo4j_driver.verify_connectivity()
-    
+
     return {
         "status": "healthy" if neo4j_healthy else "degraded",
         "database": "connected" if neo4j_healthy else "disconnected",
@@ -131,4 +131,3 @@ if __name__ == "__main__":
         port=8000,
         reload=True
     )
-
