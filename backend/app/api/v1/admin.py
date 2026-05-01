@@ -100,6 +100,23 @@ async def list_bands(
     return BandService(session).list_bands(status, skip, limit)["bands"]
 
 
+@router.get("/bands/draft-count")
+async def get_draft_count(
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    return {"count": BandService(session).draft_count()}
+
+
+@router.post("/bands/publish-all-drafts")
+async def publish_all_drafts(
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    count = BandService(session).publish_all_drafts()
+    return {"published": count}
+
+
 @router.post("/bands", response_model=BandResponse, status_code=201)
 async def create_band(
     body: BandCreate,

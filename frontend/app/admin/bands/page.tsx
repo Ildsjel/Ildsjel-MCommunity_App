@@ -34,14 +34,11 @@ export default function AdminBandsPage() {
     setLoading(true)
     setError(null)
     try {
-      const [rawData, countRes] = await Promise.all([
+      const [data, countRes] = await Promise.all([
         adminAPI.listBands(filter === 'all' ? undefined : filter),
         adminAPI.draftCount(),
       ])
-      const bandsArray: any[] = Array.isArray(rawData)
-        ? rawData
-        : (rawData as any)?.items ?? (rawData as any)?.bands ?? []
-      setBands(bandsArray)
+      setBands(data)
       setDraftCount(countRes.count)
     } catch (e: any) {
       setError(e.message)

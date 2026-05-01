@@ -94,6 +94,90 @@ class EmailService:
         await EmailService._send_email(email, subject, html_content, text_content)
     
     @staticmethod
+    async def send_register_collision_email(email: str, handle: str):
+        """
+        Notify a user that someone tried to register with their email.
+
+        Sent in place of the old "Email already registered" 400 response so
+        the registration endpoint cannot be used to enumerate accounts. The
+        legitimate owner learns out-of-band that a registration attempt was
+        made; an attacker without inbox access learns nothing.
+
+        Args:
+            email: User's email address (the address that was already registered)
+            handle: Handle of the existing account
+        """
+        if not settings.SMTP_ENABLED:
+            print(f"📧 [DEV MODE] Register-collision email for {email}")
+            print(f"   Existing handle: {handle}")
+            return
+
+        subject = "Someone tried to register with your Grimr email"
+        login_link = f"{settings.FRONTEND_URL}/auth/login"
+        reset_link = f"{settings.FRONTEND_URL}/auth/reset-password"
+
+        html_content = f"""
+        <html>
+        <body style="background-color: #0A0A0A; color: #EAEAEA; font-family: Arial, sans-serif; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #1C1C1E; border: 1px solid #333333; border-radius: 8px; padding: 40px;">
+                <h1 style="color: #8D021F; font-family: Georgia, serif; text-align: center;">
+                    Account already exists
+                </h1>
+                <p style="color: #EAEAEA; font-size: 16px;">
+                    Hey {handle},
+                </p>
+                <p style="color: #888888; font-size: 14px;">
+                    Someone just tried to create a new Grimr account with this email address,
+                    but you already have one. If that was you, you can sign in below — or
+                    reset your password if you've forgotten it.
+                </p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{login_link}"
+                       style="background-color: #8D021F; color: #F9F9F9; padding: 15px 40px;
+                              text-decoration: none; border-radius: 4px; font-weight: bold;
+                              display: inline-block; margin-right: 8px;">
+                        Sign in
+                    </a>
+                    <a href="{reset_link}"
+                       style="background-color: transparent; color: #EAEAEA; padding: 15px 40px;
+                              text-decoration: none; border-radius: 4px; font-weight: bold;
+                              display: inline-block; border: 1px solid #333333;">
+                        Reset password
+                    </a>
+                </div>
+                <p style="color: #888888; font-size: 12px; margin-top: 30px;">
+                    If this wasn't you, no action is needed — we did not create a new account
+                    and your existing one is unchanged.
+                </p>
+                <hr style="border: none; border-top: 1px solid #333333; margin: 30px 0;">
+                <p style="color: #666666; font-size: 11px; text-align: center;">
+                    Grimr - Metalheads Connect
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        text_content = f"""
+        Hey {handle},
+
+        Someone just tried to create a new Grimr account with this email address,
+        but you already have one.
+
+        If that was you:
+          - Sign in:        {login_link}
+          - Reset password: {reset_link}
+
+        If this wasn't you, no action is needed — we did not create a new account
+        and your existing one is unchanged.
+
+        ---
+        Grimr - Metalheads Connect
+        """
+
+        await EmailService._send_email(email, subject, html_content, text_content)
+
+    @staticmethod
     async def send_password_reset_email(email: str, token: str, handle: str):
         """
         Send password reset link

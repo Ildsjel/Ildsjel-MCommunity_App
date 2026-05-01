@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from pydantic import BaseModel
-from app.models.user_models import UserCreate, UserLogin, TokenResponse, UserResponse
+from app.models.user_models import UserCreate, UserLogin, TokenResponse
 from app.services.user_service import UserService
 from app.db.neo4j_driver import get_neo4j_session
 
@@ -29,7 +29,13 @@ class PasswordResetConfirm(BaseModel):
     new_password: str
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+REGISTER_GENERIC_MESSAGE = (
+    "If this email isn't already registered, you'll receive a confirmation "
+    "link shortly. Please check your inbox."
+)
+
+
+@router.post("/register", status_code=status.HTTP_202_ACCEPTED)
 @limiter.limit("5/hour")
 async def register(
     request: Request,
@@ -37,30 +43,32 @@ async def register(
     session = Depends(get_neo4j_session)
 ):
     """
-    Register a new user with email verification
-    
+    Register a new user with email verification.
+
+    Always returns the same generic 202 response regardless of whether the
+    email is new or already registered. This prevents an attacker from using
+    /auth/register to enumerate accounts. The real outcome is delivered to
+    the inbox: a verify-email link for fresh registrations, a
+    "someone tried to register with your address" notice for collisions.
+
     Rate limit: 5 requests per hour per IP
-    
-    Args:
-        user_data: User registration data
-        session: Neo4j database session
-    
-    Returns:
-        Created user data (email_verified=False, is_active=False)
-    
+
     Raises:
-        HTTPException: If email already exists or validation fails
+        HTTPException 400: If the requested handle is already taken (handles
+            are public information, so this is not an enumeration concern).
     """
     user_service = UserService(session)
-    
+
     try:
-        user = await user_service.register_user(user_data)
-        return UserResponse(**user)
+        await user_service.register_user(user_data)
     except ValueError as e:
+        # Currently only "Handle already taken" — handles are public.
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+    return {"message": REGISTER_GENERIC_MESSAGE}
 
 
 @router.post("/login", response_model=TokenResponse)
