@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Box, Typography, TextField, CircularProgress } from '@mui/material'
+import { Box, Typography, TextField } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
+import LoadingState from '@/app/components/LoadingState'
+import { getErrorMessage } from '@/lib/types/apiError'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -38,7 +40,7 @@ export default function AdminTagsPage() {
   const load = async () => {
     setLoading(true)
     try { setTags(await adminAPI.listTags()) }
-    catch (e: any) { setError(e.message) }
+    catch (e: unknown) { setError(getErrorMessage(e)) }
     finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -52,14 +54,14 @@ export default function AdminTagsPage() {
       const tag = await adminAPI.createTag(form)
       setTags((prev) => [...prev, tag])
       setForm({ name: '', slug: '', category: 'mood' })
-    } catch (err: any) { setError(err.message) }
+    } catch (err: unknown) { setError(getErrorMessage(err)) }
     finally { setSaving(false) }
   }
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete tag "${name}"?`)) return
     try { await adminAPI.deleteTag(id); setTags((prev) => prev.filter((t) => t.id !== id)) }
-    catch (err: any) { alert(err.message) }
+    catch (err: unknown) { alert(getErrorMessage(err)) }
   }
 
   const handleMerge = async (e: React.FormEvent) => {
@@ -71,7 +73,7 @@ export default function AdminTagsPage() {
       await adminAPI.mergeTags(mergeSource, mergeTarget)
       await load()
       setMergeSource(''); setMergeTarget('')
-    } catch (err: any) { setError(err.message) }
+    } catch (err: unknown) { setError(getErrorMessage(err)) }
     finally { setSaving(false) }
   }
 
@@ -134,7 +136,7 @@ export default function AdminTagsPage() {
         ))}
       </Box>
 
-      {loading && <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress size={20} sx={{ color: 'var(--accent)' }} /></Box>}
+      {loading && <LoadingState />}
 
       {/* Tags grouped by category */}
       {TAG_CATEGORIES.map((cat) => {

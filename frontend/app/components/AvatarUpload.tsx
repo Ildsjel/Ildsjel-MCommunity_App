@@ -21,6 +21,7 @@ import { PhotoCamera, Delete, MoreVert } from '@mui/icons-material'
 import { galleryAPI } from '@/lib/galleryApi'
 import { useUser } from '@/app/context/UserContext'
 import UserAvatar from './UserAvatar'
+import { getErrorMessage } from '@/lib/types/apiError'
 
 interface AvatarUploadProps {
   size?: number
@@ -64,8 +65,8 @@ export default function AvatarUpload({
         // Update global user context - this will update avatar everywhere
         updateAvatar(result.image_url)
       }
-    } catch (error: any) {
-      alert(`Upload failed: ${error.response?.data?.detail || error.message}`)
+    } catch (error: unknown) {
+      alert(`Upload failed: ${getErrorMessage(error)}`)
     } finally {
       setUploading(false)
       // Reset file input so the same file can be selected again
@@ -92,8 +93,8 @@ export default function AvatarUpload({
       // Update global user context to remove avatar
       updateAvatar('')
       setDeleteDialogOpen(false)
-    } catch (error: any) {
-      alert(`Delete failed: ${error.response?.data?.detail || error.message}`)
+    } catch (error: unknown) {
+      alert(`Delete failed: ${getErrorMessage(error)}`)
     } finally {
       setDeleting(false)
     }

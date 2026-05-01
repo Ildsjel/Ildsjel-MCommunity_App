@@ -1,0 +1,63 @@
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+function authHeaders() {
+  const token = localStorage.getItem('access_token')
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+}
+
+async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}/api/v1${path}`, {
+    method,
+    headers: authHeaders(),
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail || 'Request failed')
+  }
+  if (res.status === 204) return undefined as T
+  return res.json()
+}
+
+export type FriendStatus = 'none' | 'pending_sent' | 'pending_received' | 'accepted'
+
+export interface FriendUser {
+  id: string
+  handle: string
+  profile_image_url?: string
+  since?: string
+}
+
+export interface FriendsPage {
+  friends: FriendUser[]
+  total: number
+}
+
+export interface GlobeMarker {
+  id: string
+  handle: string
+  lat: number
+  lon: number
+  city: string
+  country: string
+}
+
+export interface GlobeData {
+  markers: GlobeMarker[]
+  my_location: { lat: number; lon: number } | null
+}
+
+export const friendsApi = {
+  getStatus: (otherId: string) => req<{ status: FriendStatus }>('GET', `/friends/status/${otherId}`),
+  getGlobeData: () => req<GlobeData>('GET', '/friends/globe'),
+  sendRequest: (targetId: string) => req<{ message: string }>('POST', `/friends/request/${targetId}`),
+  respond: (requesterId: string, action: 'accept' | 'decline') =>
+    req<{ message: string }>('POST', `/friends/respond/${requesterId}`, { action }),
+  cancelRequest: (otherId: string) => req<void>('DELETE', `/friends/request/${otherId}`),
+  unfriend: (friendId: string) => req<void>('DELETE', `/friends/${friendId}`),
+  listFriends: (skip = 0, limit = 25) =>
+    req<FriendsPage>('GET', `/friends/?skip=${skip}&limit=${limit}`),
+  listFriendsPreview: () => req<FriendUser[]>('GET', '/friends/preview'),
+  listUserFriendsPreview: (userId: string) => req<FriendUser[]>('GET', `/friends/of/${userId}`),
+  listPending: () => req<FriendUser[]>('GET', '/friends/pending'),
+}

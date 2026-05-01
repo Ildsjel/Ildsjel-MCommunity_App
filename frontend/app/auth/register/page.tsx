@@ -39,9 +39,9 @@ export default function RegisterPage() {
       // already-registered emails take this path. The real status is
       // delivered via email, so we always show the same success view.
       setSubmitted(true)
-    } catch (err: any) {
-      const detail = err.response?.data?.detail
-      if (Array.isArray(detail)) setError(detail.map((e: any) => e.msg).join(', '))
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
+      if (Array.isArray(detail)) setError(detail.map((e: { msg: string }) => e.msg).join(', '))
       else if (typeof detail === 'string') setError(detail)
       else setError('Registration failed')
     } finally {

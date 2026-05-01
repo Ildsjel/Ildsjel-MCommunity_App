@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material'
 import { galleryAPI, GalleryImage } from '@/lib/galleryApi'
 import GalleryCarousel from './GalleryCarousel'
+import { getErrorMessage } from '@/lib/types/apiError'
 
 interface GalleryManagerProps {
   userId?: string
@@ -96,8 +97,8 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
     try {
       const newImage = await galleryAPI.uploadGalleryImage(file)
       setImages([...images, newImage])
-    } catch (error: any) {
-      alert(`Upload failed: ${error.response?.data?.detail || error.message}`)
+    } catch (error: unknown) {
+      alert(`Upload fehlgeschlagen: ${getErrorMessage(error)}`)
     } finally {
       setUploading(false)
     }
@@ -109,8 +110,8 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
     try {
       await galleryAPI.deleteGalleryImage(imageId)
       setImages(images.filter((img) => img.id !== imageId))
-    } catch (error: any) {
-      alert(`Delete failed: ${error.response?.data?.detail || error.message}`)
+    } catch (error: unknown) {
+      alert(`Löschen fehlgeschlagen: ${getErrorMessage(error)}`)
     }
   }
 
@@ -131,8 +132,8 @@ export default function GalleryManager({ userId, isOwnProfile, previewMode = fal
         )
       )
       setCaptionDialogOpen(false)
-    } catch (error: any) {
-      alert(`Save failed: ${error.response?.data?.detail || error.message}`)
+    } catch (error: unknown) {
+      alert(`Speichern fehlgeschlagen: ${getErrorMessage(error)}`)
     }
   }
 
