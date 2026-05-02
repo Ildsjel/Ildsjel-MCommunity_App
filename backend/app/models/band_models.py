@@ -135,6 +135,17 @@ class TagMerge(BaseModel):
     target_id: str
 
 
+class BandTagsAdd(BaseModel):
+    """Body for the public POST /bands/{band_id}/tags endpoint.
+
+    Both lists are optional — callers can add genres, tags, or both in
+    a single round-trip.  All IDs must reference existing ontology nodes;
+    unknown IDs are silently skipped (MATCH semantics in Cypher).
+    """
+    genre_ids: List[str] = []
+    tag_ids: List[str] = []
+
+
 class BandSummaryResponse(BaseModel):
     id: str
     slug: str

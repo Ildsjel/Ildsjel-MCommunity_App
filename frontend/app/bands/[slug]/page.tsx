@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
-import { getBand } from '@/lib/bandsApi'
+import TagPicker from '@/app/components/TagPicker'
+import { getBand, removeBandTag } from '@/lib/bandsApi'
 import type { Band, Release } from '@/lib/bandsApi'
 import { bandFavouritesApi } from '@/lib/bandFavouritesApi'
+import { useUser } from '@/app/context/UserContext'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -96,12 +98,17 @@ function ReleaseCard({ release, bandSlug, onClick }: { release: Release; bandSlu
 export default function BandPage({ params }: { params: { slug: string } }) {
   const { slug } = params
   const router = useRouter()
+  const { user } = useUser()
   const [band, setBand] = useState<Band | null>(null)
   const [loading, setLoading] = useState(true)
   const [isFavourite, setIsFavourite] = useState(false)
   const [favLoading, setFavLoading] = useState(false)
+  /** Bumping this triggers a band reload (e.g. after tag mutation). */
+  const [refetchKey, setRefetchKey] = useState(0)
   /** Non-null for a few seconds after a successful match against Spotify/Last.fm */
   const [matchNotice, setMatchNotice] = useState<string | null>(null)
+
+  const reload = useCallback(() => setRefetchKey((k) => k + 1), [])
 
   useEffect(() => {
     setLoading(true)
@@ -114,7 +121,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
           .catch(() => {})
       }
     })
-  }, [slug])
+  }, [slug, refetchKey])
 
   const handleToggleFavourite = async () => {
     if (!band || favLoading) return
@@ -144,6 +151,16 @@ export default function BandPage({ params }: { params: { slug: string } }) {
     }
   }
 
+  const handleRemoveTag = useCallback(async (nodeId: string) => {
+    if (!band) return
+    try {
+      await removeBandTag(band.id, nodeId)
+      reload()
+    } catch {
+      // silently ignore
+    }
+  }, [band, reload])
+
   if (loading) {
     return (
       <>
@@ -168,6 +185,19 @@ export default function BandPage({ params }: { params: { slug: string } }) {
 
   const lps = band.releases.filter((r) => r.type === 'LP')
   const other = band.releases.filter((r) => r.type !== 'LP')
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
+
+  // Shared styles for tag/genre remove button
+  const removeBtn: React.CSSProperties = {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '0 0 0 3px',
+    lineHeight: 1,
+    color: 'inherit',
+    opacity: 0.5,
+    fontSize: '0.5rem',
+  }
 
   return (
     <>
@@ -265,18 +295,71 @@ export default function BandPage({ params }: { params: { slug: string } }) {
             <Typography variant="h4" sx={{ fontSize: '1.125rem', lineHeight: 1.2, mb: 0.75 }}>
               {band.name}
             </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.75 }}>
+
+            {/* Genres + Tags + Picker */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.75, alignItems: 'center' }}>
+
+              {/* Genre chips */}
               {band.genres.map((g) => (
-                <Box key={g.id} sx={{
-                  border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px',
-                  px: 0.75, height: 18, display: 'inline-flex', alignItems: 'center',
-                  fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
-                  letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)',
-                }}>
+                <Box
+                  key={g.id}
+                  sx={{
+                    border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px',
+                    px: 0.75, height: 18, display: 'inline-flex', alignItems: 'center',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                    letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)',
+                  }}
+                >
                   {g.name}
+                  {user && (
+                    <button
+                      style={removeBtn}
+                      onClick={() => handleRemoveTag(g.id)}
+                      title={`Remove genre ${g.name}`}
+                    >
+                      ×
+                    </button>
+                  )}
                 </Box>
               ))}
+
+              {/* Tag chips (purple-tinted to distinguish from genres) */}
+              {band.tags.map((t) => (
+                <Box
+                  key={t.id}
+                  sx={{
+                    border: '1px solid rgba(154,122,191,0.35)', borderRadius: '2px',
+                    px: 0.75, height: 18, display: 'inline-flex', alignItems: 'center',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                    color: 'rgba(154,122,191,0.85)',
+                  }}
+                >
+                  {t.name}
+                  {user && (
+                    <button
+                      style={removeBtn}
+                      onClick={() => handleRemoveTag(t.id)}
+                      title={`Remove tag ${t.name}`}
+                    >
+                      ×
+                    </button>
+                  )}
+                </Box>
+              ))}
+
+              {/* Tag picker — authenticated users only */}
+              {user && (
+                <TagPicker
+                  bandId={band.id}
+                  appliedGenreIds={band.genres.map((g) => g.id)}
+                  appliedTagIds={band.tags.map((t) => t.id)}
+                  isAdmin={isAdmin}
+                  onDone={reload}
+                />
+              )}
             </Box>
+
             <span style={{ ...lbl, fontSize: '0.5rem' }}>
               {band.country} · est. {band.formed}
             </span>
