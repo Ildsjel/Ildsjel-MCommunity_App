@@ -25,6 +25,7 @@ import { adminAPI } from '@/lib/adminAPI'
 import { friendsApi, FriendUser } from '@/lib/friendsApi'
 import { messagesApi } from '@/lib/messagesApi'
 import { profileAPI } from '@/lib/profileAPI'
+import { bandFavouritesApi, FavouriteBandSummary } from '@/lib/bandFavouritesApi'
 import { getErrorMessage } from '@/lib/types/apiError'
 import LinkListeningCard from './LinkListeningCard'
 import FitsRow from './FitsRow'
@@ -74,6 +75,7 @@ export default function ProfilePage() {
   const [redeemMsg, setRedeemMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [friendsPreview, setFriendsPreview] = useState<FriendUser[]>([])
   const [msgLoading, setMsgLoading] = useState<string | null>(null)
+  const [favouriteBands, setFavouriteBands] = useState<FavouriteBandSummary[]>([])
 
   const handleMessage = async (friendId: string) => {
     setMsgLoading(friendId)
@@ -92,6 +94,11 @@ export default function ProfilePage() {
   // Load friends preview separately
   useEffect(() => {
     friendsApi.listFriendsPreview().then(setFriendsPreview).catch(() => {})
+  }, [])
+
+  // Load favourite bands
+  useEffect(() => {
+    bandFavouritesApi.getFavourites().then(setFavouriteBands).catch(() => {})
   }, [])
 
   const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -383,6 +390,55 @@ export default function ProfilePage() {
         </Box>
 
 
+
+        {/* Favourites section */}
+        <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', p: '10px 12px', mb: 2, backgroundColor: '#120e18' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: favouriteBands.length > 0 ? 1.25 : 0 }}>
+            <span style={{ ...lbl, color: 'var(--muted)' }}>♥ FAVOURITES</span>
+            {favouriteBands.length > 0 && (
+              <span
+                style={{ ...lbl, fontSize: '0.5rem', cursor: 'pointer', color: 'var(--muted)' }}
+                onClick={() => router.push('/bands/favourites')}
+              >
+                VIEW ALL →
+              </span>
+            )}
+          </Box>
+
+          {favouriteBands.length === 0 ? (
+            <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', pt: 0.5 }}>
+              No favourite bands yet.
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.625 }}>
+              {favouriteBands.slice(0, 5).map((band) => (
+                <Box
+                  key={band.id}
+                  onClick={() => router.push(`/bands/${band.slug}`)}
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
+                >
+                  <span style={{ ...lbl, fontSize: '0.5rem', color: 'var(--accent)' }}>♥</span>
+                  <span style={{ ...lbl, flex: 1, color: 'var(--ink)', fontSize: '0.5625rem', letterSpacing: '0.08em' }}>
+                    {band.name}
+                  </span>
+                  {band.genres.length > 0 && (
+                    <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--muted)', textAlign: 'right' }}>
+                      {band.genres[0].name}
+                    </span>
+                  )}
+                </Box>
+              ))}
+              {favouriteBands.length > 5 && (
+                <span
+                  style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--muted)', cursor: 'pointer', paddingTop: 4 }}
+                  onClick={() => router.push('/bands/favourites')}
+                >
+                  +{favouriteBands.length - 5} more
+                </span>
+              )}
+            </Box>
+          )}
+        </Box>
 
         <LinkListeningCard hasSpotify={hasSpotify} hasLastFm={hasLastFm} />
 
