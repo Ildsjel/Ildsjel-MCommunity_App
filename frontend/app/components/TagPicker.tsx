@@ -75,6 +75,7 @@ export default function TagPicker({
   const [ontology, setOntology] = useState<OntologyItem[]>([])
   const [loadingOntology, setLoadingOntology] = useState(false)
   const [applying, setApplying] = useState<string | null>(null) // id of item being applied
+  const [applyError, setApplyError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -106,8 +107,10 @@ export default function TagPicker({
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 50)
+      setApplyError(null)
     } else {
       setQuery('')
+      setApplyError(null)
     }
   }, [open])
 
@@ -144,6 +147,7 @@ export default function TagPicker({
   const handleApply = useCallback(
     async (item: OntologyItem) => {
       setApplying(item.id)
+      setApplyError(null)
       try {
         if (item.kind === 'genre') {
           await addBandTags(bandId, [item.id], [])
@@ -152,8 +156,14 @@ export default function TagPicker({
         }
         setOpen(false)
         onDone()
-      } catch {
-        // ignore — user may not be authenticated; parent page handles that
+      } catch (err: unknown) {
+        // Check for 401 specifically — token expired or not logged in
+        const status = (err as { response?: { status?: number } })?.response?.status
+        if (status === 401) {
+          setApplyError('Session expired — please log in again')
+        } else {
+          setApplyError('Failed to apply tag')
+        }
       } finally {
         setApplying(null)
       }
@@ -168,13 +178,19 @@ export default function TagPicker({
     const slug = slugify(name)
     if (!slug) return
     setApplying('__create__')
+    setApplyError(null)
     try {
       const newTag = await adminAPI.createTag({ slug, name, category: 'genre' })
       await addBandTags(bandId, [], [newTag.id])
       setOpen(false)
       onDone()
-    } catch {
-      // silently ignore — admin API may reject duplicate slugs
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 401) {
+        setApplyError('Session expired — please log in again')
+      } else {
+        setApplyError('Could not create tag')
+      }
     } finally {
       setApplying(null)
     }
@@ -324,6 +340,14 @@ export default function TagPicker({
               <Box sx={{ px: 1.25, py: 0.75 }}>
                 <span style={{ ...mono, color: 'var(--muted)' }}>
                   {query ? 'no matches' : 'all tags applied'}
+                </span>
+              </Box>
+            )}
+
+            {applyError && (
+              <Box sx={{ px: 1.25, py: 0.625, borderTop: '1px solid rgba(196,58,42,0.3)' }}>
+                <span style={{ ...mono, fontSize: '0.375rem', color: 'var(--accent, #c43a2a)' }}>
+                  ⚠ {applyError}
                 </span>
               </Box>
             )}
