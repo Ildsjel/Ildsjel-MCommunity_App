@@ -61,6 +61,11 @@ class BandCreate(BandBase):
     tag_ids: List[str] = []
 
 
+class BandRequestCreate(BaseModel):
+    """Submitted by any authenticated user when a streaming artist has no Grimr match."""
+    artist_name: str = Field(..., min_length=1, max_length=200)
+
+
 class BandUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     country: Optional[str] = None

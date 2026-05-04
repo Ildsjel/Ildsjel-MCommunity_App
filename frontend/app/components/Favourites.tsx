@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import axios from 'axios'
+import { requestBandReview } from '@/lib/bandsApi'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -46,6 +47,8 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
   const [albums, setAlbums] = useState<FavAlbum[]>([])
   const [bands, setBands] = useState<FavBand[]>([])
   const [loading, setLoading] = useState(true)
+  // Tracks names that have been requested this session for visual feedback
+  const [requestedNames, setRequestedNames] = useState<Set<string>>(new Set())
 
   const fetchFavourites = useCallback(async () => {
     try {
@@ -103,40 +106,62 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
             Artists
           </span>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-            {artists.map((a) => (
-              <Box
-                key={a.name_norm}
-                onClick={() => a.band_slug && router.push(`/bands/${a.band_slug}`)}
-                sx={{
-                  display: 'flex', alignItems: 'center', gap: 0.5,
-                  border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px',
-                  px: 1, py: 0.5,
-                  cursor: a.band_slug ? 'pointer' : 'default',
-                  '&:hover': a.band_slug ? { borderColor: 'rgba(216,207,184,0.45)' } : {},
-                  transition: 'border-color 0.15s',
-                }}
-              >
-                <Typography sx={{
-                  fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-                  fontSize: '0.75rem', color: 'var(--ink)', lineHeight: 1,
-                }}>
-                  {a.name}
-                </Typography>
-                {a.auto && (
-                  <span style={{ ...mono, fontSize: '0.35rem', color: 'rgba(122,117,109,0.6)', letterSpacing: '0.08em' }}>
-                    auto
-                  </span>
-                )}
-                {isOwnProfile && (
-                  <span
-                    style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)', marginLeft: 2 }}
-                    onClick={(e) => { e.stopPropagation(); removeArtist(a.name_norm) }}
-                  >
-                    ✕
-                  </span>
-                )}
-              </Box>
-            ))}
+            {artists.map((a) => {
+              const alreadyRequested = requestedNames.has(a.name)
+              const handleClick = async () => {
+                if (a.band_slug) {
+                  router.push(`/bands/${a.band_slug}`)
+                  return
+                }
+                if (alreadyRequested) return
+                try {
+                  const result = await requestBandReview(a.name)
+                  if (result.status === 'exists' && result.band_slug) {
+                    router.push(`/bands/${result.band_slug}`)
+                  } else {
+                    setRequestedNames((prev) => new Set([...prev, a.name]))
+                  }
+                } catch { /* silent */ }
+              }
+              return (
+                <Box
+                  key={a.name_norm}
+                  onClick={handleClick}
+                  sx={{
+                    display: 'flex', alignItems: 'center', gap: 0.5,
+                    border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px',
+                    px: 1, py: 0.5, cursor: 'pointer',
+                    '&:hover': { borderColor: 'rgba(216,207,184,0.45)' },
+                    transition: 'border-color 0.15s',
+                  }}
+                >
+                  <Typography sx={{
+                    fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+                    fontSize: '0.75rem', color: 'var(--ink)', lineHeight: 1,
+                  }}>
+                    {a.name}
+                  </Typography>
+                  {a.auto && (
+                    <span style={{ ...mono, fontSize: '0.35rem', color: 'rgba(122,117,109,0.6)', letterSpacing: '0.08em' }}>
+                      auto
+                    </span>
+                  )}
+                  {alreadyRequested && (
+                    <span style={{ ...mono, fontSize: '0.35rem', color: 'rgba(106,154,122,0.8)', letterSpacing: '0.08em' }}>
+                      requested
+                    </span>
+                  )}
+                  {isOwnProfile && (
+                    <span
+                      style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)', marginLeft: 2 }}
+                      onClick={(e) => { e.stopPropagation(); removeArtist(a.name_norm) }}
+                    >
+                      ✕
+                    </span>
+                  )}
+                </Box>
+              )
+            })}
 
             {/* Grimr-platform likes — red border to distinguish from streaming artists */}
             {bands.map((b) => (

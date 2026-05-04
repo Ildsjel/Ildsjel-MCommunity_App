@@ -144,3 +144,24 @@ export async function getRelease(bandSlug: string, releaseSlug: string): Promise
     return null
   }
 }
+
+export interface BandRequestResult {
+  /** 'exists' — published band found, band_slug is set and frontend can navigate
+   *  'already_requested' — draft already exists, no action needed
+   *  'requested' — new draft created, admin review pending */
+  status: 'exists' | 'already_requested' | 'requested'
+  band_slug: string | null
+}
+
+/**
+ * Request a band review from the admin.
+ * Called when a user clicks on a streaming artist that has no linked Grimr band.
+ */
+export async function requestBandReview(artistName: string): Promise<BandRequestResult> {
+  const res = await api.post<BandRequestResult>(
+    '/bands/request',
+    { artist_name: artistName },
+    { headers: authHeader() },
+  )
+  return res.data
+}
