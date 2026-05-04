@@ -36,6 +36,16 @@ export interface FavouriteBandSummary {
   releases: unknown[]
 }
 
+export interface AddFavouriteBandResult {
+  ok: boolean
+  /** True when the band was matched against the user's Spotify / Last.fm library */
+  matched_external: boolean
+  /** The external artist name that was matched, if any */
+  matched_artist_name?: string | null
+  /** Which external source produced the match */
+  matched_source?: 'spotify' | 'lastfm' | 'both' | null
+}
+
 export const bandFavouritesApi = {
   /** All bands the current user has favourited */
   getFavourites: () =>
@@ -45,9 +55,9 @@ export const bandFavouritesApi = {
   getStatus: (bandId: string) =>
     req<{ is_favourite: boolean }>('GET', `/favourites/band/${bandId}`),
 
-  /** Add a band to favourites */
+  /** Add a band to favourites. Returns match info from the external library. */
   add: (bandId: string) =>
-    req<{ ok: boolean }>('POST', '/favourites/band', { band_id: bandId }),
+    req<AddFavouriteBandResult>('POST', '/favourites/band', { band_id: bandId }),
 
   /** Remove a band from favourites */
   remove: (bandId: string) =>

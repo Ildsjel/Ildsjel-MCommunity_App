@@ -357,8 +357,10 @@ class BandRepository:
         result = self.session.run(
             """
             MATCH (g:Genre)
+            WHERE g.id IS NOT NULL AND g.slug IS NOT NULL
             OPTIONAL MATCH (g)-[:CHILD_OF]->(p:Genre)
             OPTIONAL MATCH (c:Genre)-[:CHILD_OF]->(g)
+            WHERE c.id IS NOT NULL AND c.slug IS NOT NULL
             RETURN g, p.id AS parent_id, collect(c {.id, .slug, .name}) AS children
             ORDER BY g.name
             """

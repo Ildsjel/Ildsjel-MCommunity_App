@@ -1,15 +1,17 @@
 """
 Favourites — explicit + auto-favourites for artists and albums
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from app.db.neo4j_driver import get_neo4j_session
 from app.auth.jwt_handler import get_current_user
 from app.models.favourites_models import (
     FavouriteArtistRequest,
     FavouriteAlbumRequest,
     FavouriteBandRequest,
+    AddFavouriteBandResponse,
     VisibilityUpdateRequest,
 )
+from app.utils.name_matching import normalize_for_matching
 
 router = APIRouter(prefix="/favourites", tags=["Favourites"])
 
@@ -83,9 +85,41 @@ async def get_favourites(
         )
     ]
 
+    # ── Grimr-catalogue bands (deduplicated against the artist list above) ──────
+    #
+    # A band is already represented in the artists list when it is linked via
+    # (Artist)-[:LINKED_BAND]->(Band) to an artist the user has as a
+    # TOP_ARTIST or FAVOURITE_ARTIST (and has not unfavourited).
+    # We only surface bands that are NOT covered that way.
+    grimr_bands = [
+        {
+            "id": r["id"],
+            "slug": r["slug"],
+            "name": r["name"],
+            "genres": [dict(g) for g in (r.get("genres") or []) if g and g.get("id")],
+            "grimr": True,
+        }
+        for r in session.run(
+            """
+            MATCH (u:User {id: $uid})-[:FAVOURITE_BAND]->(b:Band)
+            WHERE NOT EXISTS {
+              MATCH (u)-[:TOP_ARTIST|FAVOURITE_ARTIST]->(a:Artist)-[:LINKED_BAND]->(b)
+              WHERE NOT (u)-[:UNFAVOURITE_ARTIST]->(a)
+            }
+            OPTIONAL MATCH (b)-[:TAGGED_WITH]->(g:Genre)
+            WHERE g.id IS NOT NULL
+            WITH b, collect(DISTINCT {id: g.id, slug: g.slug, name: g.name}) AS genres
+            RETURN b.id AS id, b.slug AS slug, b.name AS name, genres
+            ORDER BY b.name
+            """,
+            uid=uid,
+        )
+    ]
+
     return {
         "artists": explicit_artists + auto_artists,
         "albums": explicit_albums + auto_albums,
+        "bands": grimr_bands,
     }
 
 
@@ -209,20 +243,102 @@ async def get_favourite_band_status(
     return {"is_favourite": bool(rec["is_favourite"]) if rec else False}
 
 
-@router.post("/band")
+@router.post("/band", response_model=AddFavouriteBandResponse)
 async def add_favourite_band(
     body: FavouriteBandRequest,
     session=Depends(get_neo4j_session),
     current_user: dict = Depends(get_current_user),
 ):
+    """Favourite a band from the catalogue.
+
+    After creating the ``[:FAVOURITE_BAND]`` edge this endpoint attempts to
+    match the band against the user's existing Spotify / Last.fm artist library
+    using normalised string comparison (v1).  If a match is found:
+
+    * An ``(Artist)-[:LINKED_BAND]->(Band)`` edge is merged so the two
+      representations are connected in the graph.
+    * The response includes ``matched_external=True`` so the frontend can
+      surface a "found in your library" notice.
+
+    No match leaves the state unchanged (idempotent MERGE semantics).
+    """
+    uid = current_user["id"]
+    band_id = body.band_id
+
+    # ── 1. Resolve the band name ─────────────────────────────────────────────
+    band_rec = session.run(
+        "MATCH (b:Band {id: $band_id}) RETURN b.name AS name",
+        band_id=band_id,
+    ).single()
+    if not band_rec:
+        raise HTTPException(status_code=404, detail="Band not found")
+
+    band_name_norm = normalize_for_matching(band_rec["name"])
+
+    # ── 2. Create the canonical FAVOURITE_BAND edge ──────────────────────────
     session.run(
         """
         MATCH (u:User {id: $uid}), (b:Band {id: $band_id})
         MERGE (u)-[:FAVOURITE_BAND]->(b)
         """,
-        uid=current_user["id"], band_id=body.band_id,
+        uid=uid,
+        band_id=band_id,
     )
-    return {"ok": True}
+
+    # ── 3. Try to match against the user's external artist library ───────────
+    #
+    # We look at both TOP_ARTIST (imported from Spotify/Last.fm sync) and any
+    # explicit FAVOURITE_ARTIST relationships.
+    #
+    # Matching strategy (exact, case-insensitive, whitespace-collapsed):
+    #   a) Compare against `name_normalized` when it exists (Last.fm-sourced)
+    #   b) Fall back to toLower(trim(a.name)) for Spotify-only nodes
+    #
+    # We pick LIMIT 1 — if multiple artists match (unlikely), we take the
+    # first.  Ambiguous multi-match resolution is out-of-scope for v1.
+    match_rec = session.run(
+        """
+        MATCH (u:User {id: $uid})-[:TOP_ARTIST|FAVOURITE_ARTIST]->(a:Artist)
+        WHERE
+          CASE
+            WHEN a.name_normalized IS NOT NULL
+              THEN apoc.text.regreplace(a.name_normalized, '\\\\s+', ' ')
+            ELSE toLower(trim(a.name))
+          END = $band_name_norm
+        WITH DISTINCT a
+        RETURN
+          a.id          AS artist_id,
+          a.name        AS artist_name,
+          CASE
+            WHEN a.spotify_id IS NOT NULL AND a.lastfm_mbid IS NOT NULL THEN 'both'
+            WHEN a.spotify_id IS NOT NULL                               THEN 'spotify'
+            ELSE                                                             'lastfm'
+          END           AS source
+        LIMIT 1
+        """,
+        uid=uid,
+        band_name_norm=band_name_norm,
+    ).single()
+
+    if not match_rec:
+        # No external match — plain favourite, nothing more to do
+        return AddFavouriteBandResponse(matched_external=False)
+
+    # ── 4. Match found — link the Artist node to the Band catalogue entity ───
+    session.run(
+        """
+        MATCH (a:Artist {id: $artist_id}), (b:Band {id: $band_id})
+        MERGE (a)-[:LINKED_BAND]->(b)
+        """,
+        artist_id=match_rec["artist_id"],
+        band_id=band_id,
+    )
+
+    return AddFavouriteBandResponse(
+        matched_external=True,
+        matched_artist_name=match_rec["artist_name"],
+        matched_source=match_rec["source"],
+    )
 
 
 @router.delete("/band/{band_id}")

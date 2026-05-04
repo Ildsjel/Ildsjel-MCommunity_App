@@ -25,7 +25,7 @@ class ImageService:
     BAND_PHOTO_SIZE = (1200, 675)   # 16:9 banner
     BAND_LOGO_SIZE = (400, 400)     # square
 
-    def __init__(self, upload_dir: str = "/app/uploads"):
+    def __init__(self, upload_dir: str = "/tmp/grimr_uploads"):
         """Initialize image service with upload directory"""
         self.upload_dir = Path(upload_dir)
         self.avatar_dir = self.upload_dir / "avatars"

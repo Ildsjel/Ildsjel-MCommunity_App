@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import { useUser } from '@/app/context/UserContext'
+import { bandFavouritesApi } from '@/lib/bandFavouritesApi'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -36,12 +37,51 @@ export default function BandsPage() {
   const [query, setQuery] = useState('')
   const [inputValue, setInputValue] = useState('')
   const [bandsLoading, setBandsLoading] = useState(true)
+  const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set())
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/auth/login')
   }, [user, isLoading, router])
+
+  // Load all favourited band IDs once so we can show the heart state on each row
+  useEffect(() => {
+    if (!user) return
+    bandFavouritesApi.getFavourites()
+      .then((favs) => setFavouriteIds(new Set(favs.map((f) => f.id))))
+      .catch(() => {})
+  }, [user])
+
+  const handleToggleFavourite = useCallback(async (e: React.MouseEvent, bandId: string) => {
+    e.stopPropagation()
+    if (togglingId) return
+    setTogglingId(bandId)
+    const isFav = favouriteIds.has(bandId)
+    // Optimistic update
+    setFavouriteIds((prev) => {
+      const next = new Set(prev)
+      isFav ? next.delete(bandId) : next.add(bandId)
+      return next
+    })
+    try {
+      if (isFav) {
+        await bandFavouritesApi.remove(bandId)
+      } else {
+        await bandFavouritesApi.add(bandId)
+      }
+    } catch {
+      // Revert on failure
+      setFavouriteIds((prev) => {
+        const next = new Set(prev)
+        isFav ? next.add(bandId) : next.delete(bandId)
+        return next
+      })
+    } finally {
+      setTogglingId(null)
+    }
+  }, [togglingId, favouriteIds])
 
   const fetchBands = useCallback((q: string, p: number) => {
     setBandsLoading(true)
@@ -253,6 +293,26 @@ export default function BandsPage() {
                       </Typography>
                     </Box>
                   )}
+
+                  {/* Favourite heart */}
+                  <Box
+                    component="button"
+                    onClick={(e: React.MouseEvent) => handleToggleFavourite(e, band.id)}
+                    disabled={togglingId === band.id}
+                    sx={{
+                      flexShrink: 0, alignSelf: 'center',
+                      background: 'none', border: 'none', cursor: togglingId === band.id ? 'default' : 'pointer',
+                      p: 0.5, lineHeight: 1,
+                      fontSize: '0.75rem',
+                      color: favouriteIds.has(band.id) ? 'var(--accent, #c43a2a)' : 'rgba(216,207,184,0.25)',
+                      transition: 'color 0.15s',
+                      '&:hover:not(:disabled)': {
+                        color: favouriteIds.has(band.id) ? 'rgba(196,58,42,0.7)' : 'rgba(216,207,184,0.6)',
+                      },
+                    }}
+                  >
+                    {favouriteIds.has(band.id) ? '♥' : '♡'}
+                  </Box>
                 </Box>
               )
             })}

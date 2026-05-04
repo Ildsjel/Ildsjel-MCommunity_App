@@ -1,6 +1,7 @@
 """
 Grimr Backend - FastAPI Main Entry Point
 """
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,12 +46,18 @@ async def lifespan(app: FastAPI):
     from app.services.spotify_polling_service import polling_service
     await polling_service.start()
 
+    # Start nightly auto-favourite service
+    from app.services.auto_favourite_service import auto_favourite_service
+    await auto_favourite_service.start()
+
     yield
 
     # Shutdown
     print("🛑 Shutting down Grimr API...")
     from app.services.spotify_polling_service import polling_service
     await polling_service.stop()
+    from app.services.auto_favourite_service import auto_favourite_service
+    await auto_favourite_service.stop()
     neo4j_driver.close()
 
 
@@ -96,7 +103,7 @@ app.include_router(friends.router, prefix="/api/v1")
 app.include_router(messages.router, prefix="/api/v1")
 
 # Mount static files for uploads
-uploads_dir = Path("/app/uploads")
+uploads_dir = Path(os.environ.get("UPLOADS_DIR", "/app/uploads"))
 uploads_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 

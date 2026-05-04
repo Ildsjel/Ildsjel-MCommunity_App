@@ -24,7 +24,7 @@ const inputSx = {
   '& .MuiInputLabel-root.Mui-focused': { color: 'var(--muted)' },
 }
 
-const TAG_CATEGORIES = ['mood', 'theme', 'era', 'technique', 'production', 'instrument', 'other']
+const TAG_CATEGORIES = ['genre', 'mood', 'theme', 'era', 'technique', 'production', 'instrument', 'other']
 
 export default function AdminTagsPage() {
   const router = useRouter()
@@ -33,7 +33,7 @@ export default function AdminTagsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [catFilter, setCatFilter] = useState<string>('all')
-  const [form, setForm] = useState({ name: '', slug: '', category: 'mood' })
+  const [form, setForm] = useState({ name: '', slug: '', category: 'genre' })
   const [mergeSource, setMergeSource] = useState('')
   const [mergeTarget, setMergeTarget] = useState('')
 
@@ -53,7 +53,7 @@ export default function AdminTagsPage() {
     try {
       const tag = await adminAPI.createTag(form)
       setTags((prev) => [...prev, tag])
-      setForm({ name: '', slug: '', category: 'mood' })
+      setForm({ name: '', slug: '', category: 'genre' })
     } catch (err: unknown) { setError(getErrorMessage(err)) }
     finally { setSaving(false) }
   }
