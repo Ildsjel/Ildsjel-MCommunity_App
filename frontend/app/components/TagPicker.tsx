@@ -169,7 +169,7 @@ export default function TagPicker({
     if (!slug) return
     setApplying('__create__')
     try {
-      const newTag = await adminAPI.createTag({ slug, name, category: 'general' })
+      const newTag = await adminAPI.createTag({ slug, name, category: 'genre' })
       await addBandTags(bandId, [], [newTag.id])
       setOpen(false)
       onDone()
