@@ -77,13 +77,17 @@ export interface ReleaseDetail {
   release: Release
 }
 
-/** Flatten a genre tree into a plain list (depth-first). */
+/** Flatten a genre tree into a plain list (depth-first), deduplicating by id. */
 export function flattenGenreTree(genres: GenreNode[]): BandGenre[] {
+  const seen = new Set<string>()
   const result: BandGenre[] = []
   const walk = (nodes: GenreNode[]) => {
     for (const g of nodes) {
-      result.push({ id: g.id, slug: g.slug, name: g.name })
-      if (g.children?.length) walk(g.children)
+      if (!seen.has(g.id)) {
+        seen.add(g.id)
+        result.push({ id: g.id, slug: g.slug, name: g.name })
+        if (g.children?.length) walk(g.children)
+      }
     }
   }
   walk(genres)
