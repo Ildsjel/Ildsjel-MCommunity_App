@@ -12,6 +12,7 @@ interface FavArtist {
   name_norm: string
   image_url: string | null
   auto: boolean
+  band_slug?: string | null
 }
 
 interface FavAlbum {
@@ -105,15 +106,15 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
             {artists.map((a) => (
               <Box
                 key={a.name_norm}
+                onClick={() => a.band_slug && router.push(`/bands/${a.band_slug}`)}
                 sx={{
                   display: 'flex', alignItems: 'center', gap: 0.5,
                   border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px',
                   px: 1, py: 0.5,
-                  cursor: isOwnProfile ? 'pointer' : 'default',
-                  '&:hover': isOwnProfile ? { borderColor: 'rgba(196,58,42,0.45)' } : {},
+                  cursor: a.band_slug ? 'pointer' : 'default',
+                  '&:hover': a.band_slug ? { borderColor: 'rgba(216,207,184,0.45)' } : {},
                   transition: 'border-color 0.15s',
                 }}
-                onClick={() => isOwnProfile && removeArtist(a.name_norm)}
               >
                 <Typography sx={{
                   fontFamily: 'var(--font-serif)', fontStyle: 'italic',
@@ -127,7 +128,12 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                   </span>
                 )}
                 {isOwnProfile && (
-                  <span style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)', marginLeft: 2 }}>✕</span>
+                  <span
+                    style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)', marginLeft: 2 }}
+                    onClick={(e) => { e.stopPropagation(); removeArtist(a.name_norm) }}
+                  >
+                    ✕
+                  </span>
                 )}
               </Box>
             ))}
