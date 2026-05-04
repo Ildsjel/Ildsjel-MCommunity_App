@@ -46,12 +46,18 @@ async def lifespan(app: FastAPI):
     from app.services.spotify_polling_service import polling_service
     await polling_service.start()
 
+    # Start nightly auto-favourite service
+    from app.services.auto_favourite_service import auto_favourite_service
+    await auto_favourite_service.start()
+
     yield
 
     # Shutdown
     print("🛑 Shutting down Grimr API...")
     from app.services.spotify_polling_service import polling_service
     await polling_service.stop()
+    from app.services.auto_favourite_service import auto_favourite_service
+    await auto_favourite_service.stop()
     neo4j_driver.close()
 
 

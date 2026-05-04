@@ -85,9 +85,41 @@ async def get_favourites(
         )
     ]
 
+    # ── Grimr-catalogue bands (deduplicated against the artist list above) ──────
+    #
+    # A band is already represented in the artists list when it is linked via
+    # (Artist)-[:LINKED_BAND]->(Band) to an artist the user has as a
+    # TOP_ARTIST or FAVOURITE_ARTIST (and has not unfavourited).
+    # We only surface bands that are NOT covered that way.
+    grimr_bands = [
+        {
+            "id": r["id"],
+            "slug": r["slug"],
+            "name": r["name"],
+            "genres": [dict(g) for g in (r.get("genres") or []) if g and g.get("id")],
+            "grimr": True,
+        }
+        for r in session.run(
+            """
+            MATCH (u:User {id: $uid})-[:FAVOURITE_BAND]->(b:Band)
+            WHERE NOT EXISTS {
+              MATCH (u)-[:TOP_ARTIST|FAVOURITE_ARTIST]->(a:Artist)-[:LINKED_BAND]->(b)
+              WHERE NOT (u)-[:UNFAVOURITE_ARTIST]->(a)
+            }
+            OPTIONAL MATCH (b)-[:TAGGED_WITH]->(g:Genre)
+            WHERE g.id IS NOT NULL
+            WITH b, collect(DISTINCT {id: g.id, slug: g.slug, name: g.name}) AS genres
+            RETURN b.id AS id, b.slug AS slug, b.name AS name, genres
+            ORDER BY b.name
+            """,
+            uid=uid,
+        )
+    ]
+
     return {
         "artists": explicit_artists + auto_artists,
         "albums": explicit_albums + auto_albums,
+        "bands": grimr_bands,
     }
 
 

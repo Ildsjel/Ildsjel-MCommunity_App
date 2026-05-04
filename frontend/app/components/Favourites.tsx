@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import axios from 'axios'
 
@@ -22,6 +23,14 @@ interface FavAlbum {
   auto: boolean
 }
 
+interface FavBand {
+  id: string
+  slug: string
+  name: string
+  genres: { id: string; slug: string; name: string }[]
+  grimr: boolean
+}
+
 interface FavouritesProps {
   isOwnProfile: boolean
 }
@@ -31,8 +40,10 @@ const mono: React.CSSProperties = {
 }
 
 export default function Favourites({ isOwnProfile }: FavouritesProps) {
+  const router = useRouter()
   const [artists, setArtists] = useState<FavArtist[]>([])
   const [albums, setAlbums] = useState<FavAlbum[]>([])
+  const [bands, setBands] = useState<FavBand[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchFavourites = useCallback(async () => {
@@ -43,6 +54,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
       })
       setArtists(res.data.artists ?? [])
       setAlbums(res.data.albums ?? [])
+      setBands(res.data.bands ?? [])
     } catch {
       // silent — empty state is shown
     } finally {
@@ -74,7 +86,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
     </Box>
   )
 
-  if (artists.length === 0 && albums.length === 0) return (
+  if (artists.length === 0 && albums.length === 0 && bands.length === 0) return (
     <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
       {isOwnProfile
         ? 'No favourites yet. Your top 10 scrobbled artists and albums appear here automatically.'
@@ -124,7 +136,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
       )}
 
       {albums.length > 0 && (
-        <Box>
+        <Box sx={{ mb: bands.length > 0 ? 2 : 0 }}>
           <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
             Albums
           </span>
@@ -168,6 +180,42 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                     <span style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)' }}>✕</span>
                   )}
                 </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {bands.length > 0 && (
+        <Box>
+          <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
+            Bands
+          </span>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+            {bands.map((b) => (
+              <Box
+                key={b.id}
+                onClick={() => router.push(`/bands/${b.slug}`)}
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 0.5,
+                  border: '1px solid rgba(196,58,42,0.35)', borderRadius: '3px',
+                  px: 1, py: 0.5, cursor: 'pointer',
+                  '&:hover': { borderColor: 'rgba(196,58,42,0.65)' },
+                  transition: 'border-color 0.15s',
+                }}
+              >
+                <span style={{ ...mono, fontSize: '0.375rem', color: 'var(--accent, #c43a2a)' }}>♥</span>
+                <Typography sx={{
+                  fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+                  fontSize: '0.75rem', color: 'var(--ink)', lineHeight: 1,
+                }}>
+                  {b.name}
+                </Typography>
+                {b.genres[0] && (
+                  <span style={{ ...mono, fontSize: '0.35rem', color: 'rgba(122,117,109,0.6)', letterSpacing: '0.08em' }}>
+                    {b.genres[0].name}
+                  </span>
+                )}
               </Box>
             ))}
           </Box>
