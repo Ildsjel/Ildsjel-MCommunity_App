@@ -159,3 +159,47 @@ export interface ImageUploadResponse {
   logo_url?: string
   url?: string
 }
+
+export interface AdminTrackCreate {
+  number: number
+  title: string
+  duration: string   // mm:ss
+  lyrics?: string | null
+}
+
+export interface AdminTrackUpdate {
+  number?: number
+  title?: string
+  duration?: string
+  lyrics?: string | null
+}
+
+export interface AdminAlbumSuggestion {
+  id: string
+  title: string
+  type?: string | null
+  year?: number | null
+  band_id: string
+  band_name?: string | null
+  band_slug?: string | null
+  suggested_by_user_id: string
+  suggested_by_handle?: string | null
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  reviewer_note?: string | null
+  rejected_reason?: string | null
+  reviewed_at?: string | null
+}
+
+export interface AdminSuggestionUpdate {
+  title?: string
+  type?: string | null
+  year?: number | null
+  reviewer_note?: string | null
+}
+
+export interface ReviewCounts {
+  pending: number
+  approved: number
+  rejected: number
+}

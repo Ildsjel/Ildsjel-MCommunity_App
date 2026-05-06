@@ -1,3 +1,5 @@
+import uuid, re
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from app.auth.permissions import require_admin, require_superadmin
 from app.auth.jwt_handler import get_current_user
@@ -13,8 +15,10 @@ from app.models.admin_models import (
 from app.models.band_models import (
     BandCreate, BandUpdate, BandResponse,
     ReleaseCreate, ReleaseResponse,
+    TrackCreate, TrackUpdate, TrackResponse,
     GenreCreate, GenreUpdate, GenreResponse,
     TagCreate, TagUpdate, TagResponse, TagMerge,
+    AlbumSuggestionResponse, AlbumSuggestionUpdate, AlbumSuggestionReject,
 )
 from typing import List, Optional
 
@@ -89,15 +93,17 @@ async def set_user_role(
 
 # ── Bands CRUD (admin) ───────────────────────────────────────────────────────
 
-@router.get("/bands", response_model=List[BandResponse])
+@router.get("/bands")
 async def list_bands(
     status: Optional[str] = None,
+    q: Optional[str] = None,
     skip: int = 0,
-    limit: int = 50,
+    limit: int = 25,
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
-    return BandService(session).list_bands(status, skip, limit)["bands"]
+    result = BandService(session).list_bands(status, skip, limit, query=q)
+    return {"bands": result["bands"], "total": result["total"]}
 
 
 @router.get("/bands/draft-count")
@@ -106,6 +112,21 @@ async def get_draft_count(
     session=Depends(get_neo4j_session),
 ):
     return {"count": BandService(session).draft_count()}
+
+
+@router.get("/bands/pending-counts")
+async def get_bands_pending_counts(
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Returns {band_id: pending_suggestion_count} for every band that has ≥1 pending suggestion."""
+    records = session.run(
+        """
+        MATCH (s:AlbumSuggestion {status: 'pending'})-[:SUGGESTED_FOR]->(b:Band)
+        RETURN b.id AS band_id, count(s) AS pending_count
+        """
+    )
+    return {r["band_id"]: r["pending_count"] for r in records}
 
 
 @router.post("/bands/publish-all-drafts")
@@ -215,6 +236,48 @@ async def delete_release(
         raise HTTPException(status_code=404, detail="Release not found")
 
 
+# ── Tracks (admin) ────────────────────────────────────────────────────────────
+
+@router.post("/releases/{release_id}/tracks", response_model=ReleaseResponse, status_code=201)
+async def add_track(
+    release_id: str,
+    body: TrackCreate,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Add a track to an existing release. Returns the updated release with all tracks."""
+    release = BandService(session).add_track(release_id, body.model_dump())
+    if not release:
+        raise HTTPException(status_code=404, detail="Release not found")
+    return release
+
+
+@router.patch("/tracks/{track_id}", status_code=204)
+async def update_track(
+    track_id: str,
+    body: TrackUpdate,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Update one or more fields of an existing track."""
+    updates = body.model_dump(exclude_unset=True)
+    if not updates:
+        return
+    ok = BandService(session).update_track(track_id, updates)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+
+@router.delete("/tracks/{track_id}", status_code=204)
+async def delete_track(
+    track_id: str,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Delete a track permanently."""
+    BandService(session).delete_track(track_id)
+
+
 # ── Genres (admin) ───────────────────────────────────────────────────────────
 
 @router.get("/genres", response_model=List[GenreResponse])
@@ -312,3 +375,252 @@ async def merge_tags(
     if not ok:
         raise HTTPException(status_code=400, detail="Merge failed — check source and target IDs")
     return {"message": "Tags merged successfully"}
+
+
+# ── Album Review queue (admin) ────────────────────────────────────────────────
+
+@router.get("/review/albums", response_model=List[AlbumSuggestionResponse])
+async def get_review_queue(
+    status: Optional[str] = "pending",
+    q: Optional[str] = None,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Global album suggestion review queue across all bands.
+
+    status: 'pending' (default) | 'approved' | 'rejected' | 'all'
+    q: optional search string (matches title, band name, or suggester handle)
+    """
+    where_clauses = []
+    params: dict = {}
+
+    if status and status != "all":
+        where_clauses.append("s.status = $status")
+        params["status"] = status
+
+    if q:
+        where_clauses.append(
+            "(toLower(s.title) CONTAINS toLower($q)"
+            " OR toLower(b.name) CONTAINS toLower($q)"
+            " OR toLower(COALESCE(u.handle, '')) CONTAINS toLower($q))"
+        )
+        params["q"] = q
+
+    where_str = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    records = session.run(
+        f"""
+        MATCH (s:AlbumSuggestion)-[:SUGGESTED_FOR]->(b:Band)
+        OPTIONAL MATCH (u:User {{id: s.suggested_by_user_id}})
+        {where_str}
+        RETURN s, b.name AS band_name, b.slug AS band_slug, u.handle AS suggested_by_handle
+        ORDER BY s.created_at DESC
+        """,
+        **params,
+    )
+    results = []
+    for r in records:
+        s = dict(r["s"])
+        s["band_name"] = r["band_name"]
+        s["band_slug"] = r["band_slug"]
+        s["suggested_by_handle"] = r["suggested_by_handle"]
+        results.append(s)
+    return results
+
+
+@router.get("/review/albums/counts")
+async def get_review_counts(
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """KPI counts per status."""
+    result = session.run(
+        "MATCH (s:AlbumSuggestion) RETURN s.status AS status, count(s) AS cnt"
+    ).data()
+    counts = {"pending": 0, "approved": 0, "rejected": 0}
+    for r in result:
+        if r["status"] in counts:
+            counts[r["status"]] = r["cnt"]
+    return counts
+
+
+# ── Album Suggestions per-band (admin) ───────────────────────────────────────
+
+@router.get("/bands/{band_id}/suggestions", response_model=List[AlbumSuggestionResponse])
+async def list_suggestions(
+    band_id: str,
+    status: Optional[str] = None,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """List album suggestions for a band.
+
+    status: 'pending' | 'approved' | 'rejected' | None (returns pending + rejected)
+    """
+    if status and status != "all":
+        where_str = "AND s.status = $status"
+        params = {"band_id": band_id, "status": status}
+    elif status == "all":
+        where_str = ""
+        params = {"band_id": band_id}
+    else:
+        # Default: exclude approved (those are surfaced as real releases)
+        where_str = "AND s.status <> 'approved'"
+        params = {"band_id": band_id}
+
+    records = session.run(
+        f"""
+        MATCH (s:AlbumSuggestion {{band_id: $band_id}})
+        WHERE true {where_str}
+        OPTIONAL MATCH (u:User {{id: s.suggested_by_user_id}})
+        RETURN s, u.handle AS suggested_by_handle
+        ORDER BY s.created_at DESC
+        """,
+        **params,
+    )
+    results = []
+    for r in records:
+        s = dict(r["s"])
+        s["suggested_by_handle"] = r["suggested_by_handle"]
+        results.append(s)
+    return results
+
+
+@router.patch("/band-suggestions/{suggestion_id}")
+async def update_suggestion(
+    suggestion_id: str,
+    body: AlbumSuggestionUpdate,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Admin edits a suggestion (title / type / year / reviewer note)."""
+    updates = body.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    set_parts = [f"s.{k} = ${k}" for k in updates]
+    result = session.run(
+        f"MATCH (s:AlbumSuggestion {{id: $id}}) SET {', '.join(set_parts)} RETURN s",
+        id=suggestion_id,
+        **updates,
+    ).single()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+
+    s = dict(result["s"])
+    s.setdefault("band_name", None)
+    s.setdefault("band_slug", None)
+    s.setdefault("suggested_by_handle", None)
+    return s
+
+
+@router.post("/band-suggestions/{suggestion_id}/reject", status_code=200)
+async def reject_suggestion(
+    suggestion_id: str,
+    body: AlbumSuggestionReject,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Reject a pending suggestion with an optional reason."""
+    now = datetime.now(timezone.utc).isoformat()
+    result = session.run(
+        """
+        MATCH (s:AlbumSuggestion {id: $id})
+        SET s.status = 'rejected',
+            s.rejected_reason = $reason,
+            s.reviewed_at = $now,
+            s.reviewed_by_user_id = $admin_id
+        RETURN s
+        """,
+        id=suggestion_id,
+        reason=body.reason or "",
+        now=now,
+        admin_id=current_user["id"],
+    ).single()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+
+    return {"ok": True}
+
+
+@router.delete("/band-suggestions/{suggestion_id}", status_code=204)
+async def delete_suggestion(
+    suggestion_id: str,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Hard-delete a suggestion (superadmin cleanup)."""
+    session.run(
+        "MATCH (s:AlbumSuggestion {id: $id}) DETACH DELETE s",
+        id=suggestion_id,
+    )
+
+
+@router.post("/band-suggestions/{suggestion_id}/accept", response_model=ReleaseResponse)
+async def accept_suggestion(
+    suggestion_id: str,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Approve a suggestion: create a Release and mark the suggestion as approved (audit trail kept)."""
+
+    # ── 1. Fetch suggestion ───────────────────────────────────────────────────
+    sug_rec = session.run(
+        "MATCH (s:AlbumSuggestion {id: $id}) RETURN s",
+        id=suggestion_id,
+    ).single()
+    if not sug_rec:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+
+    sug = dict(sug_rec["s"])
+    band_id = sug["band_id"]
+    title = sug["title"]
+    release_type = sug.get("type") or "LP"
+    year = sug.get("year") or datetime.now(timezone.utc).year
+
+    # ── 2. Generate a unique slug ─────────────────────────────────────────────
+    base_slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-") or "release"
+    slug = base_slug
+
+    collision = session.run(
+        """
+        MATCH (b:Band {id: $band_id})-[:HAS_RELEASE]->(r:Release {slug: $slug})
+        RETURN r LIMIT 1
+        """,
+        band_id=band_id,
+        slug=slug,
+    ).single()
+    if collision:
+        slug = f"{base_slug}-{str(uuid.uuid4())[:6]}"
+
+    # ── 3. Create the release ─────────────────────────────────────────────────
+    release = BandService(session).create_release(band_id, {
+        "slug": slug,
+        "title": title,
+        "type": release_type,
+        "year": int(year),
+        "label": None,
+        "tracks": [],
+    })
+    if not release:
+        raise HTTPException(status_code=500, detail="Failed to create release")
+
+    # ── 4. Mark suggestion as approved — keep node for audit trail ────────────
+    now = datetime.now(timezone.utc).isoformat()
+    session.run(
+        """
+        MATCH (s:AlbumSuggestion {id: $id})
+        SET s.status = 'approved',
+            s.reviewed_at = $now,
+            s.reviewed_by_user_id = $admin_id,
+            s.release_id = $release_id
+        """,
+        id=suggestion_id,
+        now=now,
+        admin_id=current_user["id"],
+        release_id=release["id"],
+    )
+
+    return release

@@ -321,6 +321,45 @@ class BandRepository:
         record = result.single()
         return (record["deleted"] > 0) if record else False
 
+    def add_track(self, release_id: str, data: dict) -> Optional[dict]:
+        track_id = str(uuid.uuid4())
+        exists = self.session.run(
+            "MATCH (r:Release {id: $id}) RETURN r LIMIT 1", id=release_id
+        ).single()
+        if not exists:
+            return None
+        self.session.run(
+            """
+            MATCH (r:Release {id: $release_id})
+            CREATE (t:Track {
+                id: $id, release_id: $release_id,
+                number: $number, title: $title, duration: $duration, lyrics: $lyrics
+            })
+            CREATE (r)-[:HAS_TRACK]->(t)
+            """,
+            id=track_id, release_id=release_id,
+            number=data["number"], title=data["title"],
+            duration=data["duration"], lyrics=data.get("lyrics"),
+        )
+        return self.get_release(release_id)
+
+    def update_track(self, track_id: str, data: dict) -> bool:
+        if not data:
+            return True
+        set_parts = [f"t.{k} = ${k}" for k in data]
+        result = self.session.run(
+            f"MATCH (t:Track {{id: $id}}) SET {', '.join(set_parts)} RETURN t",
+            id=track_id, **data,
+        ).single()
+        return result is not None
+
+    def delete_track(self, track_id: str) -> bool:
+        result = self.session.run(
+            "MATCH (t:Track {id: $id}) DETACH DELETE t RETURN count(*) AS cnt",
+            id=track_id,
+        ).single()
+        return bool(result and result["cnt"] >= 0)
+
     # ── Genres ──────────────────────────────────────────────────────────────
 
     def create_genre(self, data: dict) -> dict:

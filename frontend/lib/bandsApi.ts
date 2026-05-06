@@ -153,6 +153,29 @@ export interface BandRequestResult {
   band_slug: string | null
 }
 
+export interface AlbumSuggestionResult {
+  id: string
+  status: string
+}
+
+/**
+ * Suggest a missing album for an existing band.
+ * Returns 409 if the album already exists in the discography or was already suggested.
+ */
+export async function suggestAlbum(
+  bandId: string,
+  title: string,
+  type?: string | null,
+  year?: number | null,
+): Promise<AlbumSuggestionResult> {
+  const res = await api.post<AlbumSuggestionResult>(
+    `/bands/${bandId}/suggest-album`,
+    { title, type: type || null, year: year || null },
+    { headers: authHeader() },
+  )
+  return res.data
+}
+
 /**
  * Request a band review from the admin.
  * Called when a user clicks on a streaming artist that has no linked Grimr band.
