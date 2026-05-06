@@ -217,10 +217,10 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
   const scaleRef   = useRef(1.0)
   const dragging   = useRef(false)
   const lastPos    = useRef({ x: 0, y: 0 })
-  const autoRotate = useRef(true)
+  const autoRotate = useRef(false)   // rotation off by default
   const rafRef     = useRef<number>(0)
-  const resumeRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pinchDist  = useRef<number | null>(null)
+  const initializedView = useRef(false)
 
   // Responsive size
   useEffect(() => {
@@ -238,6 +238,45 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
   // Load world land polygons once
   useEffect(() => { loadLand().then(setLand) }, [])
 
+  // Set initial view centered on the friend cluster, with appropriate zoom
+  useEffect(() => {
+    if (initializedView.current || markers.length === 0) return
+    initializedView.current = true
+
+    // Centroid: average lat, cartesian-mean lon (handles ±180° wrap correctly)
+    const n = markers.length
+    const avgLat = markers.reduce((s, m) => s + m.lat, 0) / n
+    const sinSum = markers.reduce((s, m) => s + Math.sin(m.lon * Math.PI / 180), 0)
+    const cosSum = markers.reduce((s, m) => s + Math.cos(m.lon * Math.PI / 180), 0)
+    const avgLon = Math.atan2(sinSum / n, cosSum / n) * 180 / Math.PI
+
+    // Max angular distance from centroid to any marker (central angle via dot product)
+    let maxSpread = 0
+    const φ0 = avgLat * Math.PI / 180
+    for (const m of markers) {
+      const φ = m.lat * Math.PI / 180
+      const dλ = (m.lon - avgLon) * Math.PI / 180
+      const cosD = Math.sin(φ0) * Math.sin(φ) + Math.cos(φ0) * Math.cos(φ) * Math.cos(dλ)
+      maxSpread = Math.max(maxSpread, Math.acos(Math.min(1, Math.max(-1, cosD))) * 180 / Math.PI)
+    }
+
+    // Center on the cluster
+    const newLat = avgLat
+    const newLon = avgLon
+    setCLat(newLat); cLatRef.current = newLat
+    setCLon(newLon); cLonRef.current = newLon
+
+    // Scale so the farthest marker sits at ~70% of the visible half-height.
+    // Formula derived from: sin(spread) * R = 0.7 * available_half, R = size*0.38*s
+    // Simplifies to: s = 0.8 / sin(spread), clamped to [1, MAX_SCALE]
+    const clampedSpread = Math.max(5, Math.min(75, maxSpread))
+    const targetScale = maxSpread >= 75
+      ? 1.0   // spread is global — show whole globe
+      : Math.min(MAX_SCALE, Math.max(1.0, 0.8 / Math.sin(clampedSpread * Math.PI / 180)))
+
+    setScale(targetScale); scaleRef.current = targetScale
+  }, [markers])
+
   // Auto-rotation
   useEffect(() => {
     const tick = () => {
@@ -254,8 +293,6 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
   // Pointer drag
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     dragging.current = true
-    autoRotate.current = false
-    if (resumeRef.current) clearTimeout(resumeRef.current)
     lastPos.current = { x: e.clientX, y: e.clientY }
     ;(e.target as Element).setPointerCapture(e.pointerId)
   }, [])
@@ -273,16 +310,7 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
 
   const onPointerUp = useCallback(() => {
     dragging.current = false
-    resumeRef.current = setTimeout(() => { autoRotate.current = true }, 3000)
-  }, [])
-
-  // Scroll zoom
-  const onWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault()
-    setScale(s => {
-      const n = Math.max(MIN_SCALE, Math.min(MAX_SCALE, s + (e.deltaY > 0 ? -0.12 : 0.12)))
-      scaleRef.current = n; return n
-    })
+    // auto-rotation stays off intentionally
   }, [])
 
   // Touch pinch
@@ -374,7 +402,6 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
-        onWheel={onWheel}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
@@ -583,7 +610,7 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
           </Box>
           <Box sx={{ textAlign: 'right' }}>
             <Box sx={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'rgba(216,207,184,0.45)', textTransform: 'uppercase' }}>ZOOM {scale.toFixed(2)}×</Box>
-            <Box sx={{ ...mono, fontSize: '0.375rem', letterSpacing: '0.1em', color: 'rgba(216,207,184,0.25)', textTransform: 'uppercase', mt: 0.25 }}>DRAG · PINCH · SCROLL</Box>
+            <Box sx={{ ...mono, fontSize: '0.375rem', letterSpacing: '0.1em', color: 'rgba(216,207,184,0.25)', textTransform: 'uppercase', mt: 0.25 }}>DRAG · PINCH · ± ZOOM</Box>
           </Box>
         </Box>
       </Box>

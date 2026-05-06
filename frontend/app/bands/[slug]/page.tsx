@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Box, Typography } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import TagPicker from '@/app/components/TagPicker'
-import { getBand, removeBandTag } from '@/lib/bandsApi'
+import { getBand, removeBandTag, suggestAlbum } from '@/lib/bandsApi'
 import type { Band, Release } from '@/lib/bandsApi'
 import { bandFavouritesApi } from '@/lib/bandFavouritesApi'
 import { useUser } from '@/app/context/UserContext'
@@ -26,6 +26,8 @@ const TYPE_COLORS: Record<string, string> = {
   Live: '#9a8a4a',
   Single: '#4a8a9a',
 }
+
+const RELEASE_TYPES = ['LP', 'EP', 'Split-EP', 'Demo', 'Live', 'Single', 'Compilation']
 
 function ReleaseCard({ release, bandSlug, onClick }: { release: Release; bandSlug: string; onClick: () => void }) {
   const typeColor = TYPE_COLORS[release.type] || 'rgba(216,207,184,0.4)'
@@ -108,6 +110,14 @@ export default function BandPage({ params }: { params: { slug: string } }) {
   /** Non-null for a few seconds after a successful match against Spotify/Last.fm */
   const [matchNotice, setMatchNotice] = useState<string | null>(null)
 
+  // Suggest album form
+  const [showSuggest, setShowSuggest] = useState(false)
+  const [suggestTitle, setSuggestTitle] = useState('')
+  const [suggestType, setSuggestType] = useState('')
+  const [suggestYear, setSuggestYear] = useState('')
+  const [suggestStatus, setSuggestStatus] = useState<'idle' | 'submitting' | 'success' | 'duplicate' | 'error'>('idle')
+  const [suggestError, setSuggestError] = useState<string | null>(null)
+
   const reload = useCallback(() => setRefetchKey((k) => k + 1), [])
 
   useEffect(() => {
@@ -160,6 +170,38 @@ export default function BandPage({ params }: { params: { slug: string } }) {
       // silently ignore
     }
   }, [band, reload])
+
+  const handleSuggestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!band || !suggestTitle.trim()) return
+    setSuggestStatus('submitting')
+    setSuggestError(null)
+    try {
+      await suggestAlbum(
+        band.id,
+        suggestTitle.trim(),
+        suggestType || null,
+        suggestYear ? parseInt(suggestYear) : null,
+      )
+      setSuggestStatus('success')
+      setSuggestTitle('')
+      setSuggestType('')
+      setSuggestYear('')
+      setTimeout(() => {
+        setShowSuggest(false)
+        setSuggestStatus('idle')
+      }, 2500)
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message || ''
+      if (msg.includes('already exists') || msg.includes('already been suggested')) {
+        setSuggestStatus('duplicate')
+        setSuggestError(msg)
+      } else {
+        setSuggestStatus('error')
+        setSuggestError('Could not submit — please try again.')
+      }
+    }
+  }
 
   if (loading) {
     return (
@@ -425,6 +467,145 @@ export default function BandPage({ params }: { params: { slug: string } }) {
         {band.releases.length === 0 && (
           <Box sx={{ textAlign: 'center', pt: 3 }}>
             <span style={{ ...lbl, color: 'var(--muted)' }}>no releases yet</span>
+          </Box>
+        )}
+
+        {/* ── Suggest an album ── */}
+        {user && (
+          <Box sx={{ mt: 3, borderTop: '1px solid rgba(216,207,184,0.08)', pt: 2.5 }}>
+            {!showSuggest ? (
+              <Box
+                component="button"
+                onClick={() => { setShowSuggest(true); setSuggestStatus('idle'); setSuggestError(null) }}
+                sx={{
+                  background: 'none',
+                  border: '1px solid rgba(216,207,184,0.15)', borderRadius: '2px',
+                  px: 1.25, height: 26,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                  letterSpacing: '0.12em', color: 'var(--muted)',
+                  '&:hover': { borderColor: 'rgba(216,207,184,0.35)', color: 'var(--ink)' },
+                  transition: 'border-color 0.15s, color 0.15s',
+                }}
+              >
+                ＋ SUGGEST ALBUM
+              </Box>
+            ) : (
+              <Box
+                component="form"
+                onSubmit={handleSuggestSubmit}
+                sx={{
+                  border: '1.5px solid rgba(216,207,184,0.18)', borderRadius: '3px',
+                  backgroundColor: '#120e18', p: '14px 16px',
+                  display: 'flex', flexDirection: 'column', gap: 1,
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ ...lbl, fontSize: '0.5rem' }}>SUGGEST AN ALBUM</span>
+                  <Box
+                    component="button"
+                    type="button"
+                    onClick={() => { setShowSuggest(false); setSuggestStatus('idle'); setSuggestError(null) }}
+                    sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}
+                  >
+                    ✕
+                  </Box>
+                </Box>
+
+                {suggestStatus === 'success' ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 0.5 }}>
+                    <span style={{ ...lbl, fontSize: '0.5rem', color: '#6a9a7a', letterSpacing: '0.1em' }}>
+                      ✓ SUGGESTION SUBMITTED — THANKS!
+                    </span>
+                  </Box>
+                ) : (
+                  <>
+                    {/* Title */}
+                    <Box>
+                      <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 4 }}>ALBUM TITLE *</span>
+                      <input
+                        type="text"
+                        value={suggestTitle}
+                        onChange={(e) => { setSuggestTitle(e.target.value); setSuggestStatus('idle'); setSuggestError(null) }}
+                        placeholder="e.g. Under a Funeral Moon"
+                        required
+                        style={{
+                          width: '100%', boxSizing: 'border-box',
+                          background: '#0a0810', border: '1px solid rgba(216,207,184,0.2)',
+                          borderRadius: '3px', color: 'var(--ink)',
+                          fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem',
+                          padding: '7px 10px', outline: 'none',
+                        }}
+                      />
+                    </Box>
+
+                    {/* Type + Year row */}
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Box sx={{ flex: 1 }}>
+                        <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 4 }}>TYPE</span>
+                        <select
+                          value={suggestType}
+                          onChange={(e) => setSuggestType(e.target.value)}
+                          style={{
+                            width: '100%',
+                            background: '#0a0810', border: '1px solid rgba(216,207,184,0.2)',
+                            borderRadius: '3px', color: suggestType ? 'var(--ink)' : 'var(--muted)',
+                            fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.06em',
+                            padding: '7px 8px', outline: 'none',
+                          }}
+                        >
+                          <option value="">— optional —</option>
+                          {RELEASE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </Box>
+                      <Box sx={{ width: 90 }}>
+                        <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 4 }}>YEAR</span>
+                        <input
+                          type="number"
+                          value={suggestYear}
+                          onChange={(e) => setSuggestYear(e.target.value)}
+                          placeholder="optional"
+                          min={1960}
+                          max={2100}
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            background: '#0a0810', border: '1px solid rgba(216,207,184,0.2)',
+                            borderRadius: '3px', color: 'var(--ink)',
+                            fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                            padding: '7px 8px', outline: 'none',
+                          }}
+                        />
+                      </Box>
+                    </Box>
+
+                    {/* Error feedback */}
+                    {(suggestStatus === 'duplicate' || suggestStatus === 'error') && suggestError && (
+                      <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--accent)', letterSpacing: '0.08em' }}>
+                        ⚠ {suggestError}
+                      </span>
+                    )}
+
+                    {/* Submit */}
+                    <Box
+                      component="button"
+                      type="submit"
+                      disabled={suggestStatus === 'submitting' || !suggestTitle.trim()}
+                      sx={{
+                        border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px',
+                        py: 0.875, background: 'none', cursor: 'pointer',
+                        fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                        letterSpacing: '0.12em', color: 'var(--ink)',
+                        '&:disabled': { opacity: 0.4, cursor: 'default' },
+                        '&:not(:disabled):hover': { borderColor: 'rgba(216,207,184,0.55)' },
+                        transition: 'border-color 0.15s',
+                      }}
+                    >
+                      {suggestStatus === 'submitting' ? 'SUBMITTING…' : 'SUBMIT SUGGESTION'}
+                    </Box>
+                  </>
+                )}
+              </Box>
+            )}
           </Box>
         )}
       </Box>

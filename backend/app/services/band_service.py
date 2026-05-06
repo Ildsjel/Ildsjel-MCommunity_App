@@ -46,6 +46,15 @@ class BandService:
     def delete_release(self, release_id: str) -> bool:
         return self.repo.delete_release(release_id)
 
+    def add_track(self, release_id: str, data: dict) -> Optional[dict]:
+        return self.repo.add_track(release_id, data)
+
+    def update_track(self, track_id: str, data: dict) -> bool:
+        return self.repo.update_track(track_id, data)
+
+    def delete_track(self, track_id: str) -> bool:
+        return self.repo.delete_track(track_id)
+
     # ── Genres ───────────────────────────────────────────────────────────────
 
     def create_genre(self, data: dict) -> dict:

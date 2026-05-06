@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import axios from 'axios'
+import { requestBandReview } from '@/lib/bandsApi'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -12,6 +13,7 @@ interface FavArtist {
   name_norm: string
   image_url: string | null
   auto: boolean
+  band_slug?: string | null
 }
 
 interface FavAlbum {
@@ -45,6 +47,8 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
   const [albums, setAlbums] = useState<FavAlbum[]>([])
   const [bands, setBands] = useState<FavBand[]>([])
   const [loading, setLoading] = useState(true)
+  // Tracks names that have been requested this session for visual feedback
+  const [requestedNames, setRequestedNames] = useState<Set<string>>(new Set())
 
   const fetchFavourites = useCallback(async () => {
     try {
@@ -96,38 +100,92 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
 
   return (
     <Box>
-      {artists.length > 0 && (
+      {(artists.length > 0 || bands.length > 0) && (
         <Box sx={{ mb: albums.length > 0 ? 2 : 0 }}>
           <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
             Artists
           </span>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-            {artists.map((a) => (
+            {artists.map((a) => {
+              const alreadyRequested = requestedNames.has(a.name)
+              const handleClick = async () => {
+                if (a.band_slug) {
+                  router.push(`/bands/${a.band_slug}`)
+                  return
+                }
+                if (alreadyRequested) return
+                try {
+                  const result = await requestBandReview(a.name)
+                  if (result.status === 'exists' && result.band_slug) {
+                    router.push(`/bands/${result.band_slug}`)
+                  } else {
+                    setRequestedNames((prev) => new Set([...prev, a.name]))
+                  }
+                } catch { /* silent */ }
+              }
+              return (
+                <Box
+                  key={a.name_norm}
+                  onClick={handleClick}
+                  sx={{
+                    display: 'flex', alignItems: 'center', gap: 0.5,
+                    border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px',
+                    px: 1, py: 0.5, cursor: 'pointer',
+                    '&:hover': { borderColor: 'rgba(216,207,184,0.45)' },
+                    transition: 'border-color 0.15s',
+                  }}
+                >
+                  <Typography sx={{
+                    fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+                    fontSize: '0.75rem', color: 'var(--ink)', lineHeight: 1,
+                  }}>
+                    {a.name}
+                  </Typography>
+                  {a.auto && (
+                    <span style={{ ...mono, fontSize: '0.35rem', color: 'rgba(122,117,109,0.6)', letterSpacing: '0.08em' }}>
+                      auto
+                    </span>
+                  )}
+                  {alreadyRequested && (
+                    <span style={{ ...mono, fontSize: '0.35rem', color: 'rgba(106,154,122,0.8)', letterSpacing: '0.08em' }}>
+                      requested
+                    </span>
+                  )}
+                  {isOwnProfile && (
+                    <span
+                      style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)', marginLeft: 2 }}
+                      onClick={(e) => { e.stopPropagation(); removeArtist(a.name_norm) }}
+                    >
+                      ✕
+                    </span>
+                  )}
+                </Box>
+              )
+            })}
+
+            {/* Grimr-platform likes — red border to distinguish from streaming artists */}
+            {bands.map((b) => (
               <Box
-                key={a.name_norm}
+                key={b.id}
+                onClick={() => router.push(`/bands/${b.slug}`)}
                 sx={{
                   display: 'flex', alignItems: 'center', gap: 0.5,
-                  border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px',
-                  px: 1, py: 0.5,
-                  cursor: isOwnProfile ? 'pointer' : 'default',
-                  '&:hover': isOwnProfile ? { borderColor: 'rgba(196,58,42,0.45)' } : {},
+                  border: '1px solid rgba(196,58,42,0.45)', borderRadius: '3px',
+                  px: 1, py: 0.5, cursor: 'pointer',
+                  '&:hover': { borderColor: 'rgba(196,58,42,0.75)' },
                   transition: 'border-color 0.15s',
                 }}
-                onClick={() => isOwnProfile && removeArtist(a.name_norm)}
               >
                 <Typography sx={{
                   fontFamily: 'var(--font-serif)', fontStyle: 'italic',
                   fontSize: '0.75rem', color: 'var(--ink)', lineHeight: 1,
                 }}>
-                  {a.name}
+                  {b.name}
                 </Typography>
-                {a.auto && (
+                {b.genres[0] && (
                   <span style={{ ...mono, fontSize: '0.35rem', color: 'rgba(122,117,109,0.6)', letterSpacing: '0.08em' }}>
-                    auto
+                    {b.genres[0].name}
                   </span>
-                )}
-                {isOwnProfile && (
-                  <span style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)', marginLeft: 2 }}>✕</span>
                 )}
               </Box>
             ))}
@@ -136,7 +194,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
       )}
 
       {albums.length > 0 && (
-        <Box sx={{ mb: bands.length > 0 ? 2 : 0 }}>
+        <Box sx={{ mb: 0 }}>
           <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
             Albums
           </span>
@@ -186,41 +244,6 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
         </Box>
       )}
 
-      {bands.length > 0 && (
-        <Box>
-          <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
-            Bands
-          </span>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-            {bands.map((b) => (
-              <Box
-                key={b.id}
-                onClick={() => router.push(`/bands/${b.slug}`)}
-                sx={{
-                  display: 'flex', alignItems: 'center', gap: 0.5,
-                  border: '1px solid rgba(196,58,42,0.35)', borderRadius: '3px',
-                  px: 1, py: 0.5, cursor: 'pointer',
-                  '&:hover': { borderColor: 'rgba(196,58,42,0.65)' },
-                  transition: 'border-color 0.15s',
-                }}
-              >
-                <span style={{ ...mono, fontSize: '0.375rem', color: 'var(--accent, #c43a2a)' }}>♥</span>
-                <Typography sx={{
-                  fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-                  fontSize: '0.75rem', color: 'var(--ink)', lineHeight: 1,
-                }}>
-                  {b.name}
-                </Typography>
-                {b.genres[0] && (
-                  <span style={{ ...mono, fontSize: '0.35rem', color: 'rgba(122,117,109,0.6)', letterSpacing: '0.08em' }}>
-                    {b.genres[0].name}
-                  </span>
-                )}
-              </Box>
-            ))}
-          </Box>
-        </Box>
-      )}
     </Box>
   )
 }

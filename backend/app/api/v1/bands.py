@@ -1,8 +1,10 @@
+import uuid, re
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends, Query
 from app.db.neo4j_driver import get_neo4j_session
 from app.auth.jwt_handler import get_current_user
 from app.services.band_service import BandService
-from app.models.band_models import BandResponse, GenreResponse, TagResponse, ReleaseDetailResponse, BandTagsAdd
+from app.models.band_models import BandResponse, GenreResponse, TagResponse, ReleaseDetailResponse, BandTagsAdd, BandRequestCreate, AlbumSuggestionCreate
 from typing import List, Optional
 
 router = APIRouter(prefix="/bands", tags=["Bands"])
@@ -88,6 +90,155 @@ async def remove_tag_from_band(
         band_id=band_id,
         node_id=node_id,
     )
+
+
+@router.post("/request", status_code=201)
+async def request_band(
+    body: BandRequestCreate,
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Any authenticated user may call this when they click on a streaming artist
+    that has no matching band in the Grimr catalogue.
+
+    Behaviour:
+    - If a published band with this name already exists → return its slug so the
+      frontend can navigate there immediately.
+    - If a draft request for this name already exists → return it (idempotent).
+    - Otherwise → create a minimal draft band with ``requested = true`` so it
+      appears in the admin Draft list for review.
+    """
+    name = body.artist_name.strip()
+    name_lower = name.lower()
+    uid = current_user["id"]
+    now = datetime.now(timezone.utc).isoformat()
+
+    # ── 1. Check whether a band with this name already exists ────────────────
+    existing = session.run(
+        "MATCH (b:Band) WHERE toLower(trim(b.name)) = $name_lower RETURN b LIMIT 1",
+        name_lower=name_lower,
+    ).single()
+
+    if existing:
+        b = dict(existing["b"])
+        if b.get("status") == "published":
+            # Already in catalogue — return slug so frontend can navigate
+            return {"status": "exists", "band_slug": b["slug"]}
+        # Draft already exists (either a previous request or an admin WIP)
+        return {"status": "already_requested", "band_slug": None}
+
+    # ── 2. Generate a slug (append random suffix if collision unlikely but safe)
+    base_slug = re.sub(r"[^a-z0-9]+", "-", name_lower).strip("-") or "band"
+    slug = base_slug
+
+    # ── 3. Create the draft band ─────────────────────────────────────────────
+    session.run(
+        """
+        CREATE (b:Band {
+            id: $id, slug: $slug, name: $name,
+            status: 'draft',
+            requested: true,
+            requested_by_user_id: $uid,
+            country: 'Unknown', country_code: '??', formed: 0,
+            created_by_id: $uid, updated_by_id: $uid,
+            created_at: $now, updated_at: $now
+        })
+        """,
+        id=str(uuid.uuid4()), slug=slug, name=name,
+        uid=uid, now=now,
+    )
+
+    return {"status": "requested", "band_slug": None}
+
+
+@router.post("/{band_id}/suggest-album", status_code=201)
+async def suggest_album(
+    band_id: str,
+    body: AlbumSuggestionCreate,
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Any authenticated user may suggest a missing album for a published band.
+
+    Duplicate detection:
+    - Same title (case-insensitive) already exists as a Release on this band → 409
+    - Same title already has a pending suggestion for this band → 409
+    """
+    title = body.title.strip()
+    title_lower = title.lower()
+
+    # ── 1. Band must exist ────────────────────────────────────────────────────
+    band_rec = session.run(
+        "MATCH (b:Band {id: $band_id}) RETURN b.id AS id LIMIT 1",
+        band_id=band_id,
+    ).single()
+    if not band_rec:
+        raise HTTPException(status_code=404, detail="Band not found")
+
+    # ── 2. Check for duplicate existing release ───────────────────────────────
+    dup_rel = session.run(
+        """
+        MATCH (b:Band {id: $band_id})-[:HAS_RELEASE]->(r:Release)
+        WHERE toLower(trim(r.title)) = $title_lower
+        RETURN r LIMIT 1
+        """,
+        band_id=band_id,
+        title_lower=title_lower,
+    ).single()
+    if dup_rel:
+        raise HTTPException(
+            status_code=409,
+            detail="This release already exists in the discography",
+        )
+
+    # ── 3. Check for duplicate pending suggestion ─────────────────────────────
+    dup_sug = session.run(
+        """
+        MATCH (s:AlbumSuggestion {band_id: $band_id, status: 'pending'})
+        WHERE toLower(trim(s.title)) = $title_lower
+        RETURN s LIMIT 1
+        """,
+        band_id=band_id,
+        title_lower=title_lower,
+    ).single()
+    if dup_sug:
+        raise HTTPException(
+            status_code=409,
+            detail="This album has already been suggested and is awaiting review",
+        )
+
+    # ── 4. Create the suggestion node ─────────────────────────────────────────
+    now = datetime.now(timezone.utc).isoformat()
+    suggestion_id = str(uuid.uuid4())
+    session.run(
+        """
+        MATCH (b:Band {id: $band_id})
+        CREATE (s:AlbumSuggestion {
+            id: $id,
+            title: $title,
+            type: $type,
+            year: $year,
+            band_id: $band_id,
+            suggested_by_user_id: $uid,
+            status: 'pending',
+            created_at: $now,
+            reviewer_note: null,
+            rejected_reason: null,
+            reviewed_at: null,
+            reviewed_by_user_id: null
+        })
+        CREATE (s)-[:SUGGESTED_FOR]->(b)
+        """,
+        band_id=band_id,
+        id=suggestion_id,
+        title=title,
+        type=body.type,
+        year=body.year,
+        uid=current_user["id"],
+        now=now,
+    )
+
+    return {"id": suggestion_id, "status": "pending"}
 
 
 @router.get("/{slug}/releases/{release_slug}", response_model=ReleaseDetailResponse)

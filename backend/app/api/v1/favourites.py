@@ -24,19 +24,29 @@ async def get_favourites(
     uid = current_user["id"]
 
     explicit_artists = [
-        {"name": r["name"], "name_norm": r["name_norm"], "image_url": r["image_url"], "auto": False}
+        {
+            "name": r["name"], "name_norm": r["name_norm"],
+            "image_url": r["image_url"], "auto": False,
+            "band_slug": r["band_slug"],
+        }
         for r in session.run(
             """
             MATCH (u:User {id: $uid})-[:FAVOURITE_ARTIST]->(a:Artist)
+            OPTIONAL MATCH (a)-[:LINKED_BAND]->(b:Band)
             RETURN a.name AS name, a.name_normalized AS name_norm,
-                   a.spotify_image_url AS image_url
+                   a.spotify_image_url AS image_url,
+                   b.slug AS band_slug
             """,
             uid=uid,
         )
     ]
 
     auto_artists = [
-        {"name": r["name"], "name_norm": r["name_norm"], "image_url": r["image_url"], "auto": True}
+        {
+            "name": r["name"], "name_norm": r["name_norm"],
+            "image_url": r["image_url"], "auto": True,
+            "band_slug": r["band_slug"],
+        }
         for r in session.run(
             """
             MATCH (u:User {id: $uid})-[r:TOP_ARTIST]->(a:Artist)
@@ -44,8 +54,10 @@ async def get_favourites(
             AND NOT (u)-[:FAVOURITE_ARTIST]->(a)
             AND NOT (u)-[:UNFAVOURITE_ARTIST]->(a)
             WITH DISTINCT a
+            OPTIONAL MATCH (a)-[:LINKED_BAND]->(b:Band)
             RETURN a.name AS name, a.name_normalized AS name_norm,
-                   a.spotify_image_url AS image_url
+                   a.spotify_image_url AS image_url,
+                   b.slug AS band_slug
             """,
             uid=uid,
         )

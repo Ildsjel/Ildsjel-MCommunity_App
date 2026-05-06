@@ -16,6 +16,13 @@ class TrackCreate(TrackBase):
     pass
 
 
+class TrackUpdate(BaseModel):
+    number: Optional[int] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=300)
+    duration: Optional[str] = Field(None, pattern=r"^\d+:\d{2}$")
+    lyrics: Optional[str] = None
+
+
 class TrackResponse(TrackBase):
     id: str
 
@@ -59,6 +66,11 @@ class BandBase(BaseModel):
 class BandCreate(BandBase):
     genre_ids: List[str] = []
     tag_ids: List[str] = []
+
+
+class BandRequestCreate(BaseModel):
+    """Submitted by any authenticated user when a streaming artist has no Grimr match."""
+    artist_name: str = Field(..., min_length=1, max_length=200)
 
 
 class BandUpdate(BaseModel):
@@ -133,6 +145,43 @@ class TagResponse(TagBase):
 class TagMerge(BaseModel):
     source_id: str
     target_id: str
+
+
+class AlbumSuggestionCreate(BaseModel):
+    """Submitted by any authenticated user to suggest a missing album."""
+    title: str = Field(..., min_length=1, max_length=300)
+    type: Optional[ReleaseType] = None
+    year: Optional[int] = Field(None, ge=1960, le=2100)
+
+
+class AlbumSuggestionUpdate(BaseModel):
+    """Admin can edit a pending suggestion before approving."""
+    title: Optional[str] = Field(None, min_length=1, max_length=300)
+    type: Optional[ReleaseType] = None
+    year: Optional[int] = Field(None, ge=1960, le=2100)
+    reviewer_note: Optional[str] = Field(None, max_length=1000)
+
+
+class AlbumSuggestionReject(BaseModel):
+    """Body for rejecting a suggestion; reason is optional."""
+    reason: Optional[str] = Field(None, max_length=500)
+
+
+class AlbumSuggestionResponse(BaseModel):
+    id: str
+    title: str
+    type: Optional[str] = None
+    year: Optional[int] = None
+    band_id: str
+    band_name: Optional[str] = None
+    band_slug: Optional[str] = None
+    suggested_by_user_id: str
+    suggested_by_handle: Optional[str] = None
+    status: str
+    created_at: str
+    reviewer_note: Optional[str] = None
+    rejected_reason: Optional[str] = None
+    reviewed_at: Optional[str] = None
 
 
 class BandTagsAdd(BaseModel):

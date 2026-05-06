@@ -6,6 +6,7 @@ import { Box, Typography, TextField, CircularProgress } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
 import type { ReleaseType } from '@/lib/types/admin'
 import { getErrorMessage } from '@/lib/types/apiError'
+import { TrackPanel } from '@/app/admin/components/TrackPanel'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -107,6 +108,7 @@ function ImageUploadZone({
   )
 }
 
+
 export default function EditBandPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { id } = params
@@ -127,10 +129,13 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
   const [showRelease, setShowRelease] = useState(false)
   const [relForm, setRelForm] = useState({ title: '', slug: '', type: 'LP', year: '', label: '' })
 
+  const [pendingCount, setPendingCount] = useState(0)
+  const [expandedTracks, setExpandedTracks] = useState<Set<string>>(new Set())
+
   useEffect(() => {
-    Promise.all([adminAPI.listBands(), adminAPI.listTags()]).then(([bands, tags]) => {
+    Promise.all([adminAPI.getBand(id), adminAPI.listTags(), adminAPI.listSuggestions(id)]).then(([found, tags, sugs]) => {
       setAvailableTags(tags)
-      const found = bands.find((b: any) => b.id === id)
+      setPendingCount(sugs.filter((s: any) => s.status === 'pending').length)
       if (found) {
         setBand(found)
         setForm({ name: found.name, country: found.country, country_code: found.country_code, formed: String(found.formed), bio: found.bio || '' })
@@ -195,8 +200,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
     setSaving(true)
     try {
       await adminAPI.createRelease(id, { ...relForm, type: relForm.type as ReleaseType, year: parseInt(relForm.year), tracks: [] })
-      const bands = await adminAPI.listBands()
-      const updated = bands.find((b: any) => b.id === id)
+      const updated = await adminAPI.getBand(id)
       if (updated) setBand(updated)
       setRelForm({ title: '', slug: '', type: 'LP', year: '', label: '' })
       setShowRelease(false)
@@ -216,6 +220,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
       alert(getErrorMessage(err))
     }
   }
+
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress size={20} sx={{ color: 'var(--accent)' }} /></Box>
   if (!band) return <Box sx={{ p: 3, textAlign: 'center' }}><span style={{ ...lbl, color: 'var(--accent)' }}>Band not found</span></Box>
@@ -336,18 +341,95 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
         )}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          {(band.releases || []).map((r: any) => (
-            <Box key={r.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(216,207,184,0.12)', borderRadius: '3px', px: 1.25, py: 0.875, backgroundColor: '#120e18' }}>
-              <Box>
-                <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem' }}>{r.title}</Typography>
-                <span style={{ ...lbl, fontSize: '0.4375rem' }}>{r.type} · {r.year}</span>
+          {(band.releases || []).map((r: any) => {
+            const isExpanded = expandedTracks.has(r.id)
+            const toggleTracks = () =>
+              setExpandedTracks((prev) => {
+                const next = new Set(prev)
+                next.has(r.id) ? next.delete(r.id) : next.add(r.id)
+                return next
+              })
+            return (
+              <Box key={r.id} sx={{ border: '1px solid rgba(216,207,184,0.12)', borderRadius: '3px', backgroundColor: '#120e18' }}>
+                {/* Release header row */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.25, py: 0.875 }}>
+                  <Box>
+                    <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem' }}>{r.title}</Typography>
+                    <span style={{ ...lbl, fontSize: '0.4375rem' }}>{r.type} · {r.year}</span>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 0.625, alignItems: 'center' }}>
+                    {/* Track toggle */}
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={toggleTracks}
+                      sx={{
+                        border: `1px solid ${isExpanded ? 'rgba(216,207,184,0.35)' : 'rgba(216,207,184,0.18)'}`,
+                        borderRadius: '2px', px: 0.75, height: 20,
+                        background: isExpanded ? 'rgba(216,207,184,0.05)' : 'none',
+                        cursor: 'pointer',
+                        fontFamily: 'var(--font-mono)', fontSize: '0.375rem',
+                        letterSpacing: '0.08em',
+                        color: isExpanded ? 'var(--ink)' : 'var(--muted)',
+                        '&:hover': { color: 'var(--ink)', borderColor: 'rgba(216,207,184,0.4)' },
+                        transition: 'border-color 0.12s, color 0.12s',
+                      }}
+                    >
+                      ♬ TRACKS ({(r.tracks || []).length})
+                    </Box>
+                    {/* Delete release */}
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() => handleDeleteRelease(r.id, r.title)}
+                      sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}
+                    >
+                      ✕
+                    </Box>
+                  </Box>
+                </Box>
+
+                {/* Track panel — shown when expanded */}
+                {isExpanded && (
+                  <Box sx={{ px: 1.25, pb: 1 }}>
+                    <TrackPanel
+                      release={r}
+                      onRelease={(updated: any) =>
+                        setBand((prev: any) => ({
+                          ...prev,
+                          releases: prev.releases.map((x: any) => (x.id === r.id ? updated : x)),
+                        }))
+                      }
+                    />
+                  </Box>
+                )}
               </Box>
-              <Box component="button" onClick={() => handleDeleteRelease(r.id, r.title)} sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--accent)' }}>
-                ✕
-              </Box>
-            </Box>
-          ))}
+            )
+          })}
         </Box>
+      </Box>
+
+      {/* ── Album Suggestions link ────────────────────────────────────────── */}
+      <Box
+        component="button"
+        onClick={() => router.push(`/admin/bands/${id}/albums`)}
+        sx={{
+          mt: 1.5, width: '100%',
+          border: pendingCount > 0 ? '1px solid rgba(212,160,16,0.4)' : '1px solid rgba(216,207,184,0.15)',
+          borderRadius: '3px', py: 0.875, background: 'none', cursor: 'pointer',
+          fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em',
+          color: pendingCount > 0 ? '#d4a010' : 'var(--muted)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75,
+          '&:hover': { borderColor: pendingCount > 0 ? 'rgba(212,160,16,0.7)' : 'rgba(216,207,184,0.3)', color: pendingCount > 0 ? '#d4a010' : 'var(--ink)' },
+          transition: 'border-color 0.15s, color 0.15s',
+        }}
+      >
+        ◈ VIEW DISCOGRAPHY & ALBUM REVIEW
+        {pendingCount > 0 && (
+          <span style={{ border: '1px solid rgba(212,160,16,0.5)', borderRadius: '2px', padding: '0 4px', fontSize: '0.375rem' }}>
+            {pendingCount} PENDING
+          </span>
+        )}
       </Box>
     </Box>
   )

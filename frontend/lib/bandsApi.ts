@@ -144,3 +144,47 @@ export async function getRelease(bandSlug: string, releaseSlug: string): Promise
     return null
   }
 }
+
+export interface BandRequestResult {
+  /** 'exists' — published band found, band_slug is set and frontend can navigate
+   *  'already_requested' — draft already exists, no action needed
+   *  'requested' — new draft created, admin review pending */
+  status: 'exists' | 'already_requested' | 'requested'
+  band_slug: string | null
+}
+
+export interface AlbumSuggestionResult {
+  id: string
+  status: string
+}
+
+/**
+ * Suggest a missing album for an existing band.
+ * Returns 409 if the album already exists in the discography or was already suggested.
+ */
+export async function suggestAlbum(
+  bandId: string,
+  title: string,
+  type?: string | null,
+  year?: number | null,
+): Promise<AlbumSuggestionResult> {
+  const res = await api.post<AlbumSuggestionResult>(
+    `/bands/${bandId}/suggest-album`,
+    { title, type: type || null, year: year || null },
+    { headers: authHeader() },
+  )
+  return res.data
+}
+
+/**
+ * Request a band review from the admin.
+ * Called when a user clicks on a streaming artist that has no linked Grimr band.
+ */
+export async function requestBandReview(artistName: string): Promise<BandRequestResult> {
+  const res = await api.post<BandRequestResult>(
+    '/bands/request',
+    { artist_name: artistName },
+    { headers: authHeader() },
+  )
+  return res.data
+}
