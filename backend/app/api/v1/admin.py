@@ -623,4 +623,80 @@ async def accept_suggestion(
         release_id=release["id"],
     )
 
+
+# ── Events: Ticketmaster sync ─────────────────────────────────────────────────
+
+@router.post("/events/sync")
+async def sync_events_from_ticketmaster(
+    days: int = 180,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """
+    Pull upcoming events from Ticketmaster for every active band and upsert
+    them into Neo4j.  Requires TICKETMASTER_API_KEY in .env.
+    """
+    from app.config.settings import settings
+    from app.services.ticketmaster_sync import sync_events
+
+    api_key = settings.TICKETMASTER_API_KEY
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="TICKETMASTER_API_KEY is not set in .env — register at developer.ticketmaster.com for a free key",
+        )
+    try:
+        stats = sync_events(session, api_key, days=days)
+        return stats
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get("/events")
+async def list_admin_events(
+    q: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """List all events (admin view, including past ones)."""
+    query_filter = "WHERE toLower(e.title) CONTAINS toLower($q) OR toLower(e.city) CONTAINS toLower($q)" if q else ""
+    result = session.run(
+        f"""
+        MATCH (e:Event)
+        {query_filter}
+        OPTIONAL MATCH (h:Band)-[:HEADLINES]->(e)
+        RETURN e.id AS id, e.title AS title, e.date AS date,
+               e.venue AS venue, e.city AS city, e.country AS country,
+               e.ticket_url AS ticket_url, e.source AS source,
+               CASE WHEN h IS NOT NULL THEN h.name END AS headliner_name
+        ORDER BY e.date DESC
+        SKIP $skip LIMIT $limit
+        """,
+        q=q or "", skip=skip, limit=limit,
+    )
+    count_result = session.run(
+        f"MATCH (e:Event) {query_filter} RETURN count(e) AS total",
+        q=q or "",
+    )
+    total = (count_result.single() or {}).get("total", 0)
+    events = [dict(r) for r in result]
+    return {"events": events, "total": total}
+
+
+@router.delete("/events/{event_id}", status_code=204)
+async def delete_event(
+    event_id: str,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Delete an event and all its relationships."""
+    result = session.run(
+        "MATCH (e:Event {id: $id}) DETACH DELETE e RETURN true AS ok",
+        id=event_id,
+    )
+    if not result.single():
+        raise HTTPException(status_code=404, detail="Event not found")
+
     return release
