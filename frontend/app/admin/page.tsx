@@ -15,6 +15,7 @@ const lbl: React.CSSProperties = {
 const SECTIONS = [
   { label: '▦ ALBUM REVIEW', desc: 'Review user-submitted album suggestions — approve, edit, or reject', path: '/admin/review/albums', adminOnly: false },
   { label: '◆ BANDS', desc: 'Curate the band catalogue — create, edit, publish, archive', path: '/admin/bands', adminOnly: false },
+  { label: '☍ EVENTS', desc: 'Sync upcoming concerts from Ticketmaster · manage the events list', path: '/admin/events', adminOnly: false },
   { label: '◉ TAGS', desc: 'Manage tags, categories, and merge duplicates', path: '/admin/tags', adminOnly: false },
   { label: '✶ TOKENS', desc: 'Generate and revoke admin invitation tokens', path: '/admin/tokens', adminOnly: true },
   { label: '☍ USERS', desc: 'View and manage user roles', path: '/admin/users', adminOnly: true },

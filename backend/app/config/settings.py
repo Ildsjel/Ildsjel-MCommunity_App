@@ -70,12 +70,13 @@ class Settings(BaseSettings):
     
     BANDSINTOWN_API_KEY: str = ""
     SONGKICK_API_KEY: str = ""
+    TICKETMASTER_API_KEY: str = ""
 
     # Admin bootstrap — set this to the email of the first superadmin
     SUPERADMIN_EMAIL: str = ""
 
     class Config:
-        env_file = ".env"
+        env_file = (".env", "../.env")   # backend/ dir OR project root
         case_sensitive = True
 
 

@@ -150,4 +150,19 @@ export const adminAPI = {
     req<AdminRelease>('POST', `/admin/band-suggestions/${suggestionId}/accept`),
   deleteSuggestion: (suggestionId: string) =>
     req<void>('DELETE', `/admin/band-suggestions/${suggestionId}`),
+
+  // Events
+  syncEvents: (days = 180) =>
+    req<{ bands_checked: number; events_new: number; events_updated: number; errors: number; skipped: number }>(
+      'POST', `/admin/events/sync?days=${days}`
+    ),
+  listAdminEvents: (params?: { q?: string; skip?: number; limit?: number }) => {
+    const p = new URLSearchParams()
+    if (params?.q) p.set('q', params.q)
+    if (params?.skip !== undefined) p.set('skip', String(params.skip))
+    if (params?.limit !== undefined) p.set('limit', String(params.limit))
+    const qs = p.toString()
+    return req<{ events: any[]; total: number }>('GET', `/admin/events${qs ? `?${qs}` : ''}`)
+  },
+  deleteAdminEvent: (id: string) => req<void>('DELETE', `/admin/events/${id}`),
 }
