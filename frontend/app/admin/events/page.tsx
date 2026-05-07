@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
@@ -44,6 +44,7 @@ export default function AdminEventsPage() {
   const [syncResult, setSyncResult] = useState<SyncStats | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const load = useCallback(async (q = '') => {
     setLoading(true)
@@ -64,18 +65,39 @@ export default function AdminEventsPage() {
     return () => clearTimeout(t)
   }, [search, load])
 
+  // Poll sync status while a sync is running
+  const startPolling = useCallback((q: string) => {
+    if (pollRef.current) clearInterval(pollRef.current)
+    pollRef.current = setInterval(async () => {
+      try {
+        const status = await adminAPI.getSyncStatus()
+        if (!status.running) {
+          clearInterval(pollRef.current!)
+          pollRef.current = null
+          setSyncing(false)
+          if (status.last_error) {
+            setSyncError(status.last_error)
+          } else if (status.last_result) {
+            setSyncResult(status.last_result)
+            load(q)
+          }
+        }
+      } catch { /* ignore polling errors */ }
+    }, 3000)
+  }, [load])
+
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
+
   const handleSync = async () => {
     setSyncing(true)
     setSyncResult(null)
     setSyncError(null)
     try {
-      const stats = await adminAPI.syncEvents()
-      setSyncResult(stats)
-      load(search)
+      await adminAPI.syncEvents()  // returns 202 immediately
+      startPolling(search)
     } catch (e: unknown) {
-      setSyncError(e instanceof Error ? e.message : 'Sync failed')
-    } finally {
       setSyncing(false)
+      setSyncError(e instanceof Error ? e.message : 'Sync failed')
     }
   }
 
@@ -158,10 +180,10 @@ export default function AdminEventsPage() {
               }}
             >
               {syncing && <CircularProgress size={10} sx={{ color: 'var(--muted)' }} />}
-              {syncing ? 'SYNCING…' : '⟳ RUN SYNC'}
+              {syncing ? 'RUNNING…' : '⟳ RUN SYNC'}
             </Box>
             <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: 'rgba(216,207,184,0.3)', letterSpacing: '0.08em' }}>
-              next 180 days · all active bands
+              {syncing ? 'running in background · checking every 3s…' : 'next 180 days · all published bands'}
             </Typography>
           </Box>
 

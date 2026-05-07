@@ -626,18 +626,43 @@ async def accept_suggestion(
 
 # ── Events: Ticketmaster sync ─────────────────────────────────────────────────
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from fastapi import BackgroundTasks
+
+_sync_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="tm_sync")
+_sync_status: dict = {"running": False, "last_result": None, "last_error": None}
+
+
+def _run_sync_in_thread(api_key: str, days: int) -> None:
+    """Runs the blocking Ticketmaster sync in a thread pool and stores the result."""
+    from app.services.ticketmaster_sync import sync_events
+    from app.db.neo4j_driver import neo4j_driver
+
+    try:
+        driver = neo4j_driver.get_driver()
+        with driver.session() as session:
+            result = sync_events(session, api_key, days=days)
+        _sync_status["last_result"] = result
+    except Exception as exc:
+        _sync_status["last_error"] = str(exc)
+        _sync_status["last_result"] = None
+    finally:
+        _sync_status["running"] = False
+
+
 @router.post("/events/sync")
 async def sync_events_from_ticketmaster(
+    background_tasks: BackgroundTasks,
     days: int = 180,
     current_user: dict = Depends(require_admin),
-    session=Depends(get_neo4j_session),
 ):
     """
-    Pull upcoming events from Ticketmaster for every active band and upsert
-    them into Neo4j.  Requires TICKETMASTER_API_KEY in .env.
+    Kick off a background Ticketmaster sync and return immediately (202).
+    Poll GET /admin/events/sync/status to check progress.
+    Requires TICKETMASTER_API_KEY in .env.
     """
     from app.config.settings import settings
-    from app.services.ticketmaster_sync import sync_events
 
     api_key = settings.TICKETMASTER_API_KEY
     if not api_key:
@@ -645,11 +670,31 @@ async def sync_events_from_ticketmaster(
             status_code=400,
             detail="TICKETMASTER_API_KEY is not set in .env — register at developer.ticketmaster.com for a free key",
         )
-    try:
-        stats = sync_events(session, api_key, days=days)
-        return stats
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    if _sync_status["running"]:
+        raise HTTPException(status_code=409, detail="A sync is already in progress")
+
+    # Set running=True synchronously before dispatching so status polls see it immediately
+    _sync_status["running"] = True
+    _sync_status["last_error"] = None
+
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(_sync_executor, _run_sync_in_thread, api_key, days)
+
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=202,
+        content={"message": "Sync started in background", "days": days},
+    )
+
+
+@router.get("/events/sync/status")
+async def get_sync_status(current_user: dict = Depends(require_admin)):
+    """Poll this endpoint to check Ticketmaster sync progress."""
+    return {
+        "running": _sync_status["running"],
+        "last_result": _sync_status["last_result"],
+        "last_error": _sync_status["last_error"],
+    }
 
 
 @router.get("/events")

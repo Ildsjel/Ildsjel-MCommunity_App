@@ -153,8 +153,10 @@ export const adminAPI = {
 
   // Events
   syncEvents: (days = 180) =>
-    req<{ bands_checked: number; events_new: number; events_updated: number; errors: number; skipped: number }>(
-      'POST', `/admin/events/sync?days=${days}`
+    req<{ message: string; days: number }>('POST', `/admin/events/sync?days=${days}`),
+  getSyncStatus: () =>
+    req<{ running: boolean; last_result: { bands_checked: number; events_new: number; events_updated: number; errors: number; skipped: number } | null; last_error: string | null }>(
+      'GET', `/admin/events/sync/status`
     ),
   listAdminEvents: (params?: { q?: string; skip?: number; limit?: number }) => {
     const p = new URLSearchParams()

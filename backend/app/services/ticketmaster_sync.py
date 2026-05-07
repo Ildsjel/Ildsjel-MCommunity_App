@@ -247,7 +247,7 @@ def sync_events(session, api_key: str, days: int = LOOKAHEAD_DAYS) -> dict:
     # Load all active bands with any cached TM attraction ID
     result = session.run(
         """
-        MATCH (b:Band) WHERE b.status IN ['active', 'approved']
+        MATCH (b:Band) WHERE b.status IN ['active', 'approved', 'published']
         RETURN b.id AS id, b.name AS name, b.slug AS slug,
                b.tm_attraction_id AS tm_attraction_id
         """
