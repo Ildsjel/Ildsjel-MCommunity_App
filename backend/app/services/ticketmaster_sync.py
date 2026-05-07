@@ -22,11 +22,12 @@ import requests
 
 log = logging.getLogger(__name__)
 
-TM_BASE       = "https://app.ticketmaster.com/discovery/v2"
-RATE_SLEEP    = 0.22        # stay just under 5 req/sec
-MAX_RETRIES   = 3
+TM_BASE        = "https://app.ticketmaster.com/discovery/v2"
+RATE_SLEEP     = 0.5         # 2 req/sec — conservative to avoid 429 bursts
+MAX_RETRIES    = 3
+RATE_LIMIT_BACKOFF = 60      # after all retries exhausted on 429, pause 60 s
 LOOKAHEAD_DAYS = 180
-PAGE_SIZE     = 200         # TM max per page
+PAGE_SIZE      = 200         # TM max per page
 
 
 # ── HTTP ──────────────────────────────────────────────────────────────────────
@@ -38,8 +39,8 @@ def _get(path: str, params: dict, api_key: str) -> Optional[dict]:
         try:
             r = requests.get(f"{TM_BASE}{path}", params=params, timeout=10)
             if r.status_code == 429:
-                wait = 2 ** (attempt + 1)
-                log.warning("TM rate-limited — sleeping %ss", wait)
+                wait = 2 ** (attempt + 2)  # 8 s, 16 s, 32 s
+                log.warning("TM rate-limited — sleeping %ss (attempt %d)", wait, attempt + 1)
                 time.sleep(wait)
                 continue
             if r.status_code == 200:
@@ -49,6 +50,9 @@ def _get(path: str, params: dict, api_key: str) -> Optional[dict]:
         except requests.RequestException as exc:
             log.warning("TM request error: %s", exc)
             time.sleep(2 ** attempt)
+    # All retries exhausted on rate limit — back off hard before next band
+    log.warning("TM rate-limit retries exhausted — backing off %ss", RATE_LIMIT_BACKOFF)
+    time.sleep(RATE_LIMIT_BACKOFF)
     return None
 
 
