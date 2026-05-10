@@ -29,6 +29,19 @@ RATE_LIMIT_BACKOFF = 60      # after all retries exhausted on 429, pause 60 s
 LOOKAHEAD_DAYS = 180
 PAGE_SIZE      = 200         # TM max per page
 
+# Genre verification — only accept attractions in Music / metal-adjacent genres.
+# TM's taxonomy: Segment → Genre → Sub-genre.
+# We accept any "Music" attraction whose genre or sub-genre is in this set.
+# "Other" is intentionally included because many metal acts are mis-classified there.
+TM_ACCEPTABLE_SEGMENT = "Music"
+TM_ACCEPTABLE_GENRES  = {
+    "Metal", "Rock", "Hard Rock", "Alternative", "Punk", "Indie",
+    "Electronic", "Pop", "R&B", "Country", "Other",
+}
+# If NO classification data is present at all we treat the attraction as
+# acceptable (TM often omits classifications for niche artists).
+# However if classifications ARE present and none match, we reject.
+
 
 # ── HTTP ──────────────────────────────────────────────────────────────────────
 
@@ -56,13 +69,70 @@ def _get(path: str, params: dict, api_key: str) -> Optional[dict]:
     return None
 
 
+# ── Genre verification ────────────────────────────────────────────────────────
+
+def _is_tm_attraction_metal(attraction: dict) -> bool:
+    """
+    Return True if the TM attraction is in an acceptable music genre.
+
+    Acceptable  = segment is "Music" AND (genre is in TM_ACCEPTABLE_GENRES
+                   OR no genre info is present at all).
+    Reject      = segment is not "Music" (e.g. "Sports", "Arts & Theatre"),
+                  OR genre info is present but none of the genres match.
+    """
+    classifications = attraction.get("classifications", [])
+    if not classifications:
+        # No classification data at all — give the benefit of the doubt.
+        return True
+
+    for cls in classifications:
+        segment_name  = (cls.get("segment") or {}).get("name", "")
+        genre_name    = (cls.get("genre")   or {}).get("name", "")
+        subgenre_name = (cls.get("subGenre") or {}).get("name", "")
+
+        if segment_name and segment_name != TM_ACCEPTABLE_SEGMENT:
+            # This classification says it's NOT music (e.g. Sports)
+            continue
+
+        # Segment is Music (or absent within this classification block)
+        if not genre_name or genre_name.lower() in ("undefined", "unknown", ""):
+            # No usable genre info but it IS in the Music segment → accept.
+            # TM often labels niche/metal acts as "Undefined" rather than "Metal".
+            return True
+
+        if genre_name in TM_ACCEPTABLE_GENRES or subgenre_name in TM_ACCEPTABLE_GENRES:
+            return True
+
+        # Genre present but not in our allow-list → log and reject this block
+        log.debug(
+            "TM genre rejected: segment=%r genre=%r subgenre=%r",
+            segment_name, genre_name, subgenre_name,
+        )
+
+    # Fell through — check if ALL classifications lacked segment info entirely
+    # (means TM returned classifications with no real data → treat as unknown = accept)
+    all_empty = all(
+        not (cls.get("segment") or {}).get("name", "")
+        and not (cls.get("genre")   or {}).get("name", "")
+        for cls in classifications
+    )
+    return all_empty
+
+
 # ── Step 1: attraction ID lookup ──────────────────────────────────────────────
 
 def _lookup_attraction_id(band_name: str, api_key: str) -> Optional[str]:
     """
     Find the Ticketmaster attraction ID for a band.
-    Returns the first Music-classification result whose name matches exactly
-    (case-insensitive), falling back to the first result if no exact match.
+
+    Priority order (all with genre verification):
+      1. Exact name match  + acceptable genre  → use immediately
+      2. First result      + acceptable genre  → use as best guess
+      3. Any result with no genre info         → use (TM niche-artist fallback)
+      4. Nothing passes                        → return None
+
+    This prevents non-metal bands that share names with metal bands (e.g. an
+    "Ascension" pop act) from polluting the cache.
     """
     data = _get("/attractions.json", {
         "keyword": band_name,
@@ -77,12 +147,36 @@ def _lookup_attraction_id(band_name: str, api_key: str) -> Optional[str]:
     if not attractions:
         return None
 
-    # Prefer exact name match
     lower = band_name.lower()
+    first_passing: Optional[str] = None   # first genre-passing result (any name)
+
     for a in attractions:
-        if a.get("name", "").lower() == lower:
-            return a["id"]
-    return attractions[0]["id"]   # best-guess first result
+        name  = a.get("name", "")
+        tm_id = a.get("id", "")
+
+        passes_genre = _is_tm_attraction_metal(a)
+
+        if not passes_genre:
+            log.info(
+                "Rejected TM attraction %r (id=%s) for band %r — genre mismatch",
+                name, tm_id, band_name,
+            )
+            continue
+
+        if name.lower() == lower:
+            # Exact name match with good genre — best possible result
+            log.debug("Exact TM match for %r → %s", band_name, tm_id)
+            return tm_id
+
+        if first_passing is None:
+            first_passing = tm_id
+
+    if first_passing:
+        log.debug("Best-guess TM match for %r → %s", band_name, first_passing)
+        return first_passing
+
+    log.info("No acceptable TM attraction found for %r (all rejected by genre)", band_name)
+    return None
 
 
 # ── Step 2: fetch events by attraction ID ─────────────────────────────────────
@@ -229,6 +323,75 @@ def _upsert_event(session, fields: dict, headliner_band_id: str,
     return is_new
 
 
+# ── Re-verify cached attraction IDs ──────────────────────────────────────────
+
+def reverify_cached_attraction_ids(session, api_key: str,
+                                   status: Optional[dict] = None) -> dict:
+    """
+    Re-fetch attraction details for every Band that already has a
+    tm_attraction_id and remove the cached ID if the attraction no longer
+    passes genre verification.
+
+    Pass a mutable `status` dict to receive live progress updates
+    (used by the admin polling endpoint).
+
+    Returns summary: {checked, cleared, kept, errors}
+    """
+    if not api_key:
+        raise ValueError("TICKETMASTER_API_KEY is not configured")
+
+    result = session.run(
+        """
+        MATCH (b:Band)
+        WHERE b.tm_attraction_id IS NOT NULL
+        RETURN b.id AS id, b.name AS name, b.tm_attraction_id AS tm_attraction_id
+        """
+    )
+    bands = [dict(r) for r in result]
+
+    stats: dict = {"checked": 0, "cleared": 0, "kept": 0, "errors": 0}
+    total = len(bands)
+    log.info("Re-verifying %d cached TM attraction IDs", total)
+
+    if status is not None:
+        status.update({"total": total, "done": 0})
+
+    for band in bands:
+        try:
+            tm_id = band["tm_attraction_id"]
+            # Fetch the single attraction directly by ID
+            data = _get(f"/attractions/{tm_id}.json", {}, api_key)
+            time.sleep(RATE_SLEEP)
+            stats["checked"] += 1
+
+            if data is None:
+                # 404 or error — treat as unknown, keep the ID to avoid thrashing
+                stats["kept"] += 1
+            elif _is_tm_attraction_metal(data):
+                stats["kept"] += 1
+                log.debug("Kept TM ID for %r (%s) — genre OK", band["name"], tm_id)
+            else:
+                session.run(
+                    "MATCH (b:Band {id: $bid}) REMOVE b.tm_attraction_id",
+                    bid=band["id"],
+                )
+                stats["cleared"] += 1
+                log.info(
+                    "Cleared TM attraction ID for %r (%s) — genre mismatch",
+                    band["name"], tm_id,
+                )
+
+        except Exception as exc:
+            log.error("Error re-verifying band %r: %s", band["name"], exc)
+            stats["errors"] += 1
+
+        if status is not None:
+            status["done"] = stats["checked"] + stats["errors"]
+
+    log.info("Re-verify complete: %s", stats)
+    return stats
+
+
 # ── Public entry point ────────────────────────────────────────────────────────
 
 def sync_events(session, api_key: str, days: int = LOOKAHEAD_DAYS) -> dict:
@@ -252,6 +415,7 @@ def sync_events(session, api_key: str, days: int = LOOKAHEAD_DAYS) -> dict:
     result = session.run(
         """
         MATCH (b:Band) WHERE b.status IN ['active', 'approved', 'published']
+        // 'published' is the live status; 'active'/'approved' kept for legacy data
         RETURN b.id AS id, b.name AS name, b.slug AS slug,
                b.tm_attraction_id AS tm_attraction_id
         """

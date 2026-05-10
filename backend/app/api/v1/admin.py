@@ -744,4 +744,101 @@ async def delete_event(
     if not result.single():
         raise HTTPException(status_code=404, detail="Event not found")
 
-    return release
+
+# ── Bands: clear cached TM attraction ID ─────────────────────────────────────
+
+@router.delete("/bands/{band_id}/tm-attraction-id", status_code=204)
+async def clear_tm_attraction_id(
+    band_id: str,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """
+    Remove the cached Ticketmaster attraction ID from a Band node.
+    The next sync run will re-look it up and apply genre verification.
+    """
+    result = session.run(
+        """
+        MATCH (b:Band {id: $id})
+        WHERE b.tm_attraction_id IS NOT NULL
+        REMOVE b.tm_attraction_id
+        RETURN true AS ok
+        """,
+        id=band_id,
+    )
+    if not result.single():
+        raise HTTPException(
+            status_code=404,
+            detail="Band not found or already has no cached TM attraction ID",
+        )
+
+
+# ── Events: TM re-verify ──────────────────────────────────────────────────────
+
+_reverify_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="tm_reverify")
+_reverify_status: dict = {"running": False, "progress": None, "last_result": None, "last_error": None}
+
+
+def _run_reverify_in_thread(api_key: str) -> None:
+    """Re-verify all cached TM attraction IDs in a background thread."""
+    from app.services.ticketmaster_sync import reverify_cached_attraction_ids
+    from app.db.neo4j_driver import neo4j_driver
+
+    progress: dict = {"total": 0, "done": 0}
+    _reverify_status["progress"] = progress
+
+    try:
+        driver = neo4j_driver.get_driver()
+        with driver.session() as session:
+            result = reverify_cached_attraction_ids(session, api_key, status=progress)
+        _reverify_status["last_result"] = result
+    except Exception as exc:
+        _reverify_status["last_error"] = str(exc)
+        _reverify_status["last_result"] = None
+    finally:
+        _reverify_status["running"] = False
+
+
+@router.post("/events/tm-reverify", status_code=202)
+async def start_tm_reverify(
+    current_user: dict = Depends(require_admin),
+):
+    """
+    Kick off a background job that re-fetches every Band's cached TM attraction
+    and removes the cache entry if the attraction fails genre verification.
+
+    Returns 202 immediately. Poll GET /admin/events/tm-reverify/status.
+    """
+    from app.config.settings import settings
+
+    api_key = settings.TICKETMASTER_API_KEY
+    if not api_key:
+        raise HTTPException(status_code=400, detail="TICKETMASTER_API_KEY not set")
+    if _reverify_status["running"]:
+        raise HTTPException(status_code=409, detail="A re-verify is already in progress")
+    if _sync_status["running"]:
+        raise HTTPException(status_code=409, detail="A TM sync is already in progress — wait for it to finish")
+
+    _reverify_status["running"] = True
+    _reverify_status["last_error"] = None
+    _reverify_status["progress"] = {"total": 0, "done": 0}
+
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(_reverify_executor, _run_reverify_in_thread, api_key)
+
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=202,
+        content={"message": "Re-verify started in background"},
+    )
+
+
+@router.get("/events/tm-reverify/status")
+async def get_tm_reverify_status(current_user: dict = Depends(require_admin)):
+    """Poll this endpoint to check TM attraction re-verify progress."""
+    return {
+        "running": _reverify_status["running"],
+        "progress": _reverify_status["progress"],
+        "last_result": _reverify_status["last_result"],
+        "last_error": _reverify_status["last_error"],
+    }
