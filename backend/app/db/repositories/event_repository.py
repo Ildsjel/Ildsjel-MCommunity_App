@@ -10,38 +10,68 @@ class EventRepository:
     def _now(self) -> str:
         return datetime.now(timezone.utc).isoformat()
 
-    def list_upcoming(self, user_id: str, today_str: str) -> List[dict]:
+    def list_upcoming(self, user_id: str, today_str: str,
+                      skip: int = 0, limit: int = 1000) -> List[dict]:
+        """
+        Return upcoming events with all signals needed for ranking.
+        Deduplication is ensured by aggregating headliners into a list —
+        if an event has multiple HEADLINES edges (rare but possible from TM),
+        we take the first alphabetically rather than returning duplicate rows.
+        """
         result = self.session.run(
             """
             MATCH (e:Event) WHERE e.date >= $today
             OPTIONAL MATCH (h:Band)-[:HEADLINES]->(e)
             OPTIONAL MATCH (s:Band)-[:SUPPORTS]->(e)
-            OPTIONAL MATCH (me:User {id: $user_id})-[:FRIEND_REQUEST {status: 'accepted'}]-(f:User)-[:INTERESTED_IN]->(e)
+            OPTIONAL MATCH (me:User {id: $user_id})-[:FRIEND_REQUEST {status: 'accepted'}]-(f:User)
+                           -[:INTERESTED_IN]->(e)
             OPTIONAL MATCH (meInt:User {id: $user_id})-[:INTERESTED_IN]->(e)
-            OPTIONAL MATCH (:User {id: $user_id})-[:FAVOURITE_BAND]->(fb:Band)-[:HEADLINES|SUPPORTS]->(e)
-            WITH e, h,
-                 collect(DISTINCT CASE WHEN s IS NOT NULL THEN {id: s.id, name: s.name, slug: s.slug} END) AS supporting,
-                 collect(DISTINCT CASE WHEN f IS NOT NULL THEN {id: f.id, handle: f.handle, profile_image_url: f.profile_image_url} END) AS friends_interested,
+            // taste: headliner vs support split
+            OPTIONAL MATCH (:User {id: $user_id})-[:FAVOURITE_BAND]->(hfb:Band)-[:HEADLINES]->(e)
+            OPTIONAL MATCH (:User {id: $user_id})-[:FAVOURITE_BAND]->(sfb:Band)-[:SUPPORTS]->(e)
+            WITH e,
+                 // Collect ALL headliners; take [0] to get one canonical headliner per event
+                 [x IN collect(DISTINCT CASE WHEN h IS NOT NULL
+                      THEN {id: h.id, name: h.name, slug: h.slug} END)
+                  WHERE x IS NOT NULL] AS headliners,
+                 [x IN collect(DISTINCT CASE WHEN s IS NOT NULL
+                      THEN {id: s.id, name: s.name, slug: s.slug} END)
+                  WHERE x IS NOT NULL] AS supporting,
+                 [x IN collect(DISTINCT CASE WHEN f IS NOT NULL
+                      THEN {id: f.id, handle: f.handle,
+                            profile_image_url: f.profile_image_url} END)
+                  WHERE x IS NOT NULL] AS friends_interested,
                  max(CASE WHEN meInt IS NOT NULL THEN 1 ELSE 0 END) > 0 AS is_interested,
-                 count(DISTINCT fb) AS taste_bands_count
+                 count(DISTINCT hfb) AS taste_headliner_count,
+                 count(DISTINCT sfb) AS taste_support_count
             RETURN e.id AS id, e.title AS title, e.date AS date, e.venue AS venue,
                    e.city AS city, e.country AS country, e.country_code AS country_code,
                    e.ticket_url AS ticket_url,
-                   CASE WHEN h IS NOT NULL THEN {id: h.id, name: h.name, slug: h.slug} END AS headliner,
-                   supporting, friends_interested, is_interested, taste_bands_count
+                   e.lat AS lat, e.lon AS lon,
+                   headliners[0] AS headliner,
+                   supporting, friends_interested, is_interested,
+                   taste_headliner_count, taste_support_count
             ORDER BY e.date ASC
+            SKIP $skip LIMIT $limit
             """,
             today=today_str,
             user_id=user_id,
+            skip=skip,
+            limit=limit,
         )
         rows = []
         for record in result:
             row = dict(record)
-            # Filter None values injected by Cypher CASE WHEN in collect()
-            row["supporting"] = [x for x in row.get("supporting", []) if x is not None]
-            row["friends_interested"] = [x for x in row.get("friends_interested", []) if x is not None]
             rows.append(row)
         return rows
+
+    def count_upcoming(self, today_str: str) -> int:
+        result = self.session.run(
+            "MATCH (e:Event) WHERE e.date >= $today RETURN count(e) AS cnt",
+            today=today_str,
+        )
+        rec = result.single()
+        return rec["cnt"] if rec else 0
 
     def get_event(self, event_id: str, user_id: str) -> Optional[dict]:
         result = self.session.run(
@@ -49,19 +79,32 @@ class EventRepository:
             MATCH (e:Event {id: $event_id})
             OPTIONAL MATCH (h:Band)-[:HEADLINES]->(e)
             OPTIONAL MATCH (s:Band)-[:SUPPORTS]->(e)
-            OPTIONAL MATCH (me:User {id: $user_id})-[:FRIEND_REQUEST {status: 'accepted'}]-(f:User)-[:INTERESTED_IN]->(e)
+            OPTIONAL MATCH (me:User {id: $user_id})-[:FRIEND_REQUEST {status: 'accepted'}]-(f:User)
+                           -[:INTERESTED_IN]->(e)
             OPTIONAL MATCH (meInt:User {id: $user_id})-[:INTERESTED_IN]->(e)
-            OPTIONAL MATCH (:User {id: $user_id})-[:FAVOURITE_BAND]->(fb:Band)-[:HEADLINES|SUPPORTS]->(e)
-            WITH e, h,
-                 collect(DISTINCT CASE WHEN s IS NOT NULL THEN {id: s.id, name: s.name, slug: s.slug} END) AS supporting,
-                 collect(DISTINCT CASE WHEN f IS NOT NULL THEN {id: f.id, handle: f.handle, profile_image_url: f.profile_image_url} END) AS friends_interested,
+            OPTIONAL MATCH (:User {id: $user_id})-[:FAVOURITE_BAND]->(hfb:Band)-[:HEADLINES]->(e)
+            OPTIONAL MATCH (:User {id: $user_id})-[:FAVOURITE_BAND]->(sfb:Band)-[:SUPPORTS]->(e)
+            WITH e,
+                 [x IN collect(DISTINCT CASE WHEN h IS NOT NULL
+                      THEN {id: h.id, name: h.name, slug: h.slug} END)
+                  WHERE x IS NOT NULL] AS headliners,
+                 [x IN collect(DISTINCT CASE WHEN s IS NOT NULL
+                      THEN {id: s.id, name: s.name, slug: s.slug} END)
+                  WHERE x IS NOT NULL] AS supporting,
+                 [x IN collect(DISTINCT CASE WHEN f IS NOT NULL
+                      THEN {id: f.id, handle: f.handle,
+                            profile_image_url: f.profile_image_url} END)
+                  WHERE x IS NOT NULL] AS friends_interested,
                  max(CASE WHEN meInt IS NOT NULL THEN 1 ELSE 0 END) > 0 AS is_interested,
-                 count(DISTINCT fb) AS taste_bands_count
+                 count(DISTINCT hfb) AS taste_headliner_count,
+                 count(DISTINCT sfb) AS taste_support_count
             RETURN e.id AS id, e.title AS title, e.date AS date, e.venue AS venue,
                    e.city AS city, e.country AS country, e.country_code AS country_code,
                    e.ticket_url AS ticket_url,
-                   CASE WHEN h IS NOT NULL THEN {id: h.id, name: h.name, slug: h.slug} END AS headliner,
-                   supporting, friends_interested, is_interested, taste_bands_count
+                   e.lat AS lat, e.lon AS lon,
+                   headliners[0] AS headliner,
+                   supporting, friends_interested, is_interested,
+                   taste_headliner_count, taste_support_count
             """,
             event_id=event_id,
             user_id=user_id,
@@ -69,10 +112,7 @@ class EventRepository:
         record = result.single()
         if not record:
             return None
-        row = dict(record)
-        row["supporting"] = [x for x in row.get("supporting", []) if x is not None]
-        row["friends_interested"] = [x for x in row.get("friends_interested", []) if x is not None]
-        return row
+        return dict(record)
 
     def create_event(self, data: dict) -> dict:
         event_id = str(uuid.uuid4())
@@ -125,7 +165,8 @@ class EventRepository:
             return False
         else:
             self.session.run(
-                "MATCH (u:User {id: $uid}), (e:Event {id: $eid}) CREATE (u)-[:INTERESTED_IN {created_at: $now}]->(e)",
+                "MATCH (u:User {id: $uid}), (e:Event {id: $eid})"
+                " CREATE (u)-[:INTERESTED_IN {created_at: $now}]->(e)",
                 uid=user_id,
                 eid=event_id,
                 now=self._now(),

@@ -31,6 +31,12 @@ export interface FriendRef {
   profile_image_url?: string
 }
 
+export interface EventExplain {
+  location?: string   // e.g. "5 km away", "in your city", "far away"
+  taste?: string      // e.g. "2 matching bands"
+  friends?: string    // e.g. "3 friends interested"
+}
+
 export interface Event {
   id: string
   title: string
@@ -45,15 +51,52 @@ export interface Event {
   friends_interested: FriendRef[]
   is_interested: boolean
   match_score: number       // 0.0–1.0
+  location_score: number
+  taste_score: number
+  friends_score: number
   distance_km?: number | null
+  explain: EventExplain
 }
 
 export interface EventsResponse {
   events: Event[]
+  total: number
+  page: number
+  limit: number
+  total_pages: number
+  has_next: boolean
+  has_prev: boolean
+  location_source: 'gps' | 'city' | 'none'
+}
+
+export interface ListEventsParams {
+  lat?: number | null
+  lon?: number | null
+  page?: number
+  limit?: number
 }
 
 export const eventsApi = {
-  listEvents: () => req<EventsResponse>('GET', '/events/'),
+  listEvents: ({ lat, lon, page = 1, limit = 25 }: ListEventsParams = {}) => {
+    const p = new URLSearchParams()
+    if (lat != null) p.set('lat', String(lat))
+    if (lon != null) p.set('lon', String(lon))
+    p.set('page', String(page))
+    p.set('limit', String(limit))
+    return req<EventsResponse>('GET', `/events/?${p}`)
+  },
   getEvent: (id: string) => req<Event>('GET', `/events/${id}`),
   toggleInterest: (id: string) => req<{ interested: boolean }>('POST', `/events/${id}/interest`),
+}
+
+/** Try to get browser GPS coords. Returns null if denied or unavailable. */
+export function requestGPS(): Promise<{ lat: number; lon: number } | null> {
+  return new Promise(resolve => {
+    if (!navigator?.geolocation) { resolve(null); return }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      ()  => resolve(null),
+      { timeout: 5000, maximumAge: 300_000 },   // cache GPS for 5 min
+    )
+  })
 }
