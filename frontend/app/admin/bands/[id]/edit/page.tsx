@@ -30,14 +30,17 @@ const inputSx = {
 const RELEASE_TYPES = ['LP', 'EP', 'Split-EP', 'Demo', 'Live', 'Single', 'Compilation']
 
 /**
- * Auto-fit: center-crop the image to the required aspect ratio,
- * then scale it down to the target pixel dimensions.
- * Returns a File ready to upload.
+ * Auto-fit an image to target dimensions.
+ *
+ * fit='cover'   — center-crop to fill (band photos: always fill the 16:9 frame)
+ * fit='contain' — scale to fit inside, pad the rest with transparency
+ *                 (logos: never crop, just letterbox so the whole logo is visible)
  */
 async function autofitImage(
   file: File,
   targetW: number,
   targetH: number,
+  fit: 'cover' | 'contain' = 'cover',
 ): Promise<File> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -47,30 +50,39 @@ async function autofitImage(
 
       const srcW = img.naturalWidth
       const srcH = img.naturalHeight
-      const targetRatio = targetW / targetH
-      const srcRatio = srcW / srcH
-
-      // Determine the largest centre-crop that matches the target ratio
-      let cropW: number, cropH: number
-      if (srcRatio > targetRatio) {
-        // image is wider than needed → crop left/right
-        cropH = srcH
-        cropW = srcH * targetRatio
-      } else {
-        // image is taller than needed → crop top/bottom
-        cropW = srcW
-        cropH = srcW / targetRatio
-      }
-      const cropX = (srcW - cropW) / 2
-      const cropY = (srcH - cropH) / 2
 
       const canvas = document.createElement('canvas')
       canvas.width  = targetW
       canvas.height = targetH
       const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH)
 
-      const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+      if (fit === 'cover') {
+        // Center-crop: fill the target frame, trim the excess
+        const targetRatio = targetW / targetH
+        const srcRatio    = srcW / srcH
+        let cropW: number, cropH: number
+        if (srcRatio > targetRatio) {
+          cropH = srcH; cropW = srcH * targetRatio
+        } else {
+          cropW = srcW; cropH = srcW / targetRatio
+        }
+        const cropX = (srcW - cropW) / 2
+        const cropY = (srcH - cropH) / 2
+        ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH)
+      } else {
+        // Contain: scale the image to fit entirely within the target box,
+        // centred, with no cropping. Background stays transparent.
+        const scale = Math.min(targetW / srcW, targetH / srcH)
+        const drawW = srcW * scale
+        const drawH = srcH * scale
+        const drawX = (targetW - drawW) / 2
+        const drawY = (targetH - drawH) / 2
+        ctx.clearRect(0, 0, targetW, targetH)   // ensure transparency
+        ctx.drawImage(img, 0, 0, srcW, srcH, drawX, drawY, drawW, drawH)
+      }
+
+      // Keep PNG for contain (preserves transparency); JPEG for cover (photos)
+      const mime = (fit === 'contain' || file.type === 'image/png') ? 'image/png' : 'image/jpeg'
       const ext  = mime === 'image/png' ? '.png' : '.jpg'
       canvas.toBlob(
         (blob) => {
@@ -92,6 +104,7 @@ function ImageUploadZone({
   aspect,           // '16/9' | '1/1'
   targetW,          // output pixel width
   targetH,          // output pixel height
+  fit = 'cover',    // 'cover' = center-crop (photos), 'contain' = scale-to-fit (logos)
   uploading,
   onFile,
 }: {
@@ -100,6 +113,7 @@ function ImageUploadZone({
   aspect: '16/9' | '1/1'
   targetW: number
   targetH: number
+  fit?: 'cover' | 'contain'
   uploading: boolean
   onFile: (f: File) => void
 }) {
@@ -117,7 +131,7 @@ function ImageUploadZone({
   const handleFile = async (file: File) => {
     setProcessing(true)
     try {
-      const fitted = await autofitImage(file, targetW, targetH)
+      const fitted = await autofitImage(file, targetW, targetH, fit)
       // show the preview immediately so the admin sees exactly what will be uploaded
       setPreviewUrl(URL.createObjectURL(fitted))
       onFile(fitted)
@@ -337,6 +351,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
                 aspect="1/1"
                 targetW={400}
                 targetH={400}
+                fit="contain"
                 uploading={logoUploading}
                 onFile={handleLogoUpload}
               />
