@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
-import type { AdminAlbumSuggestion, ReviewCounts } from '@/lib/types/admin'
+import type { AdminAlbumSuggestion, ReviewCounts, ReviewStats } from '@/lib/types/admin'
 import { getErrorMessage } from '@/lib/types/apiError'
 
 const lbl: React.CSSProperties = {
@@ -15,7 +15,7 @@ const lbl: React.CSSProperties = {
   color: 'var(--muted, #7A756D)',
 }
 
-const RELEASE_TYPES = ['LP', 'EP', 'Split-EP', 'Demo', 'Live', 'Single', 'Compilation']
+const RELEASE_TYPES = ['LP', 'EP', 'Demo', 'Live', 'Single', 'Compilation']
 
 const STATUS_COLOR: Record<string, string> = {
   pending: '#d4a010',
@@ -264,7 +264,7 @@ function SuggestionRow({
             {s.band_name && (
               <Box
                 component="span"
-                onClick={() => router.push(`/admin/bands`)}
+                onClick={() => router.push(`/admin/bands/${s.band_id ?? ''}/albums`)}
                 sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em', color: 'var(--accent)', cursor: 'pointer', '&:hover': { opacity: 0.75 } }}
               >
                 {s.band_name}
@@ -331,40 +331,45 @@ function SuggestionRow({
 }
 
 export default function AlbumReviewPage() {
-  const router = useRouter()
   const [suggestions, setSuggestions] = useState<AdminAlbumSuggestion[]>([])
   const [counts, setCounts] = useState<ReviewCounts>({ pending: 0, approved: 0, rejected: 0 })
+  const [stats, setStats] = useState<ReviewStats | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('pending')
+  const [typeFilter, setTypeFilter] = useState<string>('')
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'band_az'>('newest')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [actionMsg, setActionMsg] = useState<string | null>(null)
+  const [dismissed, setDismissed] = useState(false)
 
   const flash = (msg: string) => {
     setActionMsg(msg)
     setTimeout(() => setActionMsg(null), 3000)
   }
 
-  const load = useCallback(async (sf = statusFilter, q = search) => {
+  const load = useCallback(async (sf = statusFilter, q = search, tf = typeFilter, sb = sortBy) => {
     setLoading(true)
     try {
-      const [data, countsData] = await Promise.all([
-        adminAPI.getReviewQueue(sf, q || undefined),
+      const [data, countsData, statsData] = await Promise.all([
+        adminAPI.getReviewQueue(sf, q || undefined, tf || undefined, sb),
         adminAPI.getReviewCounts(),
+        adminAPI.getReviewStats(),
       ])
       setSuggestions(data)
       setCounts(countsData)
+      setStats(statsData)
     } catch {
       // silent
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, search])
+  }, [statusFilter, search, typeFilter, sortBy])
 
   useEffect(() => { load() }, [load])
 
   // Debounced search
   useEffect(() => {
-    const t = setTimeout(() => load(statusFilter, search), 350)
+    const t = setTimeout(() => load(statusFilter, search, typeFilter, sortBy), 350)
     return () => clearTimeout(t)
   }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -396,41 +401,89 @@ export default function AlbumReviewPage() {
     { key: 'all', label: 'All', count: counts.pending + counts.approved + counts.rejected, color: 'var(--muted)' },
   ]
 
+  // Band names from current pending list for banner
+  const bandNames = Array.from(new Set(suggestions.filter(s => s.band_name).map(s => s.band_name!)))
+    .slice(0, 3).join(', ')
+  const lastSuggestion = suggestions[0]
+
   return (
-    <Box sx={{ maxWidth: 560, mx: 'auto', px: 2, pt: 2, pb: 10 }}>
+    <Box sx={{ maxWidth: 580, mx: 'auto', px: 2, pt: 2, pb: 10 }}>
 
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-        <Box>
-          <Box component="button" onClick={() => router.push('/admin')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 0.5, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
-            ← ADMIN
-          </Box>
-          <span style={{ ...lbl, color: 'var(--accent)' }}>▦ ALBUM REVIEW</span>
-        </Box>
-      </Box>
-
-      {/* KPI strip */}
-      <Box sx={{ display: 'flex', gap: 0.75, mb: 2 }}>
-        {TABS.slice(0, 3).map((t) => (
-          <Box key={t.key} onClick={() => setStatusFilter(t.key)}
-            sx={{ flex: 1, border: `1.5px solid ${statusFilter === t.key ? t.color + '60' : 'rgba(216,207,184,0.1)'}`, borderRadius: '3px', backgroundColor: '#120e18', px: 1, py: 0.875, cursor: 'pointer', '&:hover': { borderColor: t.color + '40' }, transition: 'border-color 0.15s' }}>
-            <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block' }}>{t.label}</span>
-            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '1.125rem', color: t.color, lineHeight: 1.2, mt: 0.25 }}>
-              {t.count}
-            </Typography>
-          </Box>
-        ))}
+      <Box sx={{ mb: 2 }}>
+        <span style={{ ...lbl, color: 'var(--accent)' }}>▦ ALBUM REVIEW</span>
       </Box>
 
       {/* Notification banner */}
-      {counts.pending > 0 && statusFilter === 'pending' && (
-        <Box sx={{ border: '1px solid rgba(212,160,16,0.3)', borderRadius: '3px', backgroundColor: 'rgba(212,160,16,0.06)', px: 1.25, py: 0.875, mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <span style={{ fontSize: '0.75rem', color: '#d4a010' }}>!</span>
-          <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.75rem', color: 'rgba(212,160,16,0.85)', lineHeight: 1.4 }}>
-            {counts.pending} album suggestion{counts.pending !== 1 ? 's' : ''} awaiting review
+      {counts.pending > 0 && !dismissed && (
+        <Box sx={{
+          border: '1px solid rgba(212,160,16,0.3)', borderRadius: '3px',
+          backgroundColor: 'rgba(212,160,16,0.06)', px: 1.25, py: 0.875, mb: 1.5,
+          display: 'flex', alignItems: 'center', gap: 0.75,
+        }}>
+          <span style={{ fontSize: '0.75rem', color: '#d4a010', flexShrink: 0 }}>!</span>
+          <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.75rem', color: 'rgba(212,160,16,0.85)', lineHeight: 1.4, flex: 1 }}>
+            {counts.pending} suggestion{counts.pending !== 1 ? 's' : ''} awaiting review
+            {bandNames ? ` — ${bandNames}` : ''}
+            {lastSuggestion ? ` · last ${timeAgo(lastSuggestion.created_at)}` : ''}
           </Typography>
+          <Box component="button" onClick={() => setDismissed(true)}
+            sx={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(212,160,16,0.6)', fontSize: '0.75rem', p: 0, lineHeight: 1, flexShrink: 0, '&:hover': { color: '#d4a010' } }}>
+            ✕
+          </Box>
         </Box>
       )}
+
+      {/* KPI strip — 4 cells */}
+      <Box sx={{ display: 'flex', gap: 0.75, mb: 2 }}>
+        {/* Pending */}
+        <Box onClick={() => { setStatusFilter('pending'); load('pending', search, typeFilter, sortBy) }}
+          sx={{ flex: 1, border: `1.5px solid ${statusFilter === 'pending' ? '#d4a01060' : 'rgba(216,207,184,0.1)'}`, borderRadius: '3px', backgroundColor: '#120e18', px: 1, py: 0.875, cursor: 'pointer', '&:hover': { borderColor: '#d4a01040' }, transition: 'border-color 0.15s' }}>
+          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block' }}>Pending</span>
+          <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '1.125rem', color: '#d4a010', lineHeight: 1.2, mt: 0.25 }}>
+            {counts.pending}
+          </Typography>
+        </Box>
+
+        {/* Approved 7d */}
+        <Box onClick={() => { setStatusFilter('approved'); load('approved', search, typeFilter, sortBy) }}
+          sx={{ flex: 1, border: `1.5px solid ${statusFilter === 'approved' ? '#6a9a7a60' : 'rgba(216,207,184,0.1)'}`, borderRadius: '3px', backgroundColor: '#120e18', px: 1, py: 0.875, cursor: 'pointer', '&:hover': { borderColor: '#6a9a7a40' }, transition: 'border-color 0.15s' }}>
+          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block' }}>Approved · 7d</span>
+          <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '1.125rem', color: '#6a9a7a', lineHeight: 1.2, mt: 0.25 }}>
+            {stats?.approved_7d ?? counts.approved}
+          </Typography>
+          {stats && stats.avg_review_hours_7d > 0 && (
+            <span style={{ ...lbl, fontSize: '0.375rem', color: 'var(--muted)' }}>avg {stats.avg_review_hours_7d} h</span>
+          )}
+        </Box>
+
+        {/* Rejected 7d */}
+        <Box onClick={() => { setStatusFilter('rejected'); load('rejected', search, typeFilter, sortBy) }}
+          sx={{ flex: 1, border: `1.5px solid ${statusFilter === 'rejected' ? 'rgba(196,58,42,0.4)' : 'rgba(216,207,184,0.1)'}`, borderRadius: '3px', backgroundColor: '#120e18', px: 1, py: 0.875, cursor: 'pointer', '&:hover': { borderColor: 'rgba(196,58,42,0.25)' }, transition: 'border-color 0.15s' }}>
+          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block' }}>Rejected · 7d</span>
+          <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '1.125rem', color: 'var(--accent)', lineHeight: 1.2, mt: 0.25 }}>
+            {stats?.rejected_7d ?? counts.rejected}
+          </Typography>
+          {stats && stats.rejection_rate_7d > 0 && (
+            <span style={{ ...lbl, fontSize: '0.375rem', color: 'var(--muted)' }}>{Math.round(stats.rejection_rate_7d * 100)}% rate</span>
+          )}
+        </Box>
+
+        {/* Top suggester */}
+        <Box sx={{ flex: 1, border: '1.5px solid rgba(216,207,184,0.1)', borderRadius: '3px', backgroundColor: '#120e18', px: 1, py: 0.875 }}>
+          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block' }}>Top · month</span>
+          {stats?.top_suggester ? (
+            <>
+              <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--ink)', lineHeight: 1.2, mt: 0.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {stats.top_suggester.handle}
+              </Typography>
+              <span style={{ ...lbl, fontSize: '0.375rem', color: 'var(--muted)' }}>{stats.top_suggester.count} submitted</span>
+            </>
+          ) : (
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.2, mt: 0.25 }}>—</Typography>
+          )}
+        </Box>
+      </Box>
 
       {/* Action flash */}
       {actionMsg && (
@@ -439,10 +492,10 @@ export default function AlbumReviewPage() {
         </Box>
       )}
 
-      {/* Toolbar: tabs + search */}
-      <Box sx={{ display: 'flex', gap: 0.5, mb: 1.25, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Toolbar: status tabs + search */}
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 0.875, flexWrap: 'wrap', alignItems: 'center' }}>
         {TABS.map((t) => (
-          <Box key={t.key} component="button" onClick={() => { setStatusFilter(t.key); load(t.key, search) }}
+          <Box key={t.key} component="button" onClick={() => { setStatusFilter(t.key); load(t.key, search, typeFilter, sortBy) }}
             sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', backgroundColor: statusFilter === t.key ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: statusFilter === t.key ? '#120e18' : 'var(--muted)', transition: 'background 0.1s' }}>
             {t.label}
             <span style={{ opacity: 0.6 }}>{t.count}</span>
@@ -462,6 +515,53 @@ export default function AlbumReviewPage() {
             }}
           />
         </Box>
+      </Box>
+
+      {/* Type filter pills + sort */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.25, flexWrap: 'wrap' }}>
+        {/* Type pills */}
+        <Box
+          component="button"
+          onClick={() => { setTypeFilter(''); load(statusFilter, search, '', sortBy) }}
+          sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 20, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: typeFilter === '' ? 'rgba(216,207,184,0.12)' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: typeFilter === '' ? 'var(--ink)' : 'var(--muted)', transition: 'background 0.1s' }}
+        >
+          All Types
+        </Box>
+        {RELEASE_TYPES.map((rt) => (
+          <Box
+            key={rt}
+            component="button"
+            onClick={() => { setTypeFilter(rt); load(statusFilter, search, rt, sortBy) }}
+            sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 20, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: typeFilter === rt ? 'rgba(216,207,184,0.12)' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: typeFilter === rt ? 'var(--ink)' : 'var(--muted)', transition: 'background 0.1s' }}
+          >
+            {rt}
+          </Box>
+        ))}
+
+        {/* Spacer */}
+        <Box sx={{ flex: 1 }} />
+
+        {/* Sort dropdown */}
+        <select
+          value={sortBy}
+          onChange={(e) => {
+            const v = e.target.value as typeof sortBy
+            setSortBy(v)
+            load(statusFilter, search, typeFilter, v)
+          }}
+          style={{
+            background: '#120e18', border: '1px solid rgba(216,207,184,0.2)',
+            borderRadius: '3px', color: 'var(--muted)',
+            fontFamily: 'var(--font-mono)', fontSize: '0.375rem',
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            padding: '3px 6px', outline: 'none', cursor: 'pointer',
+            height: 20,
+          }}
+        >
+          <option value="newest">Newest ▾</option>
+          <option value="oldest">Oldest ▾</option>
+          <option value="band_az">Band A–Z ▾</option>
+        </select>
       </Box>
 
       {/* List */}
