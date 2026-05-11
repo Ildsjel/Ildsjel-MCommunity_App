@@ -207,3 +207,34 @@ class BandSummaryResponse(BaseModel):
 class ReleaseDetailResponse(BaseModel):
     band: BandSummaryResponse
     release: ReleaseResponse
+
+
+# ── Album Reviews ─────────────────────────────────────────────────────────────
+
+class AlbumReviewCreate(BaseModel):
+    rating: int = Field(..., ge=1, le=10)
+    body: Optional[str] = Field(None, max_length=5000)
+
+
+class AlbumReviewUpdate(BaseModel):
+    rating: Optional[int] = Field(None, ge=1, le=10)
+    body: Optional[str] = Field(None, max_length=5000)
+
+
+class AlbumReviewResponse(BaseModel):
+    id: str
+    release_id: str
+    user_id: str
+    user_handle: str
+    user_avatar_url: Optional[str] = None
+    rating: int
+    body: Optional[str] = None
+    created_at: str
+    updated_at: Optional[str] = None
+
+
+class AlbumReviewsResponse(BaseModel):
+    reviews: List[AlbumReviewResponse]
+    avg_rating: Optional[float] = None
+    count: int
+    my_review: Optional[AlbumReviewResponse] = None

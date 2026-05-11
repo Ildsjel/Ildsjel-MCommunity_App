@@ -176,6 +176,54 @@ export async function suggestAlbum(
   return res.data
 }
 
+// ── Album Reviews ─────────────────────────────────────────────────────────────
+
+export interface AlbumReview {
+  id: string
+  release_id: string
+  user_id: string
+  user_handle: string
+  user_avatar_url?: string | null
+  rating: number        // 1–10
+  body?: string | null
+  created_at: string
+  updated_at?: string | null
+}
+
+export interface AlbumReviewsData {
+  reviews: AlbumReview[]
+  avg_rating: number | null
+  count: number
+  my_review: AlbumReview | null
+}
+
+export async function getReviews(bandSlug: string, releaseSlug: string): Promise<AlbumReviewsData> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+  const res = await api.get<AlbumReviewsData>(
+    `/bands/${bandSlug}/releases/${releaseSlug}/reviews`,
+    token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+  )
+  return res.data
+}
+
+export async function upsertReview(
+  bandSlug: string,
+  releaseSlug: string,
+  rating: number,
+  body?: string | null,
+): Promise<AlbumReview> {
+  const res = await api.post<AlbumReview>(
+    `/bands/${bandSlug}/releases/${releaseSlug}/reviews`,
+    { rating, body: body || null },
+    { headers: authHeader() },
+  )
+  return res.data
+}
+
+export async function deleteReview(bandSlug: string, releaseSlug: string): Promise<void> {
+  await api.delete(`/bands/${bandSlug}/releases/${releaseSlug}/reviews`, { headers: authHeader() })
+}
+
 /**
  * Request a band review from the admin.
  * Called when a user clicks on a streaming artist that has no linked Grimr band.
