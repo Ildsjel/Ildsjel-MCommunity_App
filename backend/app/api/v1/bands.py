@@ -363,6 +363,7 @@ async def upsert_review(
     rec = session.run(
         """
         MATCH (u:User {id: $uid})
+        MATCH (rel:Release {id: $rid})
         MERGE (u)-[:WROTE_REVIEW]->(rv:AlbumReview {release_id: $rid, user_id: $uid})
         ON CREATE SET
             rv.id         = $new_id,
@@ -376,6 +377,7 @@ async def upsert_review(
             rv.rating     = $rating,
             rv.body       = $body_text,
             rv.updated_at = $now
+        MERGE (rv)-[:REVIEWS]->(rel)
         RETURN rv, u.handle AS handle, u.avatar_url AS avatar_url
         """,
         uid=current_user["id"],

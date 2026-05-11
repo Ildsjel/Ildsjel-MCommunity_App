@@ -48,7 +48,7 @@ async def get_review_feed(
             """
             MATCH (me:User {id: $user_id})-[:FRIEND_REQUEST {status: 'accepted'}]-(u:User)
             MATCH (rv:AlbumReview)<-[:WROTE_REVIEW]-(u)
-            MATCH (rv)-[:REVIEWS]->(rel:Release)<-[:HAS_RELEASE]-(b:Band)
+            MATCH (rel:Release {id: rv.release_id})<-[:HAS_RELEASE]-(b:Band)
             RETURN rv, u.handle AS handle, u.avatar_url AS avatar_url,
                    u.id AS user_id,
                    rel.slug AS release_slug, rel.title AS release_title,
@@ -67,7 +67,7 @@ async def get_review_feed(
         result = session.run(
             """
             MATCH (rv:AlbumReview)<-[:WROTE_REVIEW]-(u:User)
-            MATCH (rv)-[:REVIEWS]->(rel:Release)<-[:HAS_RELEASE]-(b:Band)
+            MATCH (rel:Release {id: rv.release_id})<-[:HAS_RELEASE]-(b:Band)
             RETURN rv, u.handle AS handle, u.avatar_url AS avatar_url,
                    u.id AS user_id,
                    rel.slug AS release_slug, rel.title AS release_title,
@@ -85,7 +85,7 @@ async def get_review_feed(
         result = session.run(
             """
             MATCH (rv:AlbumReview)<-[:WROTE_REVIEW]-(u:User)
-            MATCH (rv)-[:REVIEWS]->(rel:Release)<-[:HAS_RELEASE]-(b:Band)
+            MATCH (rel:Release {id: rv.release_id})<-[:HAS_RELEASE]-(b:Band)
             RETURN rv, u.handle AS handle, u.avatar_url AS avatar_url,
                    u.id AS user_id,
                    rel.slug AS release_slug, rel.title AS release_title,
