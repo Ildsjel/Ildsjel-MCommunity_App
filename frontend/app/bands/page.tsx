@@ -239,17 +239,27 @@ export default function BandsPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     position: 'relative', overflow: 'hidden',
                   }}>
-                    <Box sx={{
-                      position: 'absolute', inset: 0,
-                      background: 'radial-gradient(circle at 40% 40%, rgba(196,58,42,.12), transparent 70%)',
-                    }} />
-                    <Typography sx={{
-                      fontFamily: 'var(--font-display, "Archivo Black", sans-serif)',
-                      fontSize: '1.5rem', color: 'rgba(236,229,211,0.5)', lineHeight: 1,
-                      position: 'relative', zIndex: 1,
-                    }}>
-                      {band.name.charAt(0)}
-                    </Typography>
+                    {band.logo_url ? (
+                      <img
+                        src={`${API_BASE}${band.logo_url}`}
+                        alt={`${band.name} logo`}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                      />
+                    ) : (
+                      <>
+                        <Box sx={{
+                          position: 'absolute', inset: 0,
+                          background: 'radial-gradient(circle at 40% 40%, rgba(196,58,42,.12), transparent 70%)',
+                        }} />
+                        <Typography sx={{
+                          fontFamily: 'var(--font-display, "Archivo Black", sans-serif)',
+                          fontSize: '1.5rem', color: 'rgba(236,229,211,0.5)', lineHeight: 1,
+                          position: 'relative', zIndex: 1,
+                        }}>
+                          {band.name.charAt(0)}
+                        </Typography>
+                      </>
+                    )}
                   </Box>
 
                   {/* Info */}
