@@ -1,7 +1,6 @@
 """
 Image Upload and Processing Service
 """
-import os
 import uuid
 from pathlib import Path
 from typing import Tuple, Optional
@@ -25,8 +24,23 @@ class ImageService:
     BAND_PHOTO_SIZE = (1200, 675)   # 16:9 banner
     BAND_LOGO_SIZE = (400, 400)     # square
 
-    def __init__(self, upload_dir: str = "/tmp/grimr_uploads"):
-        """Initialize image service with upload directory"""
+    def __init__(self, upload_dir: str = None):
+        """Initialize image service with upload directory.
+
+        Reads from app settings so the save path always matches the path
+        that main.py mounts for static-file serving. Both use settings.UPLOADS_DIR
+        which reads UPLOADS_DIR from .env.
+
+        Local dev (.env): UPLOADS_DIR=/tmp/grimr_uploads
+        Docker:           UPLOADS_DIR=/app/uploads  (named volume mount)
+
+        The previous hardcoded /tmp/grimr_uploads vs /app/uploads mismatch in
+        main.py caused every uploaded image to be saved somewhere it was never
+        served from, returning 404 on all image URLs.
+        """
+        if upload_dir is None:
+            from app.config.settings import settings
+            upload_dir = settings.UPLOADS_DIR
         self.upload_dir = Path(upload_dir)
         self.avatar_dir = self.upload_dir / "avatars"
         self.gallery_dir = self.upload_dir / "gallery"

@@ -1,7 +1,6 @@
 """
 Grimr Backend - FastAPI Main Entry Point
 """
-import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -104,7 +103,9 @@ app.include_router(messages.router, prefix="/api/v1")
 app.include_router(events.router, prefix="/api/v1")
 
 # Mount static files for uploads
-uploads_dir = Path(os.environ.get("UPLOADS_DIR", "/app/uploads"))
+# Uses settings.UPLOADS_DIR so the save path (image_service) and the serve
+# path (here) are always in sync — both read from the same config value.
+uploads_dir = Path(settings.UPLOADS_DIR)
 uploads_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
