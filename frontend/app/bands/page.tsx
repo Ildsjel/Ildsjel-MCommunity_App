@@ -39,6 +39,7 @@ export default function BandsPage() {
   const [bandsLoading, setBandsLoading] = useState(true)
   const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set())
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [erroredLogos, setErroredLogos] = useState<Set<string>>(new Set())
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -239,11 +240,12 @@ export default function BandsPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     position: 'relative', overflow: 'hidden',
                   }}>
-                    {band.logo_url ? (
+                    {band.logo_url && !erroredLogos.has(band.id) ? (
                       <img
                         src={`${API_BASE}${band.logo_url}`}
                         alt={`${band.name} logo`}
                         style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                        onError={() => setErroredLogos((prev) => new Set(prev).add(band.id))}
                       />
                     ) : (
                       <>

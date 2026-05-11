@@ -107,6 +107,8 @@ export default function BandPage({ params }: { params: { slug: string } }) {
   const [loading, setLoading] = useState(true)
   const [isFavourite, setIsFavourite] = useState(false)
   const [favLoading, setFavLoading] = useState(false)
+  const [logoError, setLogoError] = useState(false)
+  const [photoError, setPhotoError] = useState(false)
   /** Bumping this triggers a band reload (e.g. after tag mutation). */
   const [refetchKey, setRefetchKey] = useState(0)
   /** Non-null for a few seconds after a successful match against Spotify/Last.fm */
@@ -124,6 +126,8 @@ export default function BandPage({ params }: { params: { slug: string } }) {
 
   useEffect(() => {
     setLoading(true)
+    setLogoError(false)
+    setPhotoError(false)
     getBand(slug).then((b) => {
       setBand(b)
       setLoading(false)
@@ -322,12 +326,13 @@ export default function BandPage({ params }: { params: { slug: string } }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             position: 'relative', overflow: 'hidden',
           }}>
-            {band.logo_url ? (
+            {band.logo_url && !logoError ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={`${API_BASE}${band.logo_url}`}
                 alt={`${band.name} logo`}
                 style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                onError={() => setLogoError(true)}
               />
             ) : (
               <>
@@ -428,12 +433,13 @@ export default function BandPage({ params }: { params: { slug: string } }) {
           border: '1.5px solid rgba(216,207,184,0.12)',
           position: 'relative',
         }}>
-          {band.image_url ? (
+          {band.image_url && !photoError ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={`${API_BASE}${band.image_url}`}
               alt={`${band.name}`}
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              onError={() => setPhotoError(true)}
             />
           ) : (
             <Box sx={{
