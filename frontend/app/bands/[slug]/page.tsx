@@ -10,6 +10,8 @@ import type { Band, Release } from '@/lib/bandsApi'
 import { bandFavouritesApi } from '@/lib/bandFavouritesApi'
 import { useUser } from '@/app/context/UserContext'
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
   fontSize: '0.5625rem',
@@ -312,7 +314,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
 
         {/* Band header */}
         <Box sx={{ display: 'flex', gap: 2, mb: 2.5, alignItems: 'flex-start' }}>
-          {/* Logo */}
+          {/* Logo — real image if available, initial letter fallback otherwise */}
           <Box sx={{
             width: 88, height: 88, flexShrink: 0,
             border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '4px',
@@ -320,16 +322,27 @@ export default function BandPage({ params }: { params: { slug: string } }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             position: 'relative', overflow: 'hidden',
           }}>
-            <Box sx={{
-              position: 'absolute', inset: 0,
-              background: 'radial-gradient(circle at 38% 38%, rgba(196,58,42,.2), transparent 65%)',
-            }} />
-            <Typography sx={{
-              fontFamily: 'var(--font-display)', fontSize: '3rem',
-              color: 'rgba(236,229,211,0.55)', lineHeight: 1, position: 'relative', zIndex: 1,
-            }}>
-              {band.name.charAt(0)}
-            </Typography>
+            {band.logo_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={`${API_BASE}${band.logo_url}`}
+                alt={`${band.name} logo`}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+              />
+            ) : (
+              <>
+                <Box sx={{
+                  position: 'absolute', inset: 0,
+                  background: 'radial-gradient(circle at 38% 38%, rgba(196,58,42,.2), transparent 65%)',
+                }} />
+                <Typography sx={{
+                  fontFamily: 'var(--font-display)', fontSize: '3rem',
+                  color: 'rgba(236,229,211,0.55)', lineHeight: 1, position: 'relative', zIndex: 1,
+                }}>
+                  {band.name.charAt(0)}
+                </Typography>
+              </>
+            )}
           </Box>
 
           {/* Name + meta */}
@@ -407,6 +420,22 @@ export default function BandPage({ params }: { params: { slug: string } }) {
             </span>
           </Box>
         </Box>
+
+        {/* Band photo — 16:9 banner, only shown when one has been uploaded */}
+        {band.image_url && (
+          <Box sx={{
+            width: '100%', aspectRatio: '16 / 9',
+            borderRadius: '3px', overflow: 'hidden', mb: 2.5,
+            border: '1.5px solid rgba(216,207,184,0.12)',
+          }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`${API_BASE}${band.image_url}`}
+              alt={`${band.name}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          </Box>
+        )}
 
         {/* Bio */}
         {band.bio && (
