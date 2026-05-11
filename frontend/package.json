@@ -19,7 +19,6 @@
     "next": "14.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-image-crop": "^11.0.10",
     "react-quill": "^2.0.0"
   },
   "devDependencies": {

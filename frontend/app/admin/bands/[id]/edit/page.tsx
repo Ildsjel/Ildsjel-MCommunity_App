@@ -1,10 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Box, Typography, TextField, CircularProgress, Dialog, DialogTitle, DialogContent } from '@mui/material'
-import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop'
-import 'react-image-crop/dist/ReactCrop.css'
+import { Box, Typography, TextField, CircularProgress } from '@mui/material'
 import { adminAPI } from '@/lib/adminAPI'
 import type { ReleaseType } from '@/lib/types/admin'
 import { getErrorMessage } from '@/lib/types/apiError'
@@ -31,258 +29,166 @@ const inputSx = {
 
 const RELEASE_TYPES = ['LP', 'EP', 'Split-EP', 'Demo', 'Live', 'Single', 'Compilation']
 
-/** Render the crop area onto an offscreen canvas and return a Blob. */
-async function cropImageToBlob(
-  imageSrc: string,
-  pixelCrop: PixelCrop,
-  mimeType: string,
-): Promise<Blob> {
+/**
+ * Auto-fit: center-crop the image to the required aspect ratio,
+ * then scale it down to the target pixel dimensions.
+ * Returns a File ready to upload.
+ */
+async function autofitImage(
+  file: File,
+  targetW: number,
+  targetH: number,
+): Promise<File> {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    const url = URL.createObjectURL(file)
     img.onload = () => {
+      URL.revokeObjectURL(url)
+
+      const srcW = img.naturalWidth
+      const srcH = img.naturalHeight
+      const targetRatio = targetW / targetH
+      const srcRatio = srcW / srcH
+
+      // Determine the largest centre-crop that matches the target ratio
+      let cropW: number, cropH: number
+      if (srcRatio > targetRatio) {
+        // image is wider than needed → crop left/right
+        cropH = srcH
+        cropW = srcH * targetRatio
+      } else {
+        // image is taller than needed → crop top/bottom
+        cropW = srcW
+        cropH = srcW / targetRatio
+      }
+      const cropX = (srcW - cropW) / 2
+      const cropY = (srcH - cropH) / 2
+
       const canvas = document.createElement('canvas')
-      canvas.width = pixelCrop.width
-      canvas.height = pixelCrop.height
+      canvas.width  = targetW
+      canvas.height = targetH
       const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height)
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob)
-        else reject(new Error('Canvas toBlob failed'))
-      }, mimeType, 0.95)
+      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH)
+
+      const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+      const ext  = mime === 'image/png' ? '.png' : '.jpg'
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error('Canvas toBlob failed')); return }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ext), { type: mime }))
+        },
+        mime,
+        0.92,
+      )
     }
-    img.onerror = reject
-    img.src = imageSrc
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')) }
+    img.src = url
   })
-}
-
-/** Crop modal — shown after the user picks a file. */
-function CropModal({
-  open,
-  imageSrc,
-  mimeType,
-  aspectRatio,          // e.g. 16/9 or 1
-  label,
-  onConfirm,
-  onCancel,
-}: {
-  open: boolean
-  imageSrc: string
-  mimeType: string
-  aspectRatio: number
-  label: string
-  onConfirm: (blob: Blob, mime: string) => void
-  onCancel: () => void
-}) {
-  const imgRef = useRef<HTMLImageElement>(null)
-  const [crop, setCrop] = useState<Crop>()
-  const [completedCrop, setCompletedCrop] = useState<PixelCrop>()
-
-  const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { width, height } = e.currentTarget
-    // Start with the largest centred crop that fits the required aspect ratio
-    const initial = centerCrop(
-      makeAspectCrop({ unit: '%', width: 90 }, aspectRatio, width, height),
-      width, height,
-    )
-    setCrop(initial)
-  }, [aspectRatio])
-
-  const handleConfirm = async () => {
-    if (!completedCrop || !imgRef.current) return
-    // completedCrop is in *rendered* pixels — we need to scale to *natural* pixels
-    const scaleX = imgRef.current.naturalWidth  / imgRef.current.width
-    const scaleY = imgRef.current.naturalHeight / imgRef.current.height
-    const naturalCrop: PixelCrop = {
-      unit: 'px',
-      x:      Math.round(completedCrop.x      * scaleX),
-      y:      Math.round(completedCrop.y      * scaleY),
-      width:  Math.round(completedCrop.width  * scaleX),
-      height: Math.round(completedCrop.height * scaleY),
-    }
-    const blob = await cropImageToBlob(imageSrc, naturalCrop, mimeType)
-    onConfirm(blob, mimeType)
-  }
-
-  const btnBase: React.CSSProperties = {
-    background: 'none',
-    border: '1.5px solid',
-    borderRadius: '3px',
-    padding: '6px 14px',
-    cursor: 'pointer',
-    fontFamily: 'var(--font-mono, monospace)',
-    fontSize: '0.4375rem',
-    letterSpacing: '0.12em',
-    textTransform: 'uppercase' as const,
-  }
-
-  return (
-    <Dialog
-      open={open}
-      onClose={onCancel}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{ sx: { backgroundColor: '#120e18', border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '4px' } }}
-    >
-      <DialogTitle sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', pb: 0.5 }}>
-        Crop · {label}
-      </DialogTitle>
-      <DialogContent>
-        <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)', mb: 1.5 }}>
-          Drag the handles to set the crop area. The image will be saved at this exact framing.
-        </Typography>
-
-        {/* Crop canvas */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2, '& .ReactCrop__crop-selection': { borderColor: 'rgba(196,58,42,0.8)' } }}>
-          <ReactCrop
-            crop={crop}
-            onChange={(c) => setCrop(c)}
-            onComplete={(c) => setCompletedCrop(c)}
-            aspect={aspectRatio}
-            minWidth={60}
-            keepSelection
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              ref={imgRef}
-              src={imageSrc}
-              alt="crop preview"
-              onLoad={onImageLoad}
-              style={{ maxHeight: '60vh', maxWidth: '100%', display: 'block' }}
-            />
-          </ReactCrop>
-        </Box>
-
-        {/* Buttons */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-          <button style={{ ...btnBase, borderColor: 'rgba(216,207,184,0.2)', color: 'var(--muted)' }} onClick={onCancel}>
-            Cancel
-          </button>
-          <button
-            style={{ ...btnBase, borderColor: 'rgba(196,58,42,0.5)', color: 'var(--accent)' }}
-            onClick={handleConfirm}
-            disabled={!completedCrop}
-          >
-            Apply crop & upload
-          </button>
-        </Box>
-      </DialogContent>
-    </Dialog>
-  )
 }
 
 function ImageUploadZone({
   label,
   currentUrl,
-  aspect,
+  aspect,           // '16/9' | '1/1'
+  targetW,          // output pixel width
+  targetH,          // output pixel height
   uploading,
   onFile,
 }: {
   label: string
   currentUrl?: string | null
   aspect: '16/9' | '1/1'
+  targetW: number
+  targetH: number
   uploading: boolean
   onFile: (f: File) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const fullUrl = currentUrl ? `${API_BASE}${currentUrl}` : null
+  // local preview URL — shown immediately after autofit, before the server confirms
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [processing, setProcessing] = useState(false)
 
-  // Crop modal state
-  const [cropSrc, setCropSrc] = useState<string | null>(null)
-  const [cropMime, setCropMime] = useState<string>('image/jpeg')
-  const [originalName, setOriginalName] = useState<string>('image.jpg')
+  // revoke the object URL when the component unmounts or preview changes
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl) }, [previewUrl])
 
-  const aspectRatio = aspect === '16/9' ? 16 / 9 : 1
+  const displayUrl = previewUrl ?? (currentUrl ? `${API_BASE}${currentUrl}` : null)
+  const busy = uploading || processing
 
-  const openCropper = (file: File) => {
-    setCropMime(file.type || 'image/jpeg')
-    setOriginalName(file.name)
-    const reader = new FileReader()
-    reader.onload = (e) => setCropSrc(e.target?.result as string)
-    reader.readAsDataURL(file)
-  }
-
-  const handleCropConfirm = (blob: Blob, mime: string) => {
-    const ext = mime === 'image/png' ? '.png' : mime === 'image/webp' ? '.webp' : '.jpg'
-    const croppedFile = new File([blob], originalName.replace(/\.[^.]+$/, ext), { type: mime })
-    setCropSrc(null)
-    onFile(croppedFile)
+  const handleFile = async (file: File) => {
+    setProcessing(true)
+    try {
+      const fitted = await autofitImage(file, targetW, targetH)
+      // show the preview immediately so the admin sees exactly what will be uploaded
+      setPreviewUrl(URL.createObjectURL(fitted))
+      onFile(fitted)
+    } catch {
+      // fall back to raw file if canvas fails (rare)
+      onFile(file)
+    } finally {
+      setProcessing(false)
+    }
   }
 
   return (
-    <>
-      <Box>
-        <span style={{ ...lbl, display: 'block', marginBottom: 6 }}>{label}</span>
-        <Box
-          onClick={() => !uploading && inputRef.current?.click()}
-          sx={{
-            position: 'relative',
-            width: '100%',
-            aspectRatio: aspect,
-            border: '1.5px dashed rgba(216,207,184,0.25)',
-            borderRadius: '3px',
-            overflow: 'hidden',
-            cursor: uploading ? 'default' : 'pointer',
-            backgroundColor: '#120e18',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            '&:hover': { borderColor: uploading ? 'rgba(216,207,184,0.25)' : 'rgba(216,207,184,0.5)' },
-            transition: 'border-color 0.15s',
-          }}
-        >
-          {fullUrl && (
-            <Box
-              component="img"
-              src={fullUrl}
-              alt={label}
-              sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+    <Box>
+      <span style={{ ...lbl, display: 'block', marginBottom: 6 }}>{label}</span>
+      <Box
+        onClick={() => !busy && inputRef.current?.click()}
+        sx={{
+          position: 'relative',
+          width: '100%',
+          aspectRatio: aspect,
+          border: '1.5px dashed rgba(216,207,184,0.25)',
+          borderRadius: '3px',
+          overflow: 'hidden',
+          cursor: busy ? 'default' : 'pointer',
+          backgroundColor: '#120e18',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          '&:hover': { borderColor: busy ? 'rgba(216,207,184,0.25)' : 'rgba(216,207,184,0.5)' },
+          transition: 'border-color 0.15s',
+        }}
+      >
+        {displayUrl && (
+          <Box
+            component="img"
+            src={displayUrl}
+            alt={label}
+            sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        )}
+
+        <Box sx={{
+          position: 'relative', zIndex: 1,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5,
+          backgroundColor: displayUrl ? 'rgba(8,6,10,0.65)' : 'transparent',
+          px: 2, py: 1.5, borderRadius: '3px',
+        }}>
+          {busy ? (
+            <CircularProgress size={16} sx={{ color: 'var(--accent)' }} />
+          ) : (
+            <>
+              <span style={{ fontSize: '1.1rem', color: 'rgba(216,207,184,0.5)' }}>↑</span>
+              <span style={{ ...lbl, fontSize: '0.4375rem', color: displayUrl ? 'rgba(216,207,184,0.8)' : 'rgba(216,207,184,0.4)' }}>
+                {displayUrl ? 'CLICK TO REPLACE' : 'CLICK TO UPLOAD'}
+              </span>
+            </>
           )}
-
-          <Box sx={{
-            position: 'relative', zIndex: 1,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5,
-            backgroundColor: fullUrl ? 'rgba(8,6,10,0.65)' : 'transparent',
-            px: 2, py: 1.5, borderRadius: '3px',
-          }}>
-            {uploading ? (
-              <CircularProgress size={16} sx={{ color: 'var(--accent)' }} />
-            ) : (
-              <>
-                <span style={{ fontSize: '1.1rem', color: 'rgba(216,207,184,0.5)' }}>↑</span>
-                <span style={{ ...lbl, fontSize: '0.4375rem', color: fullUrl ? 'rgba(216,207,184,0.8)' : 'rgba(216,207,184,0.4)' }}>
-                  {fullUrl ? 'CLICK TO REPLACE' : 'CLICK TO UPLOAD'}
-                </span>
-              </>
-            )}
-          </Box>
         </Box>
-
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) { openCropper(f); e.target.value = '' }
-          }}
-        />
       </Box>
 
-      {/* Crop modal — only rendered when a file has been picked */}
-      {cropSrc && (
-        <CropModal
-          open
-          imageSrc={cropSrc}
-          mimeType={cropMime}
-          aspectRatio={aspectRatio}
-          label={label}
-          onConfirm={handleCropConfirm}
-          onCancel={() => setCropSrc(null)}
-        />
-      )}
-    </>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) { handleFile(f); e.target.value = '' }
+        }}
+      />
+    </Box>
   )
 }
 
@@ -418,6 +324,8 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
             label="Band Photo (16:9)"
             currentUrl={band.image_url}
             aspect="16/9"
+            targetW={1200}
+            targetH={675}
             uploading={photoUploading}
             onFile={handlePhotoUpload}
           />
@@ -427,6 +335,8 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
                 label="Logo (square)"
                 currentUrl={band.logo_url}
                 aspect="1/1"
+                targetW={400}
+                targetH={400}
                 uploading={logoUploading}
                 onFile={handleLogoUpload}
               />
