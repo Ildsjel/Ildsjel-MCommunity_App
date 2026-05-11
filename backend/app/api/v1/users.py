@@ -111,3 +111,32 @@ async def update_current_user_profile(
     
     return updated_user
 
+
+# ── Notifications ─────────────────────────────────────────────────────────────
+
+@router.get("/me/notifications")
+async def get_notifications(
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_neo4j_session),
+):
+    """Return unread Notification nodes for the current user."""
+    records = session.run(
+        """
+        MATCH (n:Notification {user_id: $uid, read: false})
+        RETURN n ORDER BY n.created_at DESC
+        """,
+        uid=current_user["id"],
+    )
+    return [dict(r["n"]) for r in records]
+
+
+@router.post("/me/notifications/read-all", status_code=204)
+async def mark_all_read(
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_neo4j_session),
+):
+    """Mark all unread notifications as read for the current user."""
+    session.run(
+        "MATCH (n:Notification {user_id: $uid, read: false}) SET n.read = true",
+        uid=current_user["id"],
+    )

@@ -238,6 +238,34 @@ async def suggest_album(
         now=now,
     )
 
+    # ── 5. Notify all admin/superadmin users ──────────────────────────────────
+    band_name_rec = session.run(
+        "MATCH (b:Band {id: $band_id}) RETURN b.name AS name LIMIT 1",
+        band_id=band_id,
+    ).single()
+    band_display = band_name_rec["name"] if band_name_rec else band_id
+
+    user_handle = current_user.get("handle") or current_user.get("email", "Someone")
+
+    session.run(
+        """
+        MATCH (admin:User) WHERE admin.role IN ['admin', 'superadmin'] AND admin.id <> $submitter_id
+        CREATE (n:Notification {
+            id: randomUUID(),
+            user_id: admin.id,
+            type: 'album_suggestion',
+            title: $notif_title,
+            body: $notif_body,
+            read: false,
+            created_at: $now
+        })
+        """,
+        submitter_id=current_user["id"],
+        notif_title=f"{band_display} — new album suggestion",
+        notif_body=f'{user_handle} suggested "{title}"',
+        now=now,
+    )
+
     return {"id": suggestion_id, "status": "pending"}
 
 

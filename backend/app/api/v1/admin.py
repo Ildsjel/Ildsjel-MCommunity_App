@@ -1,5 +1,5 @@
 import uuid, re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from app.auth.permissions import require_admin, require_superadmin
 from app.auth.jwt_handler import get_current_user
@@ -379,10 +379,82 @@ async def merge_tags(
 
 # ── Album Review queue (admin) ────────────────────────────────────────────────
 
+@router.get("/review/albums/stats")
+async def get_review_stats(
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Extended stats for the album review dashboard."""
+    now = datetime.now(timezone.utc)
+    seven_days_ago = (now - timedelta(days=7)).isoformat()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
+
+    # Pending count
+    pending_res = session.run(
+        "MATCH (s:AlbumSuggestion {status: 'pending'}) RETURN count(s) AS cnt"
+    ).single()
+    pending = pending_res["cnt"] if pending_res else 0
+
+    # Approved last 7d
+    approved_res = session.run(
+        "MATCH (s:AlbumSuggestion) WHERE s.status = 'approved' AND s.reviewed_at >= $seven_days_ago RETURN count(s) AS cnt",
+        seven_days_ago=seven_days_ago,
+    ).single()
+    approved_7d = approved_res["cnt"] if approved_res else 0
+
+    # Rejected last 7d
+    rejected_res = session.run(
+        "MATCH (s:AlbumSuggestion) WHERE s.status = 'rejected' AND s.reviewed_at >= $seven_days_ago RETURN count(s) AS cnt",
+        seven_days_ago=seven_days_ago,
+    ).single()
+    rejected_7d = rejected_res["cnt"] if rejected_res else 0
+
+    # Avg review hours last 7d (only reviewed items)
+    avg_res = session.run(
+        """
+        MATCH (s:AlbumSuggestion)
+        WHERE s.status IN ['approved', 'rejected'] AND s.reviewed_at >= $seven_days_ago
+          AND s.created_at IS NOT NULL AND s.reviewed_at IS NOT NULL
+        WITH duration.between(datetime(s.created_at), datetime(s.reviewed_at)).hours AS hrs
+        RETURN avg(hrs) AS avg_hrs
+        """,
+        seven_days_ago=seven_days_ago,
+    ).single()
+    avg_review_hours_7d = round(float(avg_res["avg_hrs"]), 1) if avg_res and avg_res["avg_hrs"] is not None else 0.0
+
+    reviewed_7d = approved_7d + rejected_7d
+    rejection_rate_7d = round(rejected_7d / reviewed_7d, 2) if reviewed_7d > 0 else 0.0
+
+    # Top suggester this calendar month
+    top_res = session.run(
+        """
+        MATCH (s:AlbumSuggestion)
+        WHERE s.created_at >= $month_start AND s.suggested_by_user_id IS NOT NULL
+        WITH s.suggested_by_user_id AS uid, count(s) AS cnt
+        ORDER BY cnt DESC LIMIT 1
+        OPTIONAL MATCH (u:User {id: uid})
+        RETURN COALESCE(u.handle, uid) AS handle, cnt
+        """,
+        month_start=month_start,
+    ).single()
+    top_suggester = {"handle": top_res["handle"], "count": top_res["cnt"]} if top_res else None
+
+    return {
+        "pending": pending,
+        "approved_7d": approved_7d,
+        "rejected_7d": rejected_7d,
+        "avg_review_hours_7d": avg_review_hours_7d,
+        "rejection_rate_7d": rejection_rate_7d,
+        "top_suggester": top_suggester,
+    }
+
+
 @router.get("/review/albums", response_model=List[AlbumSuggestionResponse])
 async def get_review_queue(
     status: Optional[str] = "pending",
     q: Optional[str] = None,
+    release_type: Optional[str] = None,
+    sort: str = "newest",
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
@@ -390,6 +462,8 @@ async def get_review_queue(
 
     status: 'pending' (default) | 'approved' | 'rejected' | 'all'
     q: optional search string (matches title, band name, or suggester handle)
+    release_type: optional filter by release type (LP, EP, Demo, etc.)
+    sort: 'newest' (default) | 'oldest' | 'band_az'
     """
     where_clauses = []
     params: dict = {}
@@ -406,7 +480,16 @@ async def get_review_queue(
         )
         params["q"] = q
 
+    if release_type:
+        where_clauses.append("s.type = $release_type")
+        params["release_type"] = release_type
+
     where_str = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    order_str = {
+        "oldest": "ORDER BY s.created_at ASC",
+        "band_az": "ORDER BY b.name ASC, s.created_at DESC",
+    }.get(sort, "ORDER BY s.created_at DESC")
 
     records = session.run(
         f"""
@@ -414,7 +497,7 @@ async def get_review_queue(
         OPTIONAL MATCH (u:User {{id: s.suggested_by_user_id}})
         {where_str}
         RETURN s, b.name AS band_name, b.slug AS band_slug, u.handle AS suggested_by_handle
-        ORDER BY s.created_at DESC
+        {order_str}
         """,
         **params,
     )
