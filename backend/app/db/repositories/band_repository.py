@@ -140,7 +140,9 @@ class BandRepository:
                    [] AS releases,
                    collect(DISTINCT {{id: g.id, slug: g.slug, name: g.name}}) AS genres,
                    collect(DISTINCT {{id: tag.id, slug: tag.slug, name: tag.name, category: tag.category}}) AS tags
-            ORDER BY b.name
+            ORDER BY
+              CASE WHEN b.name =~ '^[a-zA-Z\\xC0-\\xFF].*' THEN 0 ELSE 1 END,
+              toLower(b.name)
             SKIP $skip LIMIT $limit
             """,
             **params,
