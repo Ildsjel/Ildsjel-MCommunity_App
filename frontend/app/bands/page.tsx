@@ -249,14 +249,14 @@ export default function BandsPage() {
                       <>
                         <Box sx={{
                           position: 'absolute', inset: 0,
-                          background: 'radial-gradient(circle at 40% 40%, rgba(196,58,42,.12), transparent 70%)',
+                          background: 'radial-gradient(circle at 40% 40%, rgba(196,58,42,.08), transparent 70%)',
                         }} />
                         <Typography sx={{
                           fontFamily: 'var(--font-display, "Archivo Black", sans-serif)',
-                          fontSize: '1.5rem', color: 'rgba(236,229,211,0.5)', lineHeight: 1,
+                          fontSize: '1.25rem', color: 'rgba(236,229,211,0.2)', lineHeight: 1,
                           position: 'relative', zIndex: 1,
                         }}>
-                          {band.name.charAt(0)}
+                          ◆
                         </Typography>
                       </>
                     )}

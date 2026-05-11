@@ -333,13 +333,13 @@ export default function BandPage({ params }: { params: { slug: string } }) {
               <>
                 <Box sx={{
                   position: 'absolute', inset: 0,
-                  background: 'radial-gradient(circle at 38% 38%, rgba(196,58,42,.2), transparent 65%)',
+                  background: 'radial-gradient(circle at 38% 38%, rgba(196,58,42,.1), transparent 65%)',
                 }} />
                 <Typography sx={{
-                  fontFamily: 'var(--font-display)', fontSize: '3rem',
-                  color: 'rgba(236,229,211,0.55)', lineHeight: 1, position: 'relative', zIndex: 1,
+                  fontFamily: 'var(--font-display)', fontSize: '2rem',
+                  color: 'rgba(236,229,211,0.18)', lineHeight: 1, position: 'relative', zIndex: 1,
                 }}>
-                  {band.name.charAt(0)}
+                  ◆
                 </Typography>
               </>
             )}
@@ -421,21 +421,48 @@ export default function BandPage({ params }: { params: { slug: string } }) {
           </Box>
         </Box>
 
-        {/* Band photo — 16:9 banner, only shown when one has been uploaded */}
-        {band.image_url && (
-          <Box sx={{
-            width: '100%', aspectRatio: '16 / 9',
-            borderRadius: '3px', overflow: 'hidden', mb: 2.5,
-            border: '1.5px solid rgba(216,207,184,0.12)',
-          }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/* Band photo — 16:9 banner, always rendered; placeholder when no image uploaded */}
+        <Box sx={{
+          width: '100%', aspectRatio: '16 / 9',
+          borderRadius: '3px', overflow: 'hidden', mb: 2.5,
+          border: '1.5px solid rgba(216,207,184,0.12)',
+          position: 'relative',
+        }}>
+          {band.image_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={`${API_BASE}${band.image_url}`}
               alt={`${band.name}`}
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
-          </Box>
-        )}
+          ) : (
+            <Box sx={{
+              width: '100%', height: '100%',
+              background: 'repeating-linear-gradient(135deg, #1a1424 0 6px, #120e18 6px 12px)',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 1,
+            }}>
+              <Box sx={{
+                position: 'absolute', inset: 0,
+                background: 'radial-gradient(ellipse at 50% 50%, rgba(196,58,42,.07), transparent 70%)',
+              }} />
+              <Typography sx={{
+                fontFamily: 'var(--font-display)', fontSize: '2.5rem',
+                color: 'rgba(236,229,211,0.1)', lineHeight: 1, position: 'relative', zIndex: 1,
+              }}>
+                ◆
+              </Typography>
+              <span style={{
+                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                fontSize: '0.4375rem', letterSpacing: '0.14em',
+                textTransform: 'uppercase', color: 'rgba(236,229,211,0.15)',
+                position: 'relative', zIndex: 1,
+              }}>
+                no band photo
+              </span>
+            </Box>
+          )}
+        </Box>
 
         {/* Bio */}
         {band.bio && (
