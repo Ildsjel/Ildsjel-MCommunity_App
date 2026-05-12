@@ -218,6 +218,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
 
   const [availableTags, setAvailableTags] = useState<any[]>([])
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+  const [tagSearch, setTagSearch] = useState('')
 
   const [photoUploading, setPhotoUploading] = useState(false)
   const [logoUploading, setLogoUploading] = useState(false)
@@ -498,33 +499,73 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
         {availableTags.length > 0 && (
           <Box>
             <span style={{ ...lbl, display: 'block', marginBottom: 8 }}>Tags</span>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.625 }}>
-              {availableTags.map((tag: any) => {
-                const active = selectedTagIds.includes(tag.id)
-                return (
-                  <Box
-                    key={tag.id}
-                    component="button"
-                    type="button"
-                    onClick={() => setSelectedTagIds((prev) =>
-                      active ? prev.filter((id) => id !== tag.id) : [...prev, tag.id]
-                    )}
-                    sx={{
-                      border: `1px solid ${active ? 'rgba(216,207,184,0.55)' : 'rgba(216,207,184,0.18)'}`,
-                      borderRadius: '2px',
-                      px: 0.875, height: 22,
-                      background: active ? 'rgba(216,207,184,0.08)' : 'none',
-                      cursor: 'pointer',
-                      fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
-                      letterSpacing: '0.1em', textTransform: 'uppercase',
-                      color: active ? 'var(--ink)' : 'var(--muted)',
-                      transition: 'border-color 0.12s, color 0.12s',
-                    }}
-                  >
-                    {tag.name}
-                  </Box>
+            {/* Search field */}
+            <Box sx={{ position: 'relative', mb: 1 }}>
+              <input
+                type="text"
+                placeholder="Search tags…"
+                value={tagSearch}
+                onChange={(e) => setTagSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: '#120e18',
+                  border: '1px solid rgba(216,207,184,0.2)',
+                  borderRadius: '3px',
+                  padding: '5px 28px 5px 8px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.5rem',
+                  letterSpacing: '0.08em',
+                  color: 'var(--ink)',
+                  outline: 'none',
+                }}
+              />
+              {tagSearch && (
+                <button
+                  type="button"
+                  onClick={() => setTagSearch('')}
+                  style={{
+                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                    color: 'var(--muted)', padding: 0, lineHeight: 1,
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.625, maxHeight: 160, overflowY: 'auto' }}>
+              {availableTags
+                .filter((tag: any) =>
+                  !tagSearch || tag.name.toLowerCase().includes(tagSearch.toLowerCase())
                 )
-              })}
+                .map((tag: any) => {
+                  const active = selectedTagIds.includes(tag.id)
+                  return (
+                    <Box
+                      key={tag.id}
+                      component="button"
+                      type="button"
+                      onClick={() => setSelectedTagIds((prev) =>
+                        active ? prev.filter((id) => id !== tag.id) : [...prev, tag.id]
+                      )}
+                      sx={{
+                        border: `1px solid ${active ? 'rgba(216,207,184,0.55)' : 'rgba(216,207,184,0.18)'}`,
+                        borderRadius: '2px',
+                        px: 0.875, height: 22,
+                        background: active ? 'rgba(216,207,184,0.08)' : 'none',
+                        cursor: 'pointer',
+                        fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                        letterSpacing: '0.1em', textTransform: 'uppercase',
+                        color: active ? 'var(--ink)' : 'var(--muted)',
+                        transition: 'border-color 0.12s, color 0.12s',
+                      }}
+                    >
+                      {tag.name}
+                    </Box>
+                  )
+                })}
             </Box>
           </Box>
         )}
