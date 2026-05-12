@@ -391,7 +391,7 @@ function NewSoulsStripe({ onSoulTap }: { onSoulTap: () => void }) {
   )
 }
 
-function MatchedSoulSpotlight({ onViewSigil, onHorns }: { onViewSigil: () => void; onHorns: () => void }) {
+function MatchedSoulSpotlight({ userId, onViewSigil, onHorns }: { userId: string; onViewSigil: () => void; onHorns: () => void }) {
   const p = PROFILES[0]
   return (
     <Box sx={{
@@ -710,7 +710,8 @@ export default function FeedPage() {
       nodes.push(
         <MatchedSoulSpotlight
           key="matched-soul"
-          onViewSigil={() => router.push('/bands')}
+          userId={PROFILES[0].id}
+          onViewSigil={() => router.push(`/profile/${PROFILES[0].id}`)}
           onHorns={() => {}}
         />
       )
