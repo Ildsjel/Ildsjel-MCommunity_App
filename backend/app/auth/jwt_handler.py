@@ -8,6 +8,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer
 from fastapi.security.http import HTTPAuthorizationCredentials
 from app.config.settings import settings
+from app.auth.token_blacklist import blacklist
 
 security = HTTPBearer()
 
@@ -76,8 +77,16 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         HTTPException: If token is invalid or expired
     """
     token = credentials.credentials
+
+    if blacklist.is_revoked(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     payload = decode_access_token(token)
-    
+
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -1,13 +1,18 @@
 """
 Authentication API Endpoints
 """
+import time
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security.http import HTTPAuthorizationCredentials
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.models.user_models import UserCreate, UserLogin, TokenResponse
 from app.services.user_service import UserService
 from app.db.neo4j_driver import get_neo4j_session
+from app.auth.jwt_handler import get_current_user, decode_access_token, security
+from app.auth.security import verify_password, hash_password
+from app.auth.token_blacklist import blacklist
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 limiter = Limiter(key_func=get_remote_address)
@@ -204,6 +209,62 @@ async def reset_password(
         )
     
     return {"message": "Password reset successfully. You can now log in."}
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    current_user: dict = Depends(get_current_user),
+):
+    """Revoke the caller's current JWT token (stateless blacklist).
+
+    The token is added to an in-memory set keyed by its raw string and
+    TTL-d to the token's remaining expiry.  Subsequent requests with the same
+    token are rejected with 401 by ``get_current_user``.
+    """
+    token = credentials.credentials
+    payload = decode_access_token(token)
+    exp = payload.get("exp", time.time() + 3600) if payload else time.time() + 3600
+    blacklist.add(token, float(exp))
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+async def change_password(
+    body: ChangePasswordRequest,
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_neo4j_session),
+):
+    """Change the authenticated user's password.
+
+    Requires the correct current password for re-verification.  On success
+    the token is NOT revoked (caller stays logged in); the client may choose
+    to call /logout if it wants to force re-login everywhere.
+    """
+    rec = session.run(
+        "MATCH (u:User {id: $uid}) RETURN u.password_hash AS password_hash",
+        uid=current_user["id"],
+    ).single()
+    if not rec:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not verify_password(body.old_password, rec["password_hash"] or ""):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+
+    new_hash = hash_password(body.new_password)
+    session.run(
+        "MATCH (u:User {id: $uid}) SET u.password_hash = $hash",
+        uid=current_user["id"],
+        hash=new_hash,
+    )
+    return {"message": "Password changed successfully"}
 
 
 @router.post("/dev/verify-user")

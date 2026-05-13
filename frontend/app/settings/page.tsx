@@ -84,9 +84,16 @@ export default function SettingsPage() {
   const [accountSaving, setAccountSaving] = useState(false)
   const [accountMsg, setAccountMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
-  // Password reset
-  const [pwSending, setPwSending] = useState(false)
+  // Change password
+  const [oldPw, setOldPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [pwSaving, setPwSaving] = useState(false)
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  // Delete account
+  const [deleteConfirmPw, setDeleteConfirmPw] = useState('')
+  const [deletePhase, setDeletePhase] = useState<'idle' | 'confirm' | 'deleting'>('idle')
+  const [deleteMsg, setDeleteMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   // Location
   const [city, setCity] = useState('')
@@ -127,16 +134,45 @@ export default function SettingsPage() {
     }
   }
 
-  const handleSendPasswordReset = async () => {
-    setPwSending(true)
+  const handleChangePassword = async () => {
+    if (!newPw || newPw.length < 8) {
+      setPwMsg({ ok: false, text: 'New password must be at least 8 characters' })
+      return
+    }
+    setPwSaving(true)
     setPwMsg(null)
     try {
-      await axios.post(`${API_BASE}/api/v1/auth/request-password-reset`, { email })
-      setPwMsg({ ok: true, text: 'Password reset email sent — check your inbox' })
+      const token = localStorage.getItem('access_token')
+      await axios.post(
+        `${API_BASE}/api/v1/auth/change-password`,
+        { old_password: oldPw, new_password: newPw },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      setPwMsg({ ok: true, text: 'Password changed' })
+      setOldPw('')
+      setNewPw('')
     } catch (e: unknown) {
       setPwMsg({ ok: false, text: getErrorMessage(e) })
     } finally {
-      setPwSending(false)
+      setPwSaving(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeletePhase('deleting')
+    setDeleteMsg(null)
+    try {
+      const token = localStorage.getItem('access_token')
+      await axios.delete(`${API_BASE}/api/v1/users/me`, {
+        data: { password: deleteConfirmPw },
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      // Clean up local state and redirect
+      localStorage.removeItem('access_token')
+      router.push('/')
+    } catch (e: unknown) {
+      setDeleteMsg({ ok: false, text: getErrorMessage(e) })
+      setDeletePhase('confirm')
     }
   }
 
@@ -220,14 +256,31 @@ export default function SettingsPage() {
 
         {/* ── Password ─────────────────────────────────────────────── */}
         <div style={sectionBox}>
-          <span style={{ ...lbl, display: 'block', marginBottom: 8 }}>PASSWORD</span>
-          <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', mb: 1.25 }}>
-            We'll send a reset link to {email}.
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <SaveButton onClick={handleSendPasswordReset} saving={pwSending} label="SEND RESET EMAIL" />
+          <span style={{ ...lbl, display: 'block', marginBottom: 14 }}>PASSWORD</span>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+            <TextField
+              label="Current password"
+              type="password"
+              value={oldPw}
+              onChange={(e) => setOldPw(e.target.value)}
+              size="small" fullWidth sx={inputSx}
+              autoComplete="current-password"
+            />
+            <TextField
+              label="New password"
+              type="password"
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+              size="small" fullWidth sx={inputSx}
+              autoComplete="new-password"
+              helperText="Minimum 8 characters"
+              FormHelperTextProps={{ sx: { fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--muted)', ml: 0 } }}
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <SaveButton onClick={handleChangePassword} saving={pwSaving} label="CHANGE PASSWORD" />
+            </Box>
+            <FeedbackMsg msg={pwMsg} />
           </Box>
-          <FeedbackMsg msg={pwMsg} />
         </div>
 
         {/* ── Location ─────────────────────────────────────────────── */}
@@ -303,6 +356,89 @@ export default function SettingsPage() {
             <FeedbackMsg msg={redeemMsg} />
           </div>
         )}
+
+        {/* ── Danger zone ───────────────────────────────────────────── */}
+        <div style={{
+          ...sectionBox,
+          border: '1.5px solid rgba(196,58,42,0.35)',
+          marginBottom: 0,
+        }}>
+          <span style={{ ...lbl, display: 'block', marginBottom: 8, color: 'var(--accent)' }}>DANGER ZONE</span>
+
+          {deletePhase === 'idle' && (
+            <>
+              <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', mb: 1.25 }}>
+                Permanently delete your account and all associated data. This cannot be undone.
+              </Typography>
+              <Box
+                component="button"
+                onClick={() => setDeletePhase('confirm')}
+                sx={{
+                  border: '1.5px solid rgba(196,58,42,0.45)', borderRadius: '3px',
+                  px: 1.5, py: 0.625, background: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em',
+                  color: 'var(--accent)',
+                  '&:hover': { borderColor: 'var(--accent)', backgroundColor: 'rgba(196,58,42,0.06)' },
+                  transition: 'all 0.1s',
+                }}
+              >
+                DELETE ACCOUNT
+              </Box>
+            </>
+          )}
+
+          {(deletePhase === 'confirm' || deletePhase === 'deleting') && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+              <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--accent)' }}>
+                Enter your password to confirm deletion. All your data will be permanently erased.
+              </Typography>
+              <TextField
+                label="Confirm your password"
+                type="password"
+                value={deleteConfirmPw}
+                onChange={(e) => setDeleteConfirmPw(e.target.value)}
+                size="small" fullWidth sx={{
+                  ...inputSx,
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(196,58,42,0.35)', borderRadius: '3px' },
+                  '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(196,58,42,0.6)' },
+                }}
+                autoComplete="current-password"
+                disabled={deletePhase === 'deleting'}
+              />
+              <Box sx={{ display: 'flex', gap: 0.75 }}>
+                <Box
+                  component="button"
+                  onClick={() => { setDeletePhase('idle'); setDeleteConfirmPw(''); setDeleteMsg(null) }}
+                  disabled={deletePhase === 'deleting'}
+                  sx={{
+                    flex: 1, border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
+                    py: 0.625, background: 'none', cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)',
+                    '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
+                    '&:disabled': { opacity: 0.4, cursor: 'default' },
+                  }}
+                >
+                  CANCEL
+                </Box>
+                <Box
+                  component="button"
+                  onClick={handleDeleteAccount}
+                  disabled={!deleteConfirmPw || deletePhase === 'deleting'}
+                  sx={{
+                    flex: 1, border: '1.5px solid var(--accent)', borderRadius: '3px',
+                    py: 0.625, background: 'none', cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--accent)',
+                    '&:hover': { backgroundColor: 'rgba(196,58,42,0.08)' },
+                    '&:disabled': { opacity: 0.4, cursor: 'default' },
+                  }}
+                >
+                  {deletePhase === 'deleting' ? '…' : 'CONFIRM DELETE'}
+                </Box>
+              </Box>
+              <FeedbackMsg msg={deleteMsg} />
+            </Box>
+          )}
+        </div>
 
       </Box>
     </>
