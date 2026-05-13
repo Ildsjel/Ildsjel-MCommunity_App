@@ -1,8 +1,9 @@
 """
 User API Endpoints
 """
+import re
 import time
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security.http import HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from app.models.user_models import UserResponse, UserUpdate
@@ -199,3 +200,43 @@ async def mark_all_read(
         "MATCH (n:Notification {user_id: $uid, read: false}) SET n.read = true",
         uid=current_user["id"],
     )
+
+
+# ── Handle availability check ─────────────────────────────────────────────────
+
+@router.get("/handle/check")
+async def check_handle(
+    q: str = Query(..., description="Handle to check"),
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_neo4j_session),
+):
+    """Check whether a handle is available for the current user.
+
+    Returns {"status": "available"}, {"status": "taken"}, or {"status": "invalid"}.
+    The current user's own handle is never reported as taken.
+    """
+    if not re.match(r'^[a-z0-9_]{3,24}$', q):
+        return {"status": "invalid"}
+
+    result = session.run(
+        "MATCH (u:User {handle: $h}) WHERE u.id <> $uid RETURN u.id LIMIT 1",
+        h=q,
+        uid=current_user["id"],
+    ).single()
+
+    return {"status": "taken" if result else "available"}
+
+
+# ── Onboarding completion ─────────────────────────────────────────────────────
+
+@router.post("/me/onboarding-complete")
+async def complete_onboarding(
+    current_user: dict = Depends(get_current_user),
+    session=Depends(get_neo4j_session),
+):
+    """Mark onboarding as complete for the current user."""
+    session.run(
+        "MATCH (u:User {id: $id}) SET u.onboarding_complete = true",
+        id=current_user["id"],
+    )
+    return {"ok": True}

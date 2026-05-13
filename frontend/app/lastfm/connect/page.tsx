@@ -73,6 +73,7 @@ export default function LastFmConnectPage() {
         { token: lfmToken },
         { headers: { Authorization: `Bearer ${authToken}` } }
       )
+      localStorage.setItem('lastfm_connected', 'true')
       await fetchStatus(authToken)
       window.history.replaceState({}, '', '/lastfm/connect')
     } catch (err: unknown) {
