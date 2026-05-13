@@ -90,6 +90,7 @@ export default function SpotifyConnectPage() {
         { code, state, code_verifier },
         { headers: { Authorization: `Bearer ${token}` } }
       )
+      localStorage.setItem('spotify_connected', 'true')
       await fetchStatus(token)
       window.history.replaceState({}, '', '/spotify/connect')
     } catch (err: unknown) {
