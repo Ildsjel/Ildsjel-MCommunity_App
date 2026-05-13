@@ -1,124 +1,144 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
-import { getErrorMessage } from '@/lib/types/apiError';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import {
+  Box, Card, CardContent, TextField, Button,
+  Typography, Alert, Link as MuiLink,
+} from '@mui/material'
+import { Email } from '@mui/icons-material'
+import InputAdornment from '@mui/material/InputAdornment'
+import { api } from '@/lib/api'
+import { getErrorMessage } from '@/lib/types/apiError'
 
-const RATE_LIMIT_COOLDOWN_SECONDS = 60;
+const COOLDOWN_SEC = 60
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  const router = useRouter()
+  const [email, setEmail]             = useState('')
+  const [loading, setLoading]         = useState(false)
+  const [success, setSuccess]         = useState(false)
+  const [error, setError]             = useState('')
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null)
+  const [now, setNow]                 = useState(() => Date.now())
 
   useEffect(() => {
-    if (cooldownUntil === null) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [cooldownUntil]);
+    if (!cooldownUntil) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [cooldownUntil])
 
-  const cooldownRemaining = cooldownUntil
-    ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000))
-    : 0;
-  const isCoolingDown = cooldownRemaining > 0;
+  const remaining   = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000)) : 0
+  const isCooling   = remaining > 0
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isCoolingDown) return;
-    setLoading(true);
-    setError('');
-    setMessage('');
-
+    e.preventDefault()
+    if (isCooling) return
+    setLoading(true)
+    setError('')
     try {
-      const response = await api.post('/auth/request-password-reset', { email });
-      setMessage(response.data.message);
-      setEmail('');
+      await api.post('/auth/request-password-reset', { email })
+      setSuccess(true)
+      setEmail('')
     } catch (err: unknown) {
-      const e = err as {
-        response?: { status?: number; headers?: Record<string, string> };
-      };
+      const e = err as { response?: { status?: number; headers?: Record<string, string> } }
       if (e.response?.status === 429) {
-        const retryAfterHeader = e.response?.headers?.['retry-after'];
-        const retryAfterSeconds = Number.parseInt(retryAfterHeader ?? '', 10);
-        const cooldownSec = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-          ? retryAfterSeconds
-          : RATE_LIMIT_COOLDOWN_SECONDS;
-        setCooldownUntil(Date.now() + cooldownSec * 1000);
-        setNow(Date.now());
-        setError(
-          'Too many attempts. For security, only 3 requests per hour are allowed — please try again later.'
-        );
+        const sec = parseInt(e.response?.headers?.['retry-after'] ?? '', 10)
+        setCooldownUntil(Date.now() + (Number.isFinite(sec) && sec > 0 ? sec : COOLDOWN_SEC) * 1000)
+        setNow(Date.now())
+        setError('Too many attempts — please try again in a minute.')
       } else {
-        setError(getErrorMessage(err, 'An error occurred'));
+        setError(getErrorMessage(err, 'Something went wrong'))
       }
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-red-900 p-4">
-      <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-2xl p-8 border border-red-800">
-        <h1 className="text-3xl font-bold text-center mb-6 text-red-500">
-          Reset Password
-        </h1>
+    <Box sx={{
+      minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+      justifyContent: 'center', px: { xs: 2, sm: 4 }, py: 4,
+      maxWidth: 440, mx: 'auto',
+    }}>
+      {/* Brand */}
+      <Box sx={{ textAlign: 'center', mb: { xs: 4, md: 5 } }}>
+        <Typography
+          component={Link} href="/"
+          className="grimr-glow grimr-wordmark"
+          sx={{
+            fontFamily: 'var(--font-medieval, "UnifrakturCook", serif)',
+            fontSize: { xs: '2.8rem', md: '3.5rem' },
+            letterSpacing: '0.04em', color: 'text.primary',
+            textDecoration: 'none', display: 'inline-block', mb: 1.5, lineHeight: 1,
+          }}
+        >
+          Grimr
+        </Typography>
+        <Typography sx={{ fontFamily: '"EB Garamond", serif', fontStyle: 'italic', fontSize: '1.25rem', color: 'text.secondary', mb: 0.5 }}>
+          Reset your password
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          We&apos;ll send you a link to set a new one
+        </Typography>
+      </Box>
 
-        {message && (
-          <div className="mb-4 p-4 bg-green-900/30 border border-green-500 rounded-md">
-            <p className="text-green-400 text-sm">{message}</p>
-          </div>
-        )}
+      <Card>
+        <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+          {success ? (
+            <Box sx={{ textAlign: 'center', py: 1 }}>
+              <Alert severity="success" sx={{ mb: 2.5 }}>
+                If that email is registered, a reset link is on its way. Check your inbox (and spam).
+              </Alert>
+              <Button fullWidth variant="outlined" onClick={() => router.push('/auth/login')}>
+                Back to login
+              </Button>
+            </Box>
+          ) : (
+            <Box component="form" onSubmit={handleSubmit}>
+              {error && <Alert severity="error" sx={{ mb: 2.5 }}>{error}</Alert>}
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-900/30 border border-red-500 rounded-md">
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
-        )}
+              <TextField
+                fullWidth label="Email address" type="email" required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                sx={{ mb: 2.5 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email sx={{ color: 'text.disabled', fontSize: 18 }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              placeholder="your@email.com"
-            />
-          </div>
+              <Button
+                type="submit" fullWidth variant="contained" size="large"
+                disabled={loading || isCooling}
+                sx={{ mb: 2 }}
+              >
+                {loading ? 'Sending…' : isCooling ? `Try again in ${remaining}s` : 'Send reset link'}
+              </Button>
 
-          <button
-            type="submit"
-            disabled={loading || isCoolingDown}
-            className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading
-              ? 'Sending...'
-              : isCoolingDown
-                ? `Try again in ${cooldownRemaining}s`
-                : 'Send reset link'}
-          </button>
-        </form>
+              <Typography variant="body2" color="text.secondary" align="center" sx={{ fontSize: '0.875rem' }}>
+                Remembered it?{' '}
+                <MuiLink component={Link} href="/auth/login" color="primary" underline="hover">
+                  Back to login
+                </MuiLink>
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
 
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => router.push('/auth/login')}
-            className="text-red-400 hover:text-red-300 text-sm"
-          >
-            Back to login
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+      <Box sx={{ textAlign: 'center', mt: 3 }}>
+        <MuiLink component={Link} href="/" color="text.secondary" underline="hover" sx={{ fontSize: '0.8rem' }}>
+          ← Back to Home
+        </MuiLink>
+      </Box>
+    </Box>
+  )
 }
-
