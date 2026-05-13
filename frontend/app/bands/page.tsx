@@ -236,7 +236,7 @@ export default function BandsPage() {
                   <Box sx={{
                     width: 54, height: 54, flexShrink: 0,
                     border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
-                    background: 'repeating-linear-gradient(135deg, #1a1424 0 4px, #120e18 4px 8px)',
+                    background: '#000',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     position: 'relative', overflow: 'hidden',
                   }}>
@@ -244,7 +244,7 @@ export default function BandsPage() {
                       <img
                         src={`${API_BASE}${band.logo_url}`}
                         alt={`${band.name} logo`}
-                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', filter: 'invert(1)' }}
                         onError={() => setErroredLogos((prev) => new Set(prev).add(band.id))}
                       />
                     ) : (

@@ -322,7 +322,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
           <Box sx={{
             width: 88, height: 88, flexShrink: 0,
             border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '4px',
-            background: 'repeating-linear-gradient(135deg, #1a1424 0 4px, #120e18 4px 8px)',
+            background: '#000',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             position: 'relative', overflow: 'hidden',
           }}>
@@ -331,7 +331,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
               <img
                 src={`${API_BASE}${band.logo_url}`}
                 alt={`${band.name} logo`}
-                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', filter: 'invert(1)' }}
                 onError={() => setLogoError(true)}
               />
             ) : (
