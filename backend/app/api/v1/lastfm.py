@@ -10,7 +10,7 @@ from app.config.settings import settings
 
 router = APIRouter(prefix="/lastfm", tags=["Last.fm"])
 
-LASTFM_CALLBACK = "http://127.0.0.1:3001/lastfm/connect"
+LASTFM_CALLBACK = f"{settings.FRONTEND_URL}/lastfm/connect"
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
