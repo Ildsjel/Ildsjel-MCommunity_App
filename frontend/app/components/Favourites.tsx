@@ -206,11 +206,8 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                   display: 'flex', alignItems: 'center', gap: 1,
                   border: '1px solid rgba(216,207,184,0.15)', borderRadius: '3px',
                   px: 1, py: '6px',
-                  cursor: isOwnProfile ? 'pointer' : 'default',
-                  '&:hover': isOwnProfile ? { borderColor: 'rgba(196,58,42,0.45)' } : {},
                   transition: 'border-color 0.15s',
                 }}
-                onClick={() => isOwnProfile && removeAlbum(a.id)}
               >
                 {a.image_url && (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -235,7 +232,12 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                     </span>
                   )}
                   {isOwnProfile && (
-                    <span style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)' }}>✕</span>
+                    <span
+                      style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)', cursor: 'pointer' }}
+                      onClick={(e) => { e.stopPropagation(); removeAlbum(a.id) }}
+                    >
+                      ✕
+                    </span>
                   )}
                 </Box>
               </Box>
