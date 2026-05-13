@@ -26,7 +26,12 @@ class UserRoleResponse(BaseModel):
     handle: str
     email: str
     role: str
+    onboarding_complete: bool = False
 
 
 class UserRoleUpdate(BaseModel):
     role: str = Field(..., pattern="^(user|admin|superadmin)$")
+
+
+class UserOnboardingUpdate(BaseModel):
+    onboarding_complete: bool
