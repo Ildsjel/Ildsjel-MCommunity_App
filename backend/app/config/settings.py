@@ -43,14 +43,10 @@ class Settings(BaseSettings):
     EMAIL_VERIFICATION_EXPIRE_HOURS: int = 24
     PASSWORD_RESET_EXPIRE_HOURS: int = 1
     
-    # SMTP Settings
-    SMTP_ENABLED: bool = False  # Set to True in production
-    SMTP_HOST: str = "smtp.gmail.com"
-    SMTP_PORT: int = 587
-    SMTP_USERNAME: str = ""
-    SMTP_PASSWORD: str = ""
-    SMTP_FROM_EMAIL: str = "noreply@grimr.app"
-    SMTP_USE_TLS: bool = True
+    # Email — Resend (https://resend.com)
+    # Leave RESEND_API_KEY empty to disable email in dev (prints to console instead)
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = "noreply@grimr.dev"
     
     # Frontend URL
     FRONTEND_URL: str = "http://localhost:3000"
