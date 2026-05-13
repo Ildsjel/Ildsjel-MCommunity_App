@@ -264,9 +264,13 @@ class EventService:
                     ev_coords[0],   ev_coords[1],
                 ))
 
+            # Map friends_going / friends_interested → avatar group fields
+            e["going_avatars"]      = (e.pop("friends_going", None) or [])[:8]
+            e["interested_avatars"] = (e.pop("friends_interested", None) or [])[:8]
+
             h_matches = int(e.pop("taste_headliner_count", 0) or 0)
             s_matches = int(e.pop("taste_support_count", 0) or 0)
-            f_count   = len(e.get("friends_interested", []))
+            f_count   = len(e.get("going_avatars", [])) + len(e.get("interested_avatars", []))
 
             loc_s     = _location_score(dist_km)
             taste_s   = _taste_score(h_matches, s_matches)
@@ -315,7 +319,10 @@ class EventService:
         row = self.repo.get_event(event_id, user_id)
         if not row:
             return None
-        # Clean up internal scoring fields from detail view
+        # Use friends_going as going_avatars, friends_interested as interested_avatars
+        row["going_avatars"]      = (row.pop("friends_going", None) or [])[:8]
+        row["interested_avatars"] = (row.pop("friends_interested", None) or [])[:8]
+        # Clean up internal scoring/geo fields from detail view
         row.pop("taste_headliner_count", None)
         row.pop("taste_support_count", None)
         row.pop("lat", None)
@@ -326,4 +333,25 @@ class EventService:
         return self.repo.create_event(data)
 
     def toggle_interest(self, user_id: str, event_id: str) -> bool:
+        """Legacy alias."""
         return self.repo.toggle_interest(user_id, event_id)
+
+    def set_rsvp(self, user_id: str, event_id: str, status: str) -> dict:
+        """
+        Toggle RSVP. Returns RsvpResponse-compatible dict with updated counts.
+        """
+        if status not in ("interested", "going"):
+            raise ValueError(f"Invalid RSVP status: {status!r}")
+        new_status = self.repo.set_rsvp(user_id, event_id, status)
+        counts = self.repo.get_event_counts(event_id)
+        return {
+            "rsvp": new_status,
+            "going_count": counts["going_count"],
+            "interested_count": counts["interested_count"],
+        }
+
+    def get_attendees(self, event_id: str, status: str, requesting_user_id: str) -> List[Dict[str, Any]]:
+        """Return attendees sorted: friends → shared bands → handle."""
+        if status not in ("interested", "going"):
+            raise ValueError(f"Invalid status: {status!r}")
+        return self.repo.get_attendees(event_id, status, requesting_user_id)
