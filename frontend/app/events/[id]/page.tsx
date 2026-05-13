@@ -365,6 +365,7 @@ export default function EventDetailPage() {
         goingCount={event.going_count}
         interestedCount={event.interested_count}
         initialTab={modalTab}
+        currentUserId={user?.id}
       />
     </>
   )
