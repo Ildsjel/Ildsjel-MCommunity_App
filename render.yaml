@@ -1,4 +1,5 @@
 services:
+  # ── Backend API (FastAPI / Docker) ───────────────────────────────────────────
   - type: web
     name: grimr-api
     runtime: docker
@@ -7,29 +8,71 @@ services:
     plan: free
     healthCheckPath: /health
     envVars:
+      # ── App ──────────────────────────────────────────────────────────────────
       - key: ENVIRONMENT
         value: production
       - key: DEBUG
         value: false
+
+      # ── Database (Neo4j Aura) ─────────────────────────────────────────────
+      # Format: neo4j+s://<instance-id>.databases.neo4j.io
       - key: NEO4J_URI
         sync: false
       - key: NEO4J_USER
-        sync: false
+        value: neo4j
       - key: NEO4J_PASSWORD
         sync: false
+
+      # ── Auth ──────────────────────────────────────────────────────────────
       - key: SECRET_KEY
         generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 10080         # 7 days
+
+      # ── CORS — set to your Vercel frontend URL, e.g. https://grimr.vercel.app
       - key: ALLOWED_ORIGINS
         sync: false
       - key: FRONTEND_URL
         sync: false
-      - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: 10080
+
+      # ── Spotify OAuth ─────────────────────────────────────────────────────
       - key: SPOTIFY_CLIENT_ID
         sync: false
       - key: SPOTIFY_CLIENT_SECRET
         sync: false
+      # Must match the redirect URI registered in Spotify Developer Dashboard
+      # e.g. https://grimr.vercel.app/spotify/connect
       - key: SPOTIFY_REDIRECT_URI
         sync: false
+
+      # ── Last.fm ───────────────────────────────────────────────────────────
+      - key: LASTFM_API_KEY
+        sync: false
+      - key: LASTFM_API_SECRET
+        sync: false
+
+      # ── Ticketmaster (events) ─────────────────────────────────────────────
+      - key: TICKETMASTER_API_KEY
+        sync: false
+
+      # ── Email (SMTP) — Gmail App Password recommended ─────────────────────
+      - key: SMTP_ENABLED
+        value: true
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+
+      # ── Admin ─────────────────────────────────────────────────────────────
       - key: SUPERADMIN_EMAIL
         sync: false
+
+      # ── File uploads — ephemeral on free tier; ok for MVP ─────────────────
+      - key: UPLOADS_DIR
+        value: /tmp/grimr_uploads
