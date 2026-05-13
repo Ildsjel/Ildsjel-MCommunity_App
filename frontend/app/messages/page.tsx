@@ -105,7 +105,7 @@ export default function MessagesPage() {
                       {conv.other_user.handle}
                     </span>
                     {conv.last_message && (
-                      <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--muted)', flexShrink: 0, ml: 8 }}>
+                      <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--muted)', flexShrink: 0, marginLeft: 8 }}>
                         {formatTime(conv.last_message.created_at)}
                       </span>
                     )}
