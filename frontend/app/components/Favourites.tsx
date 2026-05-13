@@ -132,6 +132,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                     border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px',
                     px: 1, py: 0.5, cursor: 'pointer',
                     '&:hover': { borderColor: 'rgba(216,207,184,0.45)' },
+                    '&:hover .remove-btn': { opacity: 1 },
                     transition: 'border-color 0.15s',
                   }}
                 >
@@ -153,7 +154,8 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                   )}
                   {isOwnProfile && (
                     <span
-                      style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)', marginLeft: 2 }}
+                      className="remove-btn"
+                      style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.7)', marginLeft: 2, opacity: 0, transition: 'opacity 0.15s' }}
                       onClick={(e) => { e.stopPropagation(); removeArtist(a.name_norm) }}
                     >
                       ✕
@@ -207,6 +209,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                   border: '1px solid rgba(216,207,184,0.15)', borderRadius: '3px',
                   px: 1, py: '6px',
                   transition: 'border-color 0.15s',
+                  '&:hover .remove-btn': { opacity: 1 },
                 }}
               >
                 {a.image_url && (
@@ -233,7 +236,8 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                   )}
                   {isOwnProfile && (
                     <span
-                      style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.45)', cursor: 'pointer' }}
+                      className="remove-btn"
+                      style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.7)', cursor: 'pointer', opacity: 0, transition: 'opacity 0.15s' }}
                       onClick={(e) => { e.stopPropagation(); removeAlbum(a.id) }}
                     >
                       ✕
