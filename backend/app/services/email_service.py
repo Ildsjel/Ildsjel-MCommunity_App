@@ -276,13 +276,18 @@ class EmailService:
         message.attach(part2)
         
         try:
+            # Port 587 uses STARTTLS (start_tls=True).
+            # Port 465 uses implicit TLS (use_tls=True).
+            # Gmail standard is 587 + STARTTLS — do not mix them up.
+            use_implicit_tls = settings.SMTP_PORT == 465
             await aiosmtplib.send(
                 message,
                 hostname=settings.SMTP_HOST,
                 port=settings.SMTP_PORT,
                 username=settings.SMTP_USERNAME,
                 password=settings.SMTP_PASSWORD,
-                use_tls=settings.SMTP_USE_TLS,
+                use_tls=use_implicit_tls,
+                start_tls=not use_implicit_tls,
             )
             print(f"✅ Email sent to {to_email}")
         except Exception as e:
