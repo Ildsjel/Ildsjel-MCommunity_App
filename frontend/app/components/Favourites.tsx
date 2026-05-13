@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Box, Typography, CircularProgress } from '@mui/material'
+import {
+  Box, Typography, CircularProgress,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button,
+} from '@mui/material'
 import axios from 'axios'
 import { requestBandReview } from '@/lib/bandsApi'
 
@@ -37,6 +40,10 @@ interface FavouritesProps {
   isOwnProfile: boolean
 }
 
+type PendingRemove =
+  | { kind: 'artist'; nameNorm: string; label: string }
+  | { kind: 'album';  id: string;       label: string }
+
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
 }
@@ -44,11 +51,12 @@ const mono: React.CSSProperties = {
 export default function Favourites({ isOwnProfile }: FavouritesProps) {
   const router = useRouter()
   const [artists, setArtists] = useState<FavArtist[]>([])
-  const [albums, setAlbums] = useState<FavAlbum[]>([])
-  const [bands, setBands] = useState<FavBand[]>([])
+  const [albums, setAlbums]   = useState<FavAlbum[]>([])
+  const [bands, setBands]     = useState<FavBand[]>([])
   const [loading, setLoading] = useState(true)
-  // Tracks names that have been requested this session for visual feedback
   const [requestedNames, setRequestedNames] = useState<Set<string>>(new Set())
+  const [pending, setPending] = useState<PendingRemove | null>(null)
+  const [removing, setRemoving] = useState(false)
 
   const fetchFavourites = useCallback(async () => {
     try {
@@ -68,20 +76,27 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
 
   useEffect(() => { fetchFavourites() }, [fetchFavourites])
 
-  const removeArtist = async (nameNorm: string) => {
-    const token = localStorage.getItem('access_token')
-    await axios.delete(`${API_BASE}/api/v1/favourites/artist/${encodeURIComponent(nameNorm)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    await fetchFavourites()
-  }
-
-  const removeAlbum = async (albumId: string) => {
-    const token = localStorage.getItem('access_token')
-    await axios.delete(`${API_BASE}/api/v1/favourites/album/${encodeURIComponent(albumId)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    await fetchFavourites()
+  const confirmRemove = async () => {
+    if (!pending) return
+    setRemoving(true)
+    try {
+      const token = localStorage.getItem('access_token')
+      if (pending.kind === 'artist') {
+        await axios.delete(
+          `${API_BASE}/api/v1/favourites/artist/${encodeURIComponent(pending.nameNorm)}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+      } else {
+        await axios.delete(
+          `${API_BASE}/api/v1/favourites/album/${encodeURIComponent(pending.id)}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+      }
+      await fetchFavourites()
+    } finally {
+      setRemoving(false)
+      setPending(null)
+    }
   }
 
   if (loading) return (
@@ -100,6 +115,37 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
 
   return (
     <Box>
+      {/* ── Confirmation dialog ─────────────────────────────────────────── */}
+      <Dialog
+        open={!!pending}
+        onClose={() => setPending(null)}
+        PaperProps={{ sx: { backgroundColor: '#1C1C1E', border: '1px solid #333', borderRadius: '6px' } }}
+      >
+        <DialogTitle sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--ink)', pb: 0.5 }}>
+          Remove from favourites?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
+            <strong style={{ color: 'var(--ink)' }}>{pending?.label}</strong> will be removed from your favourites.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setPending(null)} sx={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: '0.6rem', letterSpacing: '0.1em' }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmRemove}
+            disabled={removing}
+            variant="contained"
+            color="error"
+            sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', letterSpacing: '0.1em' }}
+          >
+            {removing ? 'Removing…' : 'Remove'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Artists + Grimr bands ───────────────────────────────────────── */}
       {(artists.length > 0 || bands.length > 0) && (
         <Box sx={{ mb: albums.length > 0 ? 2 : 0 }}>
           <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
@@ -109,10 +155,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
             {artists.map((a) => {
               const alreadyRequested = requestedNames.has(a.name)
               const handleClick = async () => {
-                if (a.band_slug) {
-                  router.push(`/bands/${a.band_slug}`)
-                  return
-                }
+                if (a.band_slug) { router.push(`/bands/${a.band_slug}`); return }
                 if (alreadyRequested) return
                 try {
                   const result = await requestBandReview(a.name)
@@ -132,7 +175,6 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                     border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px',
                     px: 1, py: 0.5, cursor: 'pointer',
                     '&:hover': { borderColor: 'rgba(216,207,184,0.45)' },
-                    '&:hover .remove-btn': { opacity: 1 },
                     transition: 'border-color 0.15s',
                   }}
                 >
@@ -154,9 +196,11 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                   )}
                   {isOwnProfile && (
                     <span
-                      className="remove-btn"
-                      style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.7)', marginLeft: 2, opacity: 0, transition: 'opacity 0.15s' }}
-                      onClick={(e) => { e.stopPropagation(); removeArtist(a.name_norm) }}
+                      style={{ ...mono, fontSize: '0.55rem', color: 'rgba(196,58,42,0.5)', marginLeft: 2, cursor: 'pointer', lineHeight: 1 }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPending({ kind: 'artist', nameNorm: a.name_norm, label: a.name })
+                      }}
                     >
                       ✕
                     </span>
@@ -195,6 +239,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
         </Box>
       )}
 
+      {/* ── Albums ─────────────────────────────────────────────────────── */}
       {albums.length > 0 && (
         <Box sx={{ mb: 0 }}>
           <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
@@ -209,7 +254,6 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                   border: '1px solid rgba(216,207,184,0.15)', borderRadius: '3px',
                   px: 1, py: '6px',
                   transition: 'border-color 0.15s',
-                  '&:hover .remove-btn': { opacity: 1 },
                 }}
               >
                 {a.image_url && (
@@ -236,9 +280,11 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                   )}
                   {isOwnProfile && (
                     <span
-                      className="remove-btn"
-                      style={{ ...mono, fontSize: '0.4rem', color: 'rgba(196,58,42,0.7)', cursor: 'pointer', opacity: 0, transition: 'opacity 0.15s' }}
-                      onClick={(e) => { e.stopPropagation(); removeAlbum(a.id) }}
+                      style={{ ...mono, fontSize: '0.55rem', color: 'rgba(196,58,42,0.5)', cursor: 'pointer', lineHeight: 1 }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPending({ kind: 'album', id: a.id, label: `${a.name} — ${a.artist_name}` })
+                      }}
                     >
                       ✕
                     </span>
@@ -249,7 +295,6 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
           </Box>
         </Box>
       )}
-
     </Box>
   )
 }
