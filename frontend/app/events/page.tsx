@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
+import AvatarGroup from '@/app/components/AvatarGroup'
 import { useUser } from '@/app/context/UserContext'
 import { eventsApi, requestGPS, Event, EventsResponse } from '@/lib/eventsApi'
 
@@ -51,7 +52,12 @@ function MatchBadge({ score }: { score: number }) {
 function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
   const { day, md } = formatDate(event.date)
   const color       = scoreColor(event.match_score)
-  const { explain } = event
+  const explain     = event.explain ?? {}
+
+  const rsvpColor = event.my_rsvp === 'going' ? '#4caf7d'
+    : event.my_rsvp === 'interested' ? '#e0a840' : null
+
+  const hasAvatars = event.going_avatars.length > 0 || event.interested_avatars.length > 0
 
   return (
     <Box
@@ -114,7 +120,7 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
           </Typography>
         )}
 
-        {/* Explain chips */}
+        {/* Explain chips + RSVP status + avatars */}
         <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center', mt: 0.375 }}>
           {explain.location && (
             <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.08em', color: 'var(--accent)', flexShrink: 0 }}>
@@ -131,12 +137,36 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
               ♟ {explain.friends}
             </Typography>
           )}
-          {event.is_interested && (
-            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.08em', color: '#4caf7d', flexShrink: 0 }}>
-              ✓ going
+          {rsvpColor && (
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.08em', color: rsvpColor, flexShrink: 0 }}>
+              {event.my_rsvp === 'going' ? '✓ going' : '♡ interested'}
             </Typography>
           )}
         </Box>
+
+        {/* Avatar groups (friends only) */}
+        {hasAvatars && (
+          <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', mt: 0.5, flexWrap: 'wrap' }}>
+            {event.going_avatars.length > 0 && (
+              <AvatarGroup
+                users={event.going_avatars}
+                total={event.going_count}
+                max={4}
+                size={18}
+                label="Going"
+              />
+            )}
+            {event.interested_avatars.length > 0 && (
+              <AvatarGroup
+                users={event.interested_avatars}
+                total={event.interested_count}
+                max={4}
+                size={18}
+                label="Int."
+              />
+            )}
+          </Box>
+        )}
       </Box>
 
       <MatchBadge score={event.match_score} />
@@ -260,10 +290,10 @@ export default function EventsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // For "My List" tab: filter client-side on current page, but show all-page count
+  // For "My List" tab: filter client-side — any RSVP status (interested or going)
   const displayEvents = useMemo<Event[]>(() => {
     if (!result) return []
-    if (filter === 'mine') return result.events.filter(e => e.is_interested)
+    if (filter === 'mine') return result.events.filter(e => e.my_rsvp != null)
     return result.events
   }, [result, filter])
 

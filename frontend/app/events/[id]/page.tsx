@@ -2,14 +2,15 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { Box, Typography, CircularProgress, Avatar } from '@mui/material'
+import { Box, Typography, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
+import EventRsvpButtons from '@/app/components/EventRsvpButtons'
+import AvatarGroup from '@/app/components/AvatarGroup'
+import AttendeesModal from '@/app/components/AttendeesModal'
 import { useUser } from '@/app/context/UserContext'
-import { eventsApi, Event } from '@/lib/eventsApi'
+import { eventsApi, Event, RsvpResponse } from '@/lib/eventsApi'
 
 // ── helpers ─────────────────────────────────────────────────────────────────
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 function scoreColor(score: number) {
   if (score >= 0.65) return '#4caf7d'
@@ -44,10 +45,15 @@ export default function EventDetailPage() {
   const params = useParams()
   const id = params?.id as string
   const { user, isLoading: authLoading } = useUser()
-  const [event, setEvent] = useState<Event | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [toggling, setToggling] = useState(false)
+
+  const [event, setEvent]         = useState<Event | null>(null)
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState<string | null>(null)
+  const [toggling, setToggling]   = useState(false)
+
+  // Modal state
+  const [modalOpen, setModalOpen]       = useState(false)
+  const [modalTab, setModalTab]         = useState<'going' | 'interested'>('going')
 
   const load = useCallback(async () => {
     if (!id) return
@@ -69,15 +75,48 @@ export default function EventDetailPage() {
     load()
   }, [authLoading, user, load])
 
-  const handleToggleInterest = async () => {
+  const handleRsvp = async (status: 'interested' | 'going') => {
     if (!event || toggling) return
+    // Optimistic update
+    const prevRsvp        = event.my_rsvp
+    const newRsvp         = event.my_rsvp === status ? null : status
+    const goingDelta      = (status === 'going'      ? (newRsvp ? 1 : -1) : 0)
+                          + (prevRsvp === 'going'    && status !== 'going' ? -1 : 0)
+    const interestedDelta = (status === 'interested' ? (newRsvp ? 1 : -1) : 0)
+                          + (prevRsvp === 'interested' && status !== 'interested' ? -1 : 0)
+    setEvent(prev => prev ? {
+      ...prev,
+      my_rsvp:          newRsvp,
+      going_count:      Math.max(0, prev.going_count      + goingDelta),
+      interested_count: Math.max(0, prev.interested_count + interestedDelta),
+    } : prev)
+
     setToggling(true)
     try {
-      const res = await eventsApi.toggleInterest(event.id)
-      setEvent(prev => prev ? { ...prev, is_interested: res.interested } : prev)
-    } catch { /* silent */ } finally {
+      const res: RsvpResponse = await eventsApi.rsvp(event.id, status)
+      // Reconcile with server authoritative counts
+      setEvent(prev => prev ? {
+        ...prev,
+        my_rsvp:          res.rsvp,
+        going_count:      res.going_count,
+        interested_count: res.interested_count,
+      } : prev)
+    } catch {
+      // Rollback on error
+      setEvent(prev => prev ? {
+        ...prev,
+        my_rsvp:          prevRsvp,
+        going_count:      event.going_count,
+        interested_count: event.interested_count,
+      } : prev)
+    } finally {
       setToggling(false)
     }
+  }
+
+  const openModal = (tab: 'going' | 'interested') => {
+    setModalTab(tab)
+    setModalOpen(true)
   }
 
   if (authLoading || loading) {
@@ -112,9 +151,9 @@ export default function EventDetailPage() {
   }
 
   const { day, md } = formatDateShort(event.date)
-  const matchColor = scoreColor(event.match_score)
-  const matchPct = Math.round(event.match_score * 100)
-  const allBands = [
+  const matchColor  = scoreColor(event.match_score)
+  const matchPct    = Math.round(event.match_score * 100)
+  const allBands    = [
     ...(event.headliner ? [{ ...event.headliner, role: 'headliner' }] : []),
     ...event.supporting.map(b => ({ ...b, role: 'support' })),
   ]
@@ -138,7 +177,7 @@ export default function EventDetailPage() {
           ← EVENTS
         </Box>
 
-        {/* Header */}
+        {/* Header card */}
         <Box sx={{
           border: '1px solid rgba(216,207,184,0.12)',
           borderLeft: `3px solid ${matchColor}`,
@@ -187,14 +226,13 @@ export default function EventDetailPage() {
               </Typography>
             </Box>
 
-            {/* Match */}
+            {/* Match badge */}
             <Box sx={{ flexShrink: 0, textAlign: 'center' }}>
               <Box sx={{
                 width: 42, height: 42, borderRadius: '50%',
                 border: `2px solid ${matchColor}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backgroundColor: `${matchColor}18`,
-                mb: 0.25,
+                backgroundColor: `${matchColor}18`, mb: 0.25,
               }}>
                 <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: matchColor, fontWeight: 700 }}>
                   {matchPct}%
@@ -204,6 +242,63 @@ export default function EventDetailPage() {
             </Box>
           </Box>
         </Box>
+
+        {/* RSVP buttons */}
+        <Box sx={{ mb: 2.5 }}>
+          <EventRsvpButtons
+            myRsvp={event.my_rsvp}
+            loading={toggling}
+            onRsvp={handleRsvp}
+          />
+        </Box>
+
+        {/* Avatar groups */}
+        {(event.going_count > 0 || event.interested_count > 0) && (
+          <Box sx={{
+            mb: 2.5,
+            border: '1px solid rgba(216,207,184,0.08)',
+            borderRadius: '4px',
+            backgroundColor: '#0d0b14',
+            px: 1.5, py: 1.125,
+            display: 'flex', flexWrap: 'wrap', gap: 1.75,
+          }}>
+            {/* Going */}
+            {event.going_count > 0 && (
+              <Box
+                sx={{ display: 'flex', flexDirection: 'column', gap: 0.625, cursor: 'pointer' }}
+                onClick={() => openModal('going')}
+              >
+                <Typography sx={{ ...mono, fontSize: '0.375rem', color: 'var(--muted)' }}>
+                  Going · {event.going_count}
+                </Typography>
+                <AvatarGroup
+                  users={event.going_avatars}
+                  total={event.going_count}
+                  max={6}
+                  size={22}
+                />
+              </Box>
+            )}
+
+            {/* Interested */}
+            {event.interested_count > 0 && (
+              <Box
+                sx={{ display: 'flex', flexDirection: 'column', gap: 0.625, cursor: 'pointer' }}
+                onClick={() => openModal('interested')}
+              >
+                <Typography sx={{ ...mono, fontSize: '0.375rem', color: 'var(--muted)' }}>
+                  Interested · {event.interested_count}
+                </Typography>
+                <AvatarGroup
+                  users={event.interested_avatars}
+                  total={event.interested_count}
+                  max={6}
+                  size={22}
+                />
+              </Box>
+            )}
+          </Box>
+        )}
 
         {/* Lineup */}
         {allBands.length > 0 && (
@@ -239,68 +334,9 @@ export default function EventDetailPage() {
           </Box>
         )}
 
-        {/* Friends interested */}
-        {event.friends_interested.length > 0 && (
-          <Box sx={{ mb: 2.5 }}>
-            <Typography sx={{ ...mono, fontSize: '0.4375rem', color: 'var(--muted)', mb: 1 }}>
-              Friends going · {event.friends_interested.length}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {event.friends_interested.map(f => (
-                <Box
-                  key={f.id}
-                  onClick={() => router.push(`/profile/${f.id}`)}
-                  sx={{
-                    display: 'flex', alignItems: 'center', gap: 0.75,
-                    px: 1, py: 0.625,
-                    border: '1px solid rgba(216,207,184,0.1)', borderRadius: '3px',
-                    backgroundColor: '#0d0b14', cursor: 'pointer',
-                    '&:hover': { backgroundColor: '#1a1424' },
-                  }}
-                >
-                  <Avatar
-                    src={f.profile_image_url ? `${API_BASE}${f.profile_image_url}` : undefined}
-                    sx={{ width: 20, height: 20, fontSize: '0.5rem', backgroundColor: '#2a1f38' }}
-                  >
-                    {f.handle[0].toUpperCase()}
-                  </Avatar>
-                  <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em', color: 'var(--ink)' }}>
-                    {f.handle}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        )}
-
-        {/* Actions */}
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          {/* Interest toggle */}
-          <Box
-            component="button"
-            onClick={handleToggleInterest}
-            disabled={toggling}
-            sx={{
-              border: event.is_interested
-                ? '1px solid rgba(76,175,125,0.5)'
-                : '1px solid rgba(216,207,184,0.2)',
-              borderRadius: '3px', px: 1.5, height: 34, background: 'none',
-              cursor: 'pointer', ...mono, fontSize: '0.4375rem',
-              color: event.is_interested ? '#4caf7d' : 'var(--muted)',
-              backgroundColor: event.is_interested ? 'rgba(76,175,125,0.08)' : 'transparent',
-              transition: 'all 0.15s',
-              '&:hover': {
-                color: event.is_interested ? '#4caf7d' : 'var(--ink)',
-                borderColor: event.is_interested ? 'rgba(76,175,125,0.7)' : 'rgba(216,207,184,0.35)',
-              },
-              '&:disabled': { opacity: 0.5 },
-            }}
-          >
-            {toggling ? '…' : event.is_interested ? '✓ GOING' : '+ MARK AS GOING'}
-          </Box>
-
-          {/* Ticket link */}
-          {event.ticket_url && (
+        {/* Ticket link */}
+        {event.ticket_url && (
+          <Box>
             <Box
               component="a"
               href={event.ticket_url}
@@ -316,9 +352,20 @@ export default function EventDetailPage() {
             >
               ↗ GET TICKETS
             </Box>
-          )}
-        </Box>
+          </Box>
+        )}
       </Box>
+
+      {/* Attendees modal */}
+      <AttendeesModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        eventId={event.id}
+        eventTitle={event.headliner?.name ?? event.title}
+        goingCount={event.going_count}
+        interestedCount={event.interested_count}
+        initialTab={modalTab}
+      />
     </>
   )
 }
