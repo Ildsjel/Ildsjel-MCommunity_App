@@ -42,11 +42,20 @@ interface Props {
   goingCount: number
   interestedCount: number
   initialTab?: TabStatus
+  currentUserId?: string   // own user ID — routes to /profile instead of /profile/[id]
 }
 
 // ── AttendeeRow ────────────────────────────────────────────────────────────
 
-function AttendeeRow({ attendee, onClick }: { attendee: AttendeeRef; onClick: () => void }) {
+function AttendeeRow({
+  attendee,
+  isMe,
+  onClick,
+}: {
+  attendee: AttendeeRef
+  isMe: boolean
+  onClick: () => void
+}) {
   const src = attendee.profile_image_url
     ? `${API_BASE}${attendee.profile_image_url}`
     : undefined
@@ -91,7 +100,17 @@ function AttendeeRow({ attendee, onClick }: { attendee: AttendeeRef; onClick: ()
       </Typography>
 
       {/* Badge */}
-      {attendee.is_friend ? (
+      {isMe ? (
+        <Box sx={{
+          border: '1px solid rgba(216,207,184,0.25)', borderRadius: '2px',
+          px: 0.625, py: 0.25,
+          backgroundColor: 'rgba(216,207,184,0.06)',
+        }}>
+          <Typography sx={{ ...mono, fontSize: '0.3rem', color: 'var(--muted)' }}>
+            you
+          </Typography>
+        </Box>
+      ) : attendee.is_friend ? (
         <Box sx={{
           border: '1px solid rgba(154,122,191,0.4)', borderRadius: '2px',
           px: 0.625, py: 0.25,
@@ -130,6 +149,7 @@ export default function AttendeesModal({
   goingCount,
   interestedCount,
   initialTab = 'going',
+  currentUserId,
 }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<TabStatus>(initialTab)
@@ -286,7 +306,12 @@ export default function AttendeesModal({
               <AttendeeRow
                 key={a.id}
                 attendee={a}
-                onClick={() => { onClose(); router.push(`/profile/${a.id}`) }}
+                isMe={!!currentUserId && a.id === currentUserId}
+                onClick={() => {
+                  onClose()
+                  // Route to own profile view rather than the "other user" view
+                  router.push(currentUserId && a.id === currentUserId ? '/profile' : `/profile/${a.id}`)
+                }}
               />
             ))
           )}
