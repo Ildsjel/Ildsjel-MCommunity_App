@@ -64,6 +64,11 @@ class UserResponse(UserBase):
     is_active: bool = True
     about_me: Optional[str] = None
     role: str = "user"
+    # Extended location fields
+    country_code: Optional[str] = None
+    region: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     # Privacy/Discoverability settings
     discoverable_by_name: bool = True
     discoverable_by_music: bool = True
@@ -77,7 +82,11 @@ class UserUpdate(BaseModel):
     """Model for updating user profile"""
     handle: Optional[str] = Field(None, min_length=3, max_length=30)
     country: Optional[str] = None
+    country_code: Optional[str] = Field(None, max_length=3)
     city: Optional[str] = None
+    region: Optional[str] = None          # state / province / county
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     profile_image_url: Optional[str] = None
     about_me: Optional[str] = Field(None, max_length=1500)
 

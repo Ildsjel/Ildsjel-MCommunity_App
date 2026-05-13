@@ -8,6 +8,33 @@ from app.auth.security import hash_password, constant_time_verify_password
 from app.auth.jwt_handler import create_access_token
 from app.models.user_models import UserCreate, UserLogin, TokenResponse, UserResponse
 from app.services.email_service import EmailService
+
+
+def _user_response(u: Dict) -> UserResponse:
+    """Build a UserResponse from a raw Neo4j user dict."""
+    return UserResponse(
+        id=u["id"],
+        handle=u["handle"],
+        email=u["email"],
+        country=u.get("country"),
+        city=u.get("city"),
+        country_code=u.get("country_code"),
+        region=u.get("region"),
+        latitude=u.get("latitude"),
+        longitude=u.get("longitude"),
+        created_at=u["created_at"],
+        source_accounts=u.get("source_accounts", []),
+        is_pro=u.get("is_pro", False),
+        onboarding_complete=u.get("onboarding_complete", False),
+        profile_image_url=u.get("profile_image_url"),
+        email_verified=u.get("email_verified", False),
+        is_active=u.get("is_active", False),
+        about_me=u.get("about_me"),
+        role=u.get("role", "user"),
+        discoverable_by_name=u.get("discoverable_by_name", True),
+        discoverable_by_music=u.get("discoverable_by_music", True),
+        city_visible=u.get("city_visible", "city"),
+    )
 from app.config.settings import settings
 
 
@@ -148,25 +175,7 @@ class UserService:
         )
         
         # Remove sensitive data
-        user_response = UserResponse(
-            id=user["id"],
-            handle=user["handle"],
-            email=user["email"],
-            country=user.get("country"),
-            city=user.get("city"),
-            created_at=user["created_at"],
-            source_accounts=user.get("source_accounts", []),
-            is_pro=user.get("is_pro", False),
-            onboarding_complete=user.get("onboarding_complete", False),
-            profile_image_url=user.get("profile_image_url"),
-            email_verified=user.get("email_verified", False),
-            is_active=user.get("is_active", False),
-            role=user.get("role", "user"),
-            about_me=user.get("about_me"),
-            discoverable_by_name=user.get("discoverable_by_name", True),
-            discoverable_by_music=user.get("discoverable_by_music", True),
-            city_visible=user.get("city_visible", "city"),
-        )
+        user_response = _user_response(user)
         
         return TokenResponse(
             access_token=access_token,
@@ -188,24 +197,7 @@ class UserService:
         if not user:
             return None
         
-        return UserResponse(
-            id=user["id"],
-            handle=user["handle"],
-            email=user["email"],
-            country=user.get("country"),
-            city=user.get("city"),
-            created_at=user["created_at"],
-            source_accounts=user.get("source_accounts", []),
-            is_pro=user.get("is_pro", False),
-            onboarding_complete=user.get("onboarding_complete", False),
-            profile_image_url=user.get("profile_image_url"),
-            email_verified=user.get("email_verified", False),
-            is_active=user.get("is_active", False),
-            about_me=user.get("about_me"),
-            discoverable_by_name=user.get("discoverable_by_name", True),
-            discoverable_by_music=user.get("discoverable_by_music", True),
-            city_visible=user.get("city_visible", "city")
-        )
+        return _user_response(user)
     
     def update_user_profile(self, user_id: str, updates: Dict) -> Optional[UserResponse]:
         """
@@ -223,21 +215,7 @@ class UserService:
         if not updated_user:
             return None
         
-        return UserResponse(
-            id=updated_user["id"],
-            handle=updated_user["handle"],
-            email=updated_user["email"],
-            country=updated_user.get("country"),
-            city=updated_user.get("city"),
-            created_at=updated_user["created_at"],
-            source_accounts=updated_user.get("source_accounts", []),
-            is_pro=updated_user.get("is_pro", False),
-            onboarding_complete=updated_user.get("onboarding_complete", False),
-            profile_image_url=updated_user.get("profile_image_url"),
-            email_verified=updated_user.get("email_verified", False),
-            is_active=updated_user.get("is_active", False),
-            about_me=updated_user.get("about_me")
-        )
+        return _user_response(updated_user)
     
     def verify_email(self, token: str) -> Optional[Dict]:
         """

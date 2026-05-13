@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography, TextField, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
+import LocationSearch, { type LocationResult } from '@/app/components/LocationSearch'
 import { useUser } from '@/app/context/UserContext'
 import { userAPI } from '@/lib/api'
 import { adminAPI } from '@/lib/adminAPI'
@@ -245,8 +246,8 @@ export default function SettingsPage() {
   const [deleteMsg, setDeleteMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   // Location
-  const [city, setCity] = useState('')
-  const [country, setCountry] = useState('')
+  const [location, setLocation] = useState<LocationResult | null>(null)
+  const [locationDisplay, setLocationDisplay] = useState('')   // shown in search box
   const [locationSaving, setLocationSaving] = useState(false)
   const [locationMsg, setLocationMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -268,11 +269,23 @@ export default function SettingsPage() {
     ]).then(([userData, spotifyRes, lastfmRes]) => {
       setHandle(userData.handle || '')
       setEmail(userData.email || '')
-      setCity(userData.city || '')
-      setCountry(userData.country || '')
       setCtxUser(userData)
       setSpotifyStatus(spotifyRes.data)
       setLastfmStatus(lastfmRes.data)
+      // Reconstruct location display from stored fields
+      if (userData.city || userData.country) {
+        const parts = [userData.city, userData.region, userData.country].filter(Boolean)
+        setLocationDisplay(parts.join(', '))
+        setLocation({
+          city: userData.city || '',
+          region: userData.region || '',
+          country: userData.country || '',
+          country_code: userData.country_code || '',
+          latitude: userData.latitude ?? 0,
+          longitude: userData.longitude ?? 0,
+          display: parts.join(', '),
+        })
+      }
     }).catch(() => router.push('/auth/login'))
       .finally(() => setLoading(false))
   }, [router])
@@ -334,12 +347,20 @@ export default function SettingsPage() {
   }
 
   const handleSaveLocation = async () => {
+    if (!location) { setLocationMsg({ ok: false, text: 'Select a location from the search results' }); return }
     setLocationSaving(true)
     setLocationMsg(null)
     try {
-      const updated = await profileAPI.updateMe({ city, country })
+      const updated = await profileAPI.updateMe({
+        city: location.city,
+        country: location.country,
+        country_code: location.country_code,
+        region: location.region,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      } as Parameters<typeof profileAPI.updateMe>[0])
       setCtxUser(updated)
-      setLocationMsg({ ok: true, text: 'Location updated' })
+      setLocationMsg({ ok: true, text: 'Location saved' })
     } catch (e: unknown) {
       setLocationMsg({ ok: false, text: getErrorMessage(e) })
     } finally {
@@ -474,25 +495,44 @@ export default function SettingsPage() {
 
         {/* ── Location ─────────────────────────────────────────────── */}
         <div style={sectionBox}>
-          <span style={{ ...lbl, display: 'block', marginBottom: 14 }}>LOCATION</span>
+          <span style={{ ...lbl, display: 'block', marginBottom: 6 }}>LOCATION</span>
+          <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', mb: 1.25 }}>
+            Used to find nearby listeners and events.
+          </Typography>
+
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-            <TextField
-              label="City"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              size="small" fullWidth sx={inputSx}
-              placeholder="e.g. Oslo"
+            {/* Geocoding search */}
+            <LocationSearch
+              initialValue={locationDisplay}
+              placeholder="Search city, region or country…"
+              onSelect={(r) => { setLocation(r); setLocationDisplay(r.display) }}
             />
-            <TextField
-              label="Country"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              size="small" fullWidth sx={inputSx}
-              placeholder="e.g. Norway"
-            />
-            <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--muted)' }}>
-              Used to find nearby listeners and events.
-            </Typography>
+
+            {/* Confirmed location preview */}
+            {location && (
+              <Box sx={{
+                border: '1px solid rgba(216,207,184,0.15)', borderRadius: '3px',
+                px: 1.25, py: 1,
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '4px 16px',
+              }}>
+                {[
+                  ['CITY',    location.city    || '—'],
+                  ['REGION',  location.region  || '—'],
+                  ['COUNTRY', location.country || '—'],
+                  ['CODE',    location.country_code || '—'],
+                  ['LAT',     location.latitude  ? location.latitude.toFixed(4)  : '—'],
+                  ['LON',     location.longitude ? location.longitude.toFixed(4) : '—'],
+                ].map(([k, v]) => (
+                  <Box key={k} sx={{ display: 'flex', gap: 0.75, alignItems: 'baseline' }}>
+                    <span style={{ ...lbl, fontSize: '0.375rem', color: 'var(--muted)', flexShrink: 0, width: 44 }}>{k}</span>
+                    <span style={{ fontFamily: 'var(--font-serif)', fontSize: '0.75rem', color: 'var(--ink)' }}>{v}</span>
+                  </Box>
+                ))}
+              </Box>
+            )}
+
             <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
               <SaveButton onClick={handleSaveLocation} saving={locationSaving} />
             </Box>
