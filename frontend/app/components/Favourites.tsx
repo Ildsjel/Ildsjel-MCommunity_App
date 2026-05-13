@@ -119,7 +119,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                   if (result.status === 'exists' && result.band_slug) {
                     router.push(`/bands/${result.band_slug}`)
                   } else {
-                    setRequestedNames((prev) => new Set([...prev, a.name]))
+                    setRequestedNames((prev) => new Set(Array.from(prev).concat(a.name)))
                   }
                 } catch { /* silent */ }
               }
