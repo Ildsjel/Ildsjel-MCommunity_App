@@ -10,6 +10,8 @@ import type { Band, Release } from '@/lib/bandsApi'
 import { bandFavouritesApi } from '@/lib/bandFavouritesApi'
 import { useUser } from '@/app/context/UserContext'
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
   fontSize: '0.5625rem',
@@ -105,6 +107,8 @@ export default function BandPage({ params }: { params: { slug: string } }) {
   const [loading, setLoading] = useState(true)
   const [isFavourite, setIsFavourite] = useState(false)
   const [favLoading, setFavLoading] = useState(false)
+  const [logoError, setLogoError] = useState(false)
+  const [photoError, setPhotoError] = useState(false)
   /** Bumping this triggers a band reload (e.g. after tag mutation). */
   const [refetchKey, setRefetchKey] = useState(0)
   /** Non-null for a few seconds after a successful match against Spotify/Last.fm */
@@ -122,6 +126,8 @@ export default function BandPage({ params }: { params: { slug: string } }) {
 
   useEffect(() => {
     setLoading(true)
+    setLogoError(false)
+    setPhotoError(false)
     getBand(slug).then((b) => {
       setBand(b)
       setLoading(false)
@@ -312,24 +318,36 @@ export default function BandPage({ params }: { params: { slug: string } }) {
 
         {/* Band header */}
         <Box sx={{ display: 'flex', gap: 2, mb: 2.5, alignItems: 'flex-start' }}>
-          {/* Logo */}
+          {/* Logo — real image if available, initial letter fallback otherwise */}
           <Box sx={{
             width: 88, height: 88, flexShrink: 0,
             border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '4px',
-            background: 'repeating-linear-gradient(135deg, #1a1424 0 4px, #120e18 4px 8px)',
+            background: '#000',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             position: 'relative', overflow: 'hidden',
           }}>
-            <Box sx={{
-              position: 'absolute', inset: 0,
-              background: 'radial-gradient(circle at 38% 38%, rgba(196,58,42,.2), transparent 65%)',
-            }} />
-            <Typography sx={{
-              fontFamily: 'var(--font-display)', fontSize: '3rem',
-              color: 'rgba(236,229,211,0.55)', lineHeight: 1, position: 'relative', zIndex: 1,
-            }}>
-              {band.name.charAt(0)}
-            </Typography>
+            {band.logo_url && !logoError ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={`${API_BASE}${band.logo_url}`}
+                alt={`${band.name} logo`}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', filter: 'invert(1)' }}
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <>
+                <Box sx={{
+                  position: 'absolute', inset: 0,
+                  background: 'radial-gradient(circle at 38% 38%, rgba(196,58,42,.1), transparent 65%)',
+                }} />
+                <Typography sx={{
+                  fontFamily: 'var(--font-display)', fontSize: '2rem',
+                  color: 'rgba(236,229,211,0.18)', lineHeight: 1, position: 'relative', zIndex: 1,
+                }}>
+                  ◆
+                </Typography>
+              </>
+            )}
           </Box>
 
           {/* Name + meta */}
@@ -406,6 +424,50 @@ export default function BandPage({ params }: { params: { slug: string } }) {
               {band.country} · est. {band.formed}
             </span>
           </Box>
+        </Box>
+
+        {/* Band photo — 16:9 banner, always rendered; placeholder when no image uploaded */}
+        <Box sx={{
+          width: '100%', aspectRatio: '16 / 9',
+          borderRadius: '3px', overflow: 'hidden', mb: 2.5,
+          border: '1.5px solid rgba(216,207,184,0.12)',
+          position: 'relative',
+        }}>
+          {band.image_url && !photoError ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={`${API_BASE}${band.image_url}`}
+              alt={`${band.name}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              onError={() => setPhotoError(true)}
+            />
+          ) : (
+            <Box sx={{
+              width: '100%', height: '100%',
+              background: 'repeating-linear-gradient(135deg, #1a1424 0 6px, #120e18 6px 12px)',
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 1,
+            }}>
+              <Box sx={{
+                position: 'absolute', inset: 0,
+                background: 'radial-gradient(ellipse at 50% 50%, rgba(196,58,42,.07), transparent 70%)',
+              }} />
+              <Typography sx={{
+                fontFamily: 'var(--font-display)', fontSize: '2.5rem',
+                color: 'rgba(236,229,211,0.1)', lineHeight: 1, position: 'relative', zIndex: 1,
+              }}>
+                ◆
+              </Typography>
+              <span style={{
+                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                fontSize: '0.4375rem', letterSpacing: '0.14em',
+                textTransform: 'uppercase', color: 'rgba(236,229,211,0.15)',
+                position: 'relative', zIndex: 1,
+              }}>
+                no band photo
+              </span>
+            </Box>
+          )}
         </Box>
 
         {/* Bio */}

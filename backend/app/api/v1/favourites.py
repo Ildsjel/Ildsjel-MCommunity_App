@@ -122,7 +122,9 @@ async def get_favourites(
             WHERE g.id IS NOT NULL
             WITH b, collect(DISTINCT {id: g.id, slug: g.slug, name: g.name}) AS genres
             RETURN b.id AS id, b.slug AS slug, b.name AS name, genres
-            ORDER BY b.name
+            ORDER BY
+              CASE WHEN b.name =~ '^[a-zA-Z\\xC0-\\xFF].*' THEN 0 ELSE 1 END,
+              toLower(b.name)
             """,
             uid=uid,
         )
@@ -226,7 +228,9 @@ async def get_favourite_bands(
         WITH b, collect(DISTINCT CASE WHEN g IS NOT NULL
              THEN {id: g.id, slug: g.slug, name: g.name} END) AS genres
         RETURN b, genres
-        ORDER BY b.name
+        ORDER BY
+          CASE WHEN b.name =~ '^[a-zA-Z\\xC0-\\xFF].*' THEN 0 ELSE 1 END,
+          toLower(b.name)
         """,
         uid=uid,
     )

@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, Typography } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
-import { getRelease } from '@/lib/bandsApi'
-import type { ReleaseDetail } from '@/lib/bandsApi'
+import { getRelease, getReviews, upsertReview, deleteReview } from '@/lib/bandsApi'
+import type { ReleaseDetail, AlbumReview, AlbumReviewsData } from '@/lib/bandsApi'
+import { useUser } from '@/app/context/UserContext'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -22,6 +25,339 @@ const TYPE_COLORS: Record<string, string> = {
   Demo: '#6a9a7a',
   Live: '#9a8a4a',
   Single: '#4a8a9a',
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 30) return `${days}d ago`
+  return new Date(iso).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+}
+
+/** 10-box rating picker */
+function RatingPicker({
+  value,
+  onChange,
+  readonly = false,
+}: {
+  value: number | null
+  onChange?: (v: number) => void
+  readonly?: boolean
+}) {
+  const [hover, setHover] = useState<number | null>(null)
+  const active = hover ?? value
+
+  return (
+    <Box sx={{ display: 'flex', gap: 0.25 }}>
+      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+        <Box
+          key={n}
+          onClick={() => !readonly && onChange?.(n)}
+          onMouseEnter={() => !readonly && setHover(n)}
+          onMouseLeave={() => !readonly && setHover(null)}
+          sx={{
+            width: 22, height: 22,
+            border: `1px solid ${active !== null && n <= active ? 'rgba(196,58,42,0.7)' : 'rgba(216,207,184,0.18)'}`,
+            borderRadius: '2px',
+            backgroundColor: active !== null && n <= active ? 'rgba(196,58,42,0.18)' : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: 0,
+            color: active !== null && n <= active ? 'var(--accent, #c43a2a)' : 'rgba(216,207,184,0.3)',
+            cursor: readonly ? 'default' : 'pointer',
+            transition: 'background 0.08s, border-color 0.08s, color 0.08s',
+            userSelect: 'none',
+          }}
+        >
+          {n}
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+/** Single review card */
+function ReviewCard({
+  review,
+  isOwn,
+  onDelete,
+}: {
+  review: AlbumReview
+  isOwn: boolean
+  onDelete: () => void
+}) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  return (
+    <Box sx={{
+      border: `1px solid ${isOwn ? 'rgba(196,58,42,0.2)' : 'rgba(216,207,184,0.1)'}`,
+      borderRadius: '3px',
+      backgroundColor: isOwn ? 'rgba(196,58,42,0.03)' : '#120e18',
+      px: 1.5, py: 1.25,
+    }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+        {/* Avatar */}
+        <Box sx={{
+          width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+          border: '1px solid rgba(216,207,184,0.15)',
+          background: 'repeating-linear-gradient(135deg, #1a1424 0 3px, #120e18 3px 6px)',
+          overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {review.user_avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={`${API_BASE}${review.user_avatar_url}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'rgba(236,229,211,0.4)' }}>
+              {review.user_handle.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </Box>
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, flexWrap: 'wrap' }}>
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+              letterSpacing: '0.06em', color: 'var(--ink)',
+            }}>
+              {review.user_handle}
+            </span>
+            {isOwn && (
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em',
+                color: 'rgba(196,58,42,0.7)', border: '1px solid rgba(196,58,42,0.25)',
+                borderRadius: '2px', padding: '0 3px',
+              }}>
+                YOU
+              </span>
+            )}
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+              color: 'var(--muted)', letterSpacing: '0.04em',
+            }}>
+              {timeAgo(review.updated_at || review.created_at)}
+            </span>
+          </Box>
+        </Box>
+
+        {/* Rating badge */}
+        <Box sx={{
+          border: '1px solid rgba(196,58,42,0.4)', borderRadius: '2px',
+          px: 0.75, height: 20, display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0,
+        }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--accent, #c43a2a)', fontWeight: 600 }}>
+            {review.rating}
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: 'rgba(196,58,42,0.5)' }}>/10</span>
+        </Box>
+      </Box>
+
+      {/* Body */}
+      {review.body && (
+        <Typography sx={{
+          fontFamily: 'var(--font-serif)', fontStyle: 'italic',
+          fontSize: '0.8125rem', lineHeight: 1.65, color: 'rgba(236,229,211,0.8)',
+          mb: isOwn ? 0.75 : 0,
+        }}>
+          {review.body}
+        </Typography>
+      )}
+
+      {/* Delete own review */}
+      {isOwn && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, mt: 0.5 }}>
+          {confirmDelete ? (
+            <>
+              <Box component="button" onClick={() => setConfirmDelete(false)}
+                sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.75, height: 18, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+                CANCEL
+              </Box>
+              <Box component="button" onClick={onDelete}
+                sx={{ border: '1px solid rgba(196,58,42,0.5)', borderRadius: '2px', px: 0.75, height: 18, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}>
+                CONFIRM DELETE
+              </Box>
+            </>
+          ) : (
+            <Box component="button" onClick={() => setConfirmDelete(true)}
+              sx={{ border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.08em', color: 'rgba(196,58,42,0.45)', '&:hover': { color: 'var(--accent)' }, p: 0 }}>
+              delete review
+            </Box>
+          )}
+        </Box>
+      )}
+    </Box>
+  )
+}
+
+/** Review write form + list section */
+function ReviewSection({ bandSlug, releaseSlug }: { bandSlug: string; releaseSlug: string }) {
+  const { user } = useUser()
+  const [data, setData] = useState<AlbumReviewsData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Form state
+  const [rating, setRating] = useState<number | null>(null)
+  const [body, setBody] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [flash, setFlash] = useState<string | null>(null)
+
+  const load = () => {
+    setLoading(true)
+    getReviews(bandSlug, releaseSlug)
+      .then((d) => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [bandSlug, releaseSlug]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pre-fill form with existing review
+  useEffect(() => {
+    if (data?.my_review) {
+      setRating(data.my_review.rating)
+      setBody(data.my_review.body || '')
+    }
+  }, [data?.my_review])
+
+  const showFlash = (msg: string) => {
+    setFlash(msg); setTimeout(() => setFlash(null), 3000)
+  }
+
+  const handleSubmit = async () => {
+    if (!rating) return
+    setSubmitting(true); setErr(null)
+    try {
+      await upsertReview(bandSlug, releaseSlug, rating, body.trim() || null)
+      showFlash(data?.my_review ? 'Review updated' : 'Review published')
+      load()
+    } catch {
+      setErr('Could not save review — try again')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      await deleteReview(bandSlug, releaseSlug)
+      setRating(null); setBody('')
+      showFlash('Review deleted')
+      load()
+    } catch { /* silent */ }
+  }
+
+  const lbl: React.CSSProperties = {
+    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+    fontSize: '0.5625rem', letterSpacing: '0.12em',
+    textTransform: 'uppercase', color: 'var(--muted, #7A756D)',
+  }
+
+  return (
+    <Box sx={{ px: 2, pt: 2.5, pb: 2 }}>
+      {/* Section header */}
+      <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: 1.5 }}>
+        <span style={lbl}>◈ REVIEWS</span>
+        {!loading && data && data.count > 0 && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem', color: 'var(--accent, #c43a2a)', fontWeight: 600 }}>
+              {data.avg_rating?.toFixed(1)}
+            </span>
+            <span style={{ ...lbl, fontSize: '0.4375rem' }}>AVG · {data.count} review{data.count !== 1 ? 's' : ''}</span>
+          </Box>
+        )}
+      </Box>
+
+      {/* Write / edit form — only when logged in */}
+      {user && (
+        <Box sx={{
+          border: `1.5px solid ${data?.my_review ? 'rgba(196,58,42,0.2)' : 'rgba(216,207,184,0.15)'}`,
+          borderRadius: '3px', backgroundColor: '#120e18',
+          px: 1.5, py: 1.25, mb: 1.5,
+        }}>
+          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 8 }}>
+            {data?.my_review ? 'YOUR REVIEW' : 'WRITE A REVIEW'}
+          </span>
+
+          {/* Rating picker */}
+          <Box sx={{ mb: 1 }}>
+            <span style={{ ...lbl, fontSize: '0.375rem', display: 'block', marginBottom: 5 }}>SCORE (1–10)</span>
+            <RatingPicker value={rating} onChange={setRating} />
+          </Box>
+
+          {/* Text area */}
+          <Box sx={{ mb: 1 }}>
+            <span style={{ ...lbl, fontSize: '0.375rem', display: 'block', marginBottom: 5 }}>REVIEW (OPTIONAL)</span>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Share your thoughts on this release…"
+              rows={3}
+              style={{
+                width: '100%', boxSizing: 'border-box', resize: 'vertical',
+                background: '#0a0810', border: '1px solid rgba(216,207,184,0.15)',
+                borderRadius: '3px', color: 'var(--ink)',
+                fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem',
+                lineHeight: 1.6, padding: '8px 10px', outline: 'none',
+              }}
+            />
+          </Box>
+
+          {err && <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--accent)', display: 'block', marginBottom: 6 }}>⚠ {err}</span>}
+          {flash && <span style={{ ...lbl, fontSize: '0.4375rem', color: '#6a9a7a', display: 'block', marginBottom: 6 }}>✓ {flash}</span>}
+
+          <Box sx={{ display: 'flex', gap: 0.625 }}>
+            <Box component="button" onClick={handleSubmit} disabled={!rating || submitting}
+              sx={{
+                border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '2px',
+                px: 1.25, height: 24, background: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em',
+                color: 'var(--ink)', transition: 'border-color 0.12s',
+                '&:not(:disabled):hover': { borderColor: 'rgba(216,207,184,0.6)' },
+                '&:disabled': { opacity: 0.35, cursor: 'default' },
+              }}>
+              {submitting ? '…' : data?.my_review ? 'UPDATE REVIEW' : 'PUBLISH REVIEW'}
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {/* Reviews list */}
+      {loading ? (
+        <Box sx={{ py: 2, textAlign: 'center' }}>
+          <span style={{ ...lbl, fontSize: '0.4375rem' }}>loading…</span>
+        </Box>
+      ) : !data || data.reviews.length === 0 ? (
+        <Box sx={{ py: 2, textAlign: 'center' }}>
+          <span style={{ ...lbl, fontSize: '0.4375rem', color: 'rgba(216,207,184,0.3)' }}>
+            {user ? 'Be the first to review this release' : 'No reviews yet'}
+          </span>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.625 }}>
+          {data.reviews.map((rv) => (
+            <ReviewCard
+              key={rv.id}
+              review={rv}
+              isOwn={!!user && rv.user_id === user.id}
+              onDelete={handleDelete}
+            />
+          ))}
+        </Box>
+      )}
+
+      {!user && (
+        <Box sx={{ mt: 1, textAlign: 'center' }}>
+          <span style={{ ...lbl, fontSize: '0.4375rem', color: 'rgba(216,207,184,0.3)' }}>
+            sign in to write a review
+          </span>
+        </Box>
+      )}
+    </Box>
+  )
 }
 
 export default function AlbumPage({
@@ -167,6 +503,7 @@ export default function AlbumPage({
 
         {/* Tracklist */}
         <Box sx={{ px: 2, pt: 1.5 }}>
+
           <span style={{ ...lbl, display: 'block', marginBottom: 10 }}>◉ TRACKLIST</span>
 
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -244,6 +581,10 @@ export default function AlbumPage({
             })}
           </Box>
         </Box>
+
+        {/* Reviews */}
+        <Box sx={{ mx: 2, borderTop: '1px solid rgba(216,207,184,0.1)', mt: 1 }} />
+        <ReviewSection bandSlug={slug} releaseSlug={albumSlug} />
       </Box>
     </>
   )

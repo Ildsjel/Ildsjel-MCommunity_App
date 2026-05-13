@@ -203,3 +203,12 @@ export interface ReviewCounts {
   approved: number
   rejected: number
 }
+
+export interface ReviewStats {
+  pending: number
+  approved_7d: number
+  rejected_7d: number
+  avg_review_hours_7d: number
+  rejection_rate_7d: number
+  top_suggester: { handle: string; count: number } | null
+}

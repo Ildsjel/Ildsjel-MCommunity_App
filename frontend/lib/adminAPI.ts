@@ -4,6 +4,7 @@ import type {
   AdminTrackCreate,
   AdminTrackUpdate,
   ReviewCounts,
+  ReviewStats,
   AdminBand,
   AdminBandCreate,
   AdminBandUpdate,
@@ -127,14 +128,17 @@ export const adminAPI = {
     }),
 
   // Album Review queue
-  getReviewQueue: (status?: string, q?: string) => {
+  getReviewQueue: (status?: string, q?: string, release_type?: string, sort?: string) => {
     const params = new URLSearchParams()
     if (status) params.set('status', status)
     if (q) params.set('q', q)
+    if (release_type) params.set('release_type', release_type)
+    if (sort) params.set('sort', sort)
     const qs = params.toString()
     return req<AdminAlbumSuggestion[]>('GET', `/admin/review/albums${qs ? `?${qs}` : ''}`)
   },
   getReviewCounts: () => req<ReviewCounts>('GET', '/admin/review/albums/counts'),
+  getReviewStats: () => req<ReviewStats>('GET', '/admin/review/albums/stats'),
   getBandsPendingCounts: () => req<Record<string, number>>('GET', '/admin/bands/pending-counts'),
 
   // Album Suggestions per-band
@@ -153,8 +157,10 @@ export const adminAPI = {
 
   // Events
   syncEvents: (days = 180) =>
-    req<{ bands_checked: number; events_new: number; events_updated: number; errors: number; skipped: number }>(
-      'POST', `/admin/events/sync?days=${days}`
+    req<{ message: string; days: number }>('POST', `/admin/events/sync?days=${days}`),
+  getSyncStatus: () =>
+    req<{ running: boolean; last_result: { bands_checked: number; events_new: number; events_updated: number; errors: number; skipped: number } | null; last_error: string | null }>(
+      'GET', `/admin/events/sync/status`
     ),
   listAdminEvents: (params?: { q?: string; skip?: number; limit?: number }) => {
     const p = new URLSearchParams()

@@ -96,6 +96,8 @@ export default function AdminBandsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('all')
+  const [hasPendingFilter, setHasPendingFilter] = useState(false)
+  const [sortMode, setSortMode] = useState<'default' | 'most_pending'>('default')
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(0)
@@ -238,30 +240,45 @@ export default function AdminBandsPage() {
   const showingFrom = total === 0 ? 0 : page * PAGE_SIZE + 1
   const showingTo = Math.min((page + 1) * PAGE_SIZE, total)
 
+  // Client-side filter/sort derived list
+  const displayedBands = (() => {
+    let list = bands
+    if (hasPendingFilter) list = list.filter((b) => (pendingCounts[b.id] ?? 0) > 0)
+    if (sortMode === 'most_pending') {
+      list = [...list].sort((a, b) => (pendingCounts[b.id] ?? 0) - (pendingCounts[a.id] ?? 0))
+    }
+    return list
+  })()
+
   return (
     <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 10 }}>
 
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Box>
-          <Box component="button" onClick={() => router.push('/admin')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 0.5, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
-            ← ADMIN
-          </Box>
-          <span style={{ ...lbl, color: 'var(--accent)' }}>◆ BANDS</span>
-        </Box>
+        <span style={{ ...lbl, color: 'var(--accent)' }}>◆ BANDS</span>
         <Box component="button" onClick={() => router.push('/admin/bands/new')} sx={{ border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px', px: 1.25, py: 0.5, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--ink)', '&:hover': { borderColor: 'rgba(216,207,184,0.6)' } }}>
           + NEW BAND
         </Box>
       </Box>
 
       {/* Filter tabs + bulk publish */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.875 }}>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
           {['all', 'draft', 'published', 'archived'].map((f) => (
             <Box key={f} component="button" onClick={() => handleFilterChange(f)} sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: filter === f ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: filter === f ? '#120e18' : 'var(--muted)', transition: 'background 0.1s' }}>
               {f}
             </Box>
           ))}
+          {/* Has Pending pill */}
+          <Box component="button" onClick={() => setHasPendingFilter((v) => !v)}
+            sx={{ border: `1.5px solid ${hasPendingFilter ? 'rgba(212,160,16,0.6)' : 'rgba(216,207,184,0.2)'}`, borderRadius: '3px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: hasPendingFilter ? 'rgba(212,160,16,0.1)' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: hasPendingFilter ? '#d4a010' : 'var(--muted)', transition: 'background 0.1s' }}>
+            Has Pending
+          </Box>
+          {/* Most Pending sort */}
+          <Box component="button" onClick={() => setSortMode((v) => v === 'most_pending' ? 'default' : 'most_pending')}
+            sx={{ border: `1.5px solid ${sortMode === 'most_pending' ? 'rgba(212,160,16,0.5)' : 'rgba(216,207,184,0.2)'}`, borderRadius: '3px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: sortMode === 'most_pending' ? 'rgba(212,160,16,0.08)' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: sortMode === 'most_pending' ? '#d4a010' : 'var(--muted)', transition: 'background 0.1s' }}>
+            Most Pending
+          </Box>
         </Box>
         {draftCount > 0 && (
           <Box
@@ -340,12 +357,13 @@ export default function AdminBandsPage() {
       {/* Band cards */}
       {!loading && !error && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-          {bands.map((band) => {
+          {displayedBands.map((band) => {
             const isExpanded = expandedBandIds.has(band.id)
             const detail = bandDetails[band.id]
             const isLoadingDetail = loadingBandId === band.id
+            const hasPending = (pendingCounts[band.id] ?? 0) > 0
             return (
-              <Box key={band.id} sx={{ border: `1.5px solid ${isExpanded ? 'rgba(216,207,184,0.3)' : 'rgba(216,207,184,0.2)'}`, borderRadius: '3px', backgroundColor: '#120e18', transition: 'border-color 0.15s' }}>
+              <Box key={band.id} sx={{ border: `1.5px solid ${hasPending ? 'rgba(212,160,16,0.15)' : isExpanded ? 'rgba(216,207,184,0.3)' : 'rgba(216,207,184,0.2)'}`, borderRadius: '3px', backgroundColor: hasPending ? 'rgba(212,160,16,0.025)' : '#120e18', transition: 'border-color 0.15s' }}>
                 {/* ── Band header ── */}
                 <Box sx={{ px: 1.5, py: 1.25 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.75 }}>
@@ -376,6 +394,9 @@ export default function AdminBandsPage() {
                     </Box>
                     <Box component="button" onClick={() => router.push(`/admin/bands/${band.id}/albums`)} sx={{ border: pendingCounts[band.id] > 0 ? '1px solid rgba(212,160,16,0.5)' : '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: pendingCounts[band.id] > 0 ? '#d4a010' : 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
                       ALBUMS{pendingCounts[band.id] > 0 ? ` (${pendingCounts[band.id]})` : ''}
+                    </Box>
+                    <Box component="button" onClick={() => router.push(`/admin/bands/${band.id}/albums`)} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)', borderColor: 'rgba(216,207,184,0.4)' } }}>
+                      OPEN →
                     </Box>
                     <Box component="button" onClick={() => handlePublish(band.id, band.status)} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: band.status === 'published' ? '#9a8a4a' : '#6a9a7a', '&:hover': { opacity: 0.8 } }}>
                       {band.status === 'published' ? 'UNPUBLISH' : 'PUBLISH'}

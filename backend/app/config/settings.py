@@ -75,6 +75,11 @@ class Settings(BaseSettings):
     # Admin bootstrap — set this to the email of the first superadmin
     SUPERADMIN_EMAIL: str = ""
 
+    # File uploads
+    # Local dev: /tmp/grimr_uploads (no sudo needed, survives reloads)
+    # Docker:    /app/uploads       (bind-mounted named volume)
+    UPLOADS_DIR: str = "/tmp/grimr_uploads"
+
     class Config:
         env_file = (".env", "../.env")   # backend/ dir OR project root
         case_sensitive = True

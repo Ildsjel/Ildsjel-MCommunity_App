@@ -4,7 +4,11 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from app.db.neo4j_driver import get_neo4j_session
 from app.auth.jwt_handler import get_current_user
 from app.services.band_service import BandService
-from app.models.band_models import BandResponse, GenreResponse, TagResponse, ReleaseDetailResponse, BandTagsAdd, BandRequestCreate, AlbumSuggestionCreate
+from app.models.band_models import (
+    BandResponse, GenreResponse, TagResponse, ReleaseDetailResponse,
+    BandTagsAdd, BandRequestCreate, AlbumSuggestionCreate,
+    AlbumReviewCreate, AlbumReviewUpdate, AlbumReviewResponse, AlbumReviewsResponse,
+)
 from typing import List, Optional
 
 router = APIRouter(prefix="/bands", tags=["Bands"])
@@ -238,6 +242,34 @@ async def suggest_album(
         now=now,
     )
 
+    # ── 5. Notify all admin/superadmin users ──────────────────────────────────
+    band_name_rec = session.run(
+        "MATCH (b:Band {id: $band_id}) RETURN b.name AS name LIMIT 1",
+        band_id=band_id,
+    ).single()
+    band_display = band_name_rec["name"] if band_name_rec else band_id
+
+    user_handle = current_user.get("handle") or current_user.get("email", "Someone")
+
+    session.run(
+        """
+        MATCH (admin:User) WHERE admin.role IN ['admin', 'superadmin'] AND admin.id <> $submitter_id
+        CREATE (n:Notification {
+            id: randomUUID(),
+            user_id: admin.id,
+            type: 'album_suggestion',
+            title: $notif_title,
+            body: $notif_body,
+            read: false,
+            created_at: $now
+        })
+        """,
+        submitter_id=current_user["id"],
+        notif_title=f"{band_display} — new album suggestion",
+        notif_body=f'{user_handle} suggested "{title}"',
+        now=now,
+    )
+
     return {"id": suggestion_id, "status": "pending"}
 
 
@@ -255,3 +287,138 @@ async def get_band(slug: str, session=Depends(get_neo4j_session)):
     if not band:
         raise HTTPException(status_code=404, detail="Band not found")
     return band
+
+
+# ── Album Reviews ─────────────────────────────────────────────────────────────
+
+def _resolve_release(slug: str, release_slug: str, session) -> str:
+    """Return the release id for band slug + release slug, or raise 404."""
+    rec = session.run(
+        """
+        MATCH (b:Band {slug: $slug})-[:HAS_RELEASE]->(r:Release {slug: $rslug})
+        RETURN r.id AS release_id
+        """,
+        slug=slug, rslug=release_slug,
+    ).single()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Release not found")
+    return rec["release_id"]
+
+
+@router.get("/{slug}/releases/{release_slug}/reviews", response_model=AlbumReviewsResponse)
+async def list_reviews(
+    slug: str,
+    release_slug: str,
+    session=Depends(get_neo4j_session),
+    current_user: Optional[dict] = Depends(get_current_user),
+):
+    """All reviews for a release, plus the caller's own review if authenticated."""
+    release_id = _resolve_release(slug, release_slug, session)
+
+    records = session.run(
+        """
+        MATCH (rv:AlbumReview {release_id: $rid})<-[:WROTE_REVIEW]-(u:User)
+        RETURN rv, u.handle AS handle, u.avatar_url AS avatar_url
+        ORDER BY rv.created_at DESC
+        """,
+        rid=release_id,
+    ).data()
+
+    reviews = []
+    for r in records:
+        rv = dict(r["rv"])
+        reviews.append(AlbumReviewResponse(
+            id=rv["id"],
+            release_id=rv["release_id"],
+            user_id=rv["user_id"],
+            user_handle=r["handle"] or "unknown",
+            user_avatar_url=r["avatar_url"],
+            rating=rv["rating"],
+            body=rv.get("body"),
+            created_at=rv["created_at"],
+            updated_at=rv.get("updated_at"),
+        ))
+
+    avg = round(sum(r.rating for r in reviews) / len(reviews), 1) if reviews else None
+    my_review = None
+    if current_user:
+        my_review = next((r for r in reviews if r.user_id == current_user["id"]), None)
+
+    return AlbumReviewsResponse(reviews=reviews, avg_rating=avg, count=len(reviews), my_review=my_review)
+
+
+@router.post("/{slug}/releases/{release_slug}/reviews", response_model=AlbumReviewResponse, status_code=200)
+async def upsert_review(
+    slug: str,
+    release_slug: str,
+    body: AlbumReviewCreate,
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Create or update the authenticated user's review for a release (one per user)."""
+    release_id = _resolve_release(slug, release_slug, session)
+    now = datetime.now(timezone.utc).isoformat()
+    review_id = str(uuid.uuid4())
+
+    rec = session.run(
+        """
+        MATCH (u:User {id: $uid})
+        MATCH (rel:Release {id: $rid})
+        MERGE (u)-[:WROTE_REVIEW]->(rv:AlbumReview {release_id: $rid, user_id: $uid})
+        ON CREATE SET
+            rv.id         = $new_id,
+            rv.release_id = $rid,
+            rv.user_id    = $uid,
+            rv.rating     = $rating,
+            rv.body       = $body_text,
+            rv.created_at = $now,
+            rv.updated_at = $now
+        ON MATCH SET
+            rv.rating     = $rating,
+            rv.body       = $body_text,
+            rv.updated_at = $now
+        MERGE (rv)-[:REVIEWS]->(rel)
+        RETURN rv, u.handle AS handle, u.avatar_url AS avatar_url
+        """,
+        uid=current_user["id"],
+        rid=release_id,
+        new_id=review_id,
+        rating=body.rating,
+        body_text=body.body or None,
+        now=now,
+    ).single()
+
+    if not rec:
+        raise HTTPException(status_code=500, detail="Failed to save review")
+
+    rv = dict(rec["rv"])
+    return AlbumReviewResponse(
+        id=rv["id"],
+        release_id=rv["release_id"],
+        user_id=rv["user_id"],
+        user_handle=rec["handle"] or "unknown",
+        user_avatar_url=rec["avatar_url"],
+        rating=rv["rating"],
+        body=rv.get("body"),
+        created_at=rv["created_at"],
+        updated_at=rv.get("updated_at"),
+    )
+
+
+@router.delete("/{slug}/releases/{release_slug}/reviews", status_code=204)
+async def delete_review(
+    slug: str,
+    release_slug: str,
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """Delete the authenticated user's review for a release."""
+    release_id = _resolve_release(slug, release_slug, session)
+    session.run(
+        """
+        MATCH (u:User {id: $uid})-[:WROTE_REVIEW]->(rv:AlbumReview {release_id: $rid})
+        DETACH DELETE rv
+        """,
+        uid=current_user["id"],
+        rid=release_id,
+    )

@@ -1,5 +1,5 @@
 import uuid, re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from app.auth.permissions import require_admin, require_superadmin
 from app.auth.jwt_handler import get_current_user
@@ -379,10 +379,82 @@ async def merge_tags(
 
 # ── Album Review queue (admin) ────────────────────────────────────────────────
 
+@router.get("/review/albums/stats")
+async def get_review_stats(
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """Extended stats for the album review dashboard."""
+    now = datetime.now(timezone.utc)
+    seven_days_ago = (now - timedelta(days=7)).isoformat()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
+
+    # Pending count
+    pending_res = session.run(
+        "MATCH (s:AlbumSuggestion {status: 'pending'}) RETURN count(s) AS cnt"
+    ).single()
+    pending = pending_res["cnt"] if pending_res else 0
+
+    # Approved last 7d
+    approved_res = session.run(
+        "MATCH (s:AlbumSuggestion) WHERE s.status = 'approved' AND s.reviewed_at >= $seven_days_ago RETURN count(s) AS cnt",
+        seven_days_ago=seven_days_ago,
+    ).single()
+    approved_7d = approved_res["cnt"] if approved_res else 0
+
+    # Rejected last 7d
+    rejected_res = session.run(
+        "MATCH (s:AlbumSuggestion) WHERE s.status = 'rejected' AND s.reviewed_at >= $seven_days_ago RETURN count(s) AS cnt",
+        seven_days_ago=seven_days_ago,
+    ).single()
+    rejected_7d = rejected_res["cnt"] if rejected_res else 0
+
+    # Avg review hours last 7d (only reviewed items)
+    avg_res = session.run(
+        """
+        MATCH (s:AlbumSuggestion)
+        WHERE s.status IN ['approved', 'rejected'] AND s.reviewed_at >= $seven_days_ago
+          AND s.created_at IS NOT NULL AND s.reviewed_at IS NOT NULL
+        WITH duration.between(datetime(s.created_at), datetime(s.reviewed_at)).hours AS hrs
+        RETURN avg(hrs) AS avg_hrs
+        """,
+        seven_days_ago=seven_days_ago,
+    ).single()
+    avg_review_hours_7d = round(float(avg_res["avg_hrs"]), 1) if avg_res and avg_res["avg_hrs"] is not None else 0.0
+
+    reviewed_7d = approved_7d + rejected_7d
+    rejection_rate_7d = round(rejected_7d / reviewed_7d, 2) if reviewed_7d > 0 else 0.0
+
+    # Top suggester this calendar month
+    top_res = session.run(
+        """
+        MATCH (s:AlbumSuggestion)
+        WHERE s.created_at >= $month_start AND s.suggested_by_user_id IS NOT NULL
+        WITH s.suggested_by_user_id AS uid, count(s) AS cnt
+        ORDER BY cnt DESC LIMIT 1
+        OPTIONAL MATCH (u:User {id: uid})
+        RETURN COALESCE(u.handle, uid) AS handle, cnt
+        """,
+        month_start=month_start,
+    ).single()
+    top_suggester = {"handle": top_res["handle"], "count": top_res["cnt"]} if top_res else None
+
+    return {
+        "pending": pending,
+        "approved_7d": approved_7d,
+        "rejected_7d": rejected_7d,
+        "avg_review_hours_7d": avg_review_hours_7d,
+        "rejection_rate_7d": rejection_rate_7d,
+        "top_suggester": top_suggester,
+    }
+
+
 @router.get("/review/albums", response_model=List[AlbumSuggestionResponse])
 async def get_review_queue(
     status: Optional[str] = "pending",
     q: Optional[str] = None,
+    release_type: Optional[str] = None,
+    sort: str = "newest",
     current_user: dict = Depends(require_admin),
     session=Depends(get_neo4j_session),
 ):
@@ -390,6 +462,8 @@ async def get_review_queue(
 
     status: 'pending' (default) | 'approved' | 'rejected' | 'all'
     q: optional search string (matches title, band name, or suggester handle)
+    release_type: optional filter by release type (LP, EP, Demo, etc.)
+    sort: 'newest' (default) | 'oldest' | 'band_az'
     """
     where_clauses = []
     params: dict = {}
@@ -406,7 +480,16 @@ async def get_review_queue(
         )
         params["q"] = q
 
+    if release_type:
+        where_clauses.append("s.type = $release_type")
+        params["release_type"] = release_type
+
     where_str = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    order_str = {
+        "oldest": "ORDER BY s.created_at ASC",
+        "band_az": "ORDER BY b.name ASC, s.created_at DESC",
+    }.get(sort, "ORDER BY s.created_at DESC")
 
     records = session.run(
         f"""
@@ -414,7 +497,7 @@ async def get_review_queue(
         OPTIONAL MATCH (u:User {{id: s.suggested_by_user_id}})
         {where_str}
         RETURN s, b.name AS band_name, b.slug AS band_slug, u.handle AS suggested_by_handle
-        ORDER BY s.created_at DESC
+        {order_str}
         """,
         **params,
     )
@@ -626,18 +709,43 @@ async def accept_suggestion(
 
 # ── Events: Ticketmaster sync ─────────────────────────────────────────────────
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from fastapi import BackgroundTasks
+
+_sync_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="tm_sync")
+_sync_status: dict = {"running": False, "last_result": None, "last_error": None}
+
+
+def _run_sync_in_thread(api_key: str, days: int) -> None:
+    """Runs the blocking Ticketmaster sync in a thread pool and stores the result."""
+    from app.services.ticketmaster_sync import sync_events
+    from app.db.neo4j_driver import neo4j_driver
+
+    try:
+        driver = neo4j_driver.get_driver()
+        with driver.session() as session:
+            result = sync_events(session, api_key, days=days)
+        _sync_status["last_result"] = result
+    except Exception as exc:
+        _sync_status["last_error"] = str(exc)
+        _sync_status["last_result"] = None
+    finally:
+        _sync_status["running"] = False
+
+
 @router.post("/events/sync")
 async def sync_events_from_ticketmaster(
+    background_tasks: BackgroundTasks,
     days: int = 180,
     current_user: dict = Depends(require_admin),
-    session=Depends(get_neo4j_session),
 ):
     """
-    Pull upcoming events from Ticketmaster for every active band and upsert
-    them into Neo4j.  Requires TICKETMASTER_API_KEY in .env.
+    Kick off a background Ticketmaster sync and return immediately (202).
+    Poll GET /admin/events/sync/status to check progress.
+    Requires TICKETMASTER_API_KEY in .env.
     """
     from app.config.settings import settings
-    from app.services.ticketmaster_sync import sync_events
 
     api_key = settings.TICKETMASTER_API_KEY
     if not api_key:
@@ -645,11 +753,31 @@ async def sync_events_from_ticketmaster(
             status_code=400,
             detail="TICKETMASTER_API_KEY is not set in .env — register at developer.ticketmaster.com for a free key",
         )
-    try:
-        stats = sync_events(session, api_key, days=days)
-        return stats
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    if _sync_status["running"]:
+        raise HTTPException(status_code=409, detail="A sync is already in progress")
+
+    # Set running=True synchronously before dispatching so status polls see it immediately
+    _sync_status["running"] = True
+    _sync_status["last_error"] = None
+
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(_sync_executor, _run_sync_in_thread, api_key, days)
+
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=202,
+        content={"message": "Sync started in background", "days": days},
+    )
+
+
+@router.get("/events/sync/status")
+async def get_sync_status(current_user: dict = Depends(require_admin)):
+    """Poll this endpoint to check Ticketmaster sync progress."""
+    return {
+        "running": _sync_status["running"],
+        "last_result": _sync_status["last_result"],
+        "last_error": _sync_status["last_error"],
+    }
 
 
 @router.get("/events")
@@ -699,4 +827,101 @@ async def delete_event(
     if not result.single():
         raise HTTPException(status_code=404, detail="Event not found")
 
-    return release
+
+# ── Bands: clear cached TM attraction ID ─────────────────────────────────────
+
+@router.delete("/bands/{band_id}/tm-attraction-id", status_code=204)
+async def clear_tm_attraction_id(
+    band_id: str,
+    current_user: dict = Depends(require_admin),
+    session=Depends(get_neo4j_session),
+):
+    """
+    Remove the cached Ticketmaster attraction ID from a Band node.
+    The next sync run will re-look it up and apply genre verification.
+    """
+    result = session.run(
+        """
+        MATCH (b:Band {id: $id})
+        WHERE b.tm_attraction_id IS NOT NULL
+        REMOVE b.tm_attraction_id
+        RETURN true AS ok
+        """,
+        id=band_id,
+    )
+    if not result.single():
+        raise HTTPException(
+            status_code=404,
+            detail="Band not found or already has no cached TM attraction ID",
+        )
+
+
+# ── Events: TM re-verify ──────────────────────────────────────────────────────
+
+_reverify_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="tm_reverify")
+_reverify_status: dict = {"running": False, "progress": None, "last_result": None, "last_error": None}
+
+
+def _run_reverify_in_thread(api_key: str) -> None:
+    """Re-verify all cached TM attraction IDs in a background thread."""
+    from app.services.ticketmaster_sync import reverify_cached_attraction_ids
+    from app.db.neo4j_driver import neo4j_driver
+
+    progress: dict = {"total": 0, "done": 0}
+    _reverify_status["progress"] = progress
+
+    try:
+        driver = neo4j_driver.get_driver()
+        with driver.session() as session:
+            result = reverify_cached_attraction_ids(session, api_key, status=progress)
+        _reverify_status["last_result"] = result
+    except Exception as exc:
+        _reverify_status["last_error"] = str(exc)
+        _reverify_status["last_result"] = None
+    finally:
+        _reverify_status["running"] = False
+
+
+@router.post("/events/tm-reverify", status_code=202)
+async def start_tm_reverify(
+    current_user: dict = Depends(require_admin),
+):
+    """
+    Kick off a background job that re-fetches every Band's cached TM attraction
+    and removes the cache entry if the attraction fails genre verification.
+
+    Returns 202 immediately. Poll GET /admin/events/tm-reverify/status.
+    """
+    from app.config.settings import settings
+
+    api_key = settings.TICKETMASTER_API_KEY
+    if not api_key:
+        raise HTTPException(status_code=400, detail="TICKETMASTER_API_KEY not set")
+    if _reverify_status["running"]:
+        raise HTTPException(status_code=409, detail="A re-verify is already in progress")
+    if _sync_status["running"]:
+        raise HTTPException(status_code=409, detail="A TM sync is already in progress — wait for it to finish")
+
+    _reverify_status["running"] = True
+    _reverify_status["last_error"] = None
+    _reverify_status["progress"] = {"total": 0, "done": 0}
+
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(_reverify_executor, _run_reverify_in_thread, api_key)
+
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=202,
+        content={"message": "Re-verify started in background"},
+    )
+
+
+@router.get("/events/tm-reverify/status")
+async def get_tm_reverify_status(current_user: dict = Depends(require_admin)):
+    """Poll this endpoint to check TM attraction re-verify progress."""
+    return {
+        "running": _reverify_status["running"],
+        "progress": _reverify_status["progress"],
+        "last_result": _reverify_status["last_result"],
+        "last_error": _reverify_status["last_error"],
+    }
