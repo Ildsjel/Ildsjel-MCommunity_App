@@ -35,10 +35,12 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
       setLoading(true)
       try {
         const token = localStorage.getItem('access_token')
-        const response = await axios.get(
-          `${API_BASE}/api/v1/lastfm/top/artists?limit=5`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+        const url = isOwnProfile
+          ? `${API_BASE}/api/v1/lastfm/top/artists?limit=5`
+          : `${API_BASE}/api/v1/spotify/top/artists/${userId}?limit=5`
+        const response = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
         setArtists(response.data.artists ?? [])
       } catch {
         setError('Failed to load top artists')
