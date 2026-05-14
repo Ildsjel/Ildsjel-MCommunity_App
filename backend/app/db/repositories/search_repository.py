@@ -39,7 +39,6 @@ class SearchRepository:
         WHERE u.id <> $requester_id
           AND u.is_active = true
           AND u.email_verified = true
-          AND coalesce(u.onboarding_complete, true) = true
           AND u.discoverable_by_name = true
         RETURN u.id as user_id,
                u.handle as handle,
@@ -95,7 +94,6 @@ class SearchRepository:
         WHERE u.id <> $requester_id
           AND u.is_active = true
           AND u.email_verified = true
-          AND coalesce(u.onboarding_complete, true) = true
           AND u.discoverable_by_music = true
 
         WITH u, SUM(r.play_count) as total_plays, COLLECT({artist_id: a.id, artist_name: a.name, play_count: r.play_count}) as artists
@@ -155,7 +153,6 @@ class SearchRepository:
         WHERE u.id <> $requester_id
           AND u.is_active = true
           AND u.email_verified = true
-          AND coalesce(u.onboarding_complete, true) = true
           AND u.discoverable_by_music = true
 
         WITH u, COLLECT(DISTINCT g.name) as genres, COUNT(DISTINCT a) as artist_count
