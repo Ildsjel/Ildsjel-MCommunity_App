@@ -13,9 +13,8 @@ import {
 import Navigation from '@/app/components/Navigation'
 import GalleryManager from '@/app/components/GalleryManager'
 import TopArtists from '@/app/components/TopArtists'
+import { API_BASE_URL as API_BASE } from '@/lib/api'
 import axios from 'axios'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface User {
   id: string
@@ -31,15 +30,15 @@ interface User {
   city_visible: string
 }
 
-interface TimelineItem {
-  play_id: string
-  played_at: string
-  track: { id: string; name: string }
-  artist: { id: string; name: string }
-  album?: { id: string; name: string; image_url?: string }
+interface Artist {
+  name: string
+  spotify_id: string
+  genres: string[]
+  image_url: string | null
+  rank: number
 }
 
-const lbl: React.CSSProperties = {
+const labelStyle: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
   fontSize: '0.5625rem',
   letterSpacing: '0.12em',
@@ -61,7 +60,8 @@ export default function UserProfilePage() {
   const userId = params?.userId as string
 
   const [user, setUser] = useState<User | null>(null)
-  const [timeline, setTimeline] = useState<TimelineItem[]>([])
+  const [myArtists, setMyArtists] = useState<Artist[]>([])
+  const [theirArtists, setTheirArtists] = useState<Artist[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -71,18 +71,24 @@ export default function UserProfilePage() {
       try {
         const token = localStorage.getItem('access_token')
         if (!token) { router.push('/auth/login'); return }
+
         const res = await axios.get(`${API_BASE}/api/v1/users/${userId}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         setUser(res.data)
-        if (res.data.source_accounts.includes('spotify')) {
-          try {
-            const t = await axios.get(`${API_BASE}/api/v1/spotify/timeline/${userId}?limit=6`, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            setTimeline(t.data.timeline)
-          } catch { /* silent */ }
-        }
+
+        // Fetch both users' top artists in parallel
+        const [myRes, theirRes] = await Promise.allSettled([
+          axios.get(`${API_BASE}/api/v1/spotify/top/artists?limit=20`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${API_BASE}/api/v1/spotify/top/artists/${userId}?limit=20`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ])
+
+        if (myRes.status === 'fulfilled') setMyArtists(myRes.value.data.artists ?? [])
+        if (theirRes.status === 'fulfilled') setTheirArtists(theirRes.value.data.artists ?? [])
       } catch (err: unknown) {
         const status = (err as { response?: { status?: number } }).response?.status
         setError(status === 404 ? 'User not found' : 'Failed to load profile')
@@ -117,12 +123,15 @@ export default function UserProfilePage() {
 
   const cityDisplay = getCityDisplay()
 
-  // Unique artists from timeline as "shared" proxy
-  const timelineArtists = Array.from(new Set(timeline.map((t) => t.artist.name))).slice(0, 8)
-  const topAlbums = timeline
-    .filter((t) => t.album?.image_url)
-    .filter((t, i, arr) => arr.findIndex((a) => a.album?.id === t.album?.id) === i)
-    .slice(0, 3)
+  const myArtistNames = new Set(myArtists.map(a => a.name.toLowerCase()))
+  const sharedArtists = theirArtists.filter(a => myArtistNames.has(a.name.toLowerCase()))
+  const uniqueToThem = theirArtists.filter(a => !myArtistNames.has(a.name.toLowerCase())).slice(0, 3)
+
+  const myGenres = new Set(myArtists.flatMap(a => a.genres))
+  const sharedGenres = [...new Set(theirArtists.flatMap(a => a.genres))].filter(g => myGenres.has(g))
+
+  const hasTheirMusic = theirArtists.length > 0
+  const hasMyMusic = myArtists.length > 0
 
   return (
     <>
@@ -132,12 +141,12 @@ export default function UserProfilePage() {
         {/* Nav row */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <span
-            style={{ ...lbl, cursor: 'pointer' }}
+            style={{ ...labelStyle, cursor: 'pointer' }}
             onClick={() => router.back()}
           >
             ← BACK
           </span>
-          <span style={lbl}>⋯</span>
+          <span style={labelStyle}>⋯</span>
         </Box>
 
         {/* Identity row */}
@@ -152,7 +161,7 @@ export default function UserProfilePage() {
             <Typography variant="h5" sx={{ fontSize: '0.875rem', mb: 0.25 }}>
               {user.handle}
             </Typography>
-            {cityDisplay && <span style={lbl}>{cityDisplay}</span>}
+            {cityDisplay && <span style={labelStyle}>{cityDisplay}</span>}
           </Box>
           {/* Compat badge placeholder */}
           <Box sx={{
@@ -171,17 +180,17 @@ export default function UserProfilePage() {
             }}>
               —
             </Typography>
-            <span style={{ ...lbl, fontSize: '0.4375rem' }}>COMPAT.</span>
+            <span style={{ ...labelStyle, fontSize: '0.4375rem' }}>COMPAT.</span>
           </Box>
         </Box>
 
         {/* Shared Devotion */}
         <div style={box}>
-          <span style={{ ...lbl, display: 'block', marginBottom: 6 }}>◉ SHARED DEVOTION</span>
-          {timelineArtists.length > 0 ? (
+          <span style={{ ...labelStyle, display: 'block', marginBottom: 6 }}>◉ SHARED DEVOTION</span>
+          {sharedArtists.length > 0 ? (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-              {timelineArtists.slice(0, 6).map((artist) => (
-                <Box key={artist} sx={{
+              {sharedArtists.slice(0, 6).map((artist) => (
+                <Box key={artist.name} sx={{
                   border: '1.5px solid var(--accent)',
                   borderRadius: '3px',
                   px: 0.75,
@@ -194,44 +203,71 @@ export default function UserProfilePage() {
                   textTransform: 'uppercase',
                   color: 'var(--accent)',
                 }}>
-                  {artist}
+                  {artist.name}
                 </Box>
               ))}
             </Box>
           ) : (
             <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)' }}>
-              Connect Spotify to reveal shared devotion.
+              {!hasTheirMusic
+                ? 'No music data yet for this user.'
+                : !hasMyMusic
+                ? 'Connect Spotify to reveal shared devotion.'
+                : 'No artists in common yet.'}
             </Typography>
           )}
         </div>
 
         {/* Shared Genres */}
         <div style={box}>
-          <span style={{ ...lbl, display: 'block', marginBottom: 4 }}>◉ SHARED GENRES</span>
-          <Typography sx={{
-            fontFamily: 'var(--font-serif, "EB Garamond", serif)',
-            fontSize: '0.875rem',
-            color: 'var(--ink)',
-          }}>
-            {user.about_me
-              ? 'Genre data available after Metal-ID sync.'
-              : 'No genre data available yet.'}
-          </Typography>
+          <span style={{ ...labelStyle, display: 'block', marginBottom: 4 }}>◉ SHARED GENRES</span>
+          {sharedGenres.length > 0 ? (
+            <Typography sx={{
+              fontFamily: 'var(--font-serif, "EB Garamond", serif)',
+              fontSize: '0.875rem',
+              color: 'var(--ink)',
+              lineHeight: 1.6,
+            }}>
+              {sharedGenres.slice(0, 5).join(' · ')}
+            </Typography>
+          ) : (
+            <Typography sx={{
+              fontFamily: 'var(--font-serif, "EB Garamond", serif)',
+              fontStyle: 'italic',
+              fontSize: '0.8125rem',
+              color: 'var(--muted)',
+            }}>
+              {!hasTheirMusic || !hasMyMusic ? 'No genre data available yet.' : 'No shared genres found.'}
+            </Typography>
+          )}
         </div>
 
         {/* They introduce you to */}
         <div style={box}>
-          <span style={{ ...lbl, display: 'block', marginBottom: 6 }}>⚡ THEY INTRODUCE YOU TO</span>
-          {topAlbums.length > 0 ? (
+          <span style={{ ...labelStyle, display: 'block', marginBottom: 6 }}>⚡ THEY INTRODUCE YOU TO</span>
+          {uniqueToThem.length > 0 ? (
             <Box sx={{ display: 'flex', gap: 1 }}>
-              {topAlbums.map((item) => (
-                <Box
-                  key={item.album!.id}
-                  component="img"
-                  src={item.album!.image_url}
-                  alt={item.album!.name}
-                  sx={{ width: 44, height: 44, borderRadius: '2px', border: '1px solid rgba(216,207,184,0.15)', objectFit: 'cover' }}
-                />
+              {uniqueToThem.map((artist) => (
+                artist.image_url ? (
+                  <Box
+                    key={artist.name}
+                    component="img"
+                    src={artist.image_url}
+                    alt={artist.name}
+                    title={artist.name}
+                    sx={{ width: 44, height: 44, borderRadius: '2px', border: '1px solid rgba(216,207,184,0.15)', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <Box key={artist.name} sx={{
+                    width: 44, height: 44, border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '2px',
+                    background: 'repeating-linear-gradient(45deg, #1a1424 0 3px, #120e18 3px 6px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <span style={{ ...labelStyle, fontSize: '0.375rem', textAlign: 'center', lineHeight: 1.2, padding: '2px' }}>
+                      {artist.name.slice(0, 8)}
+                    </span>
+                  </Box>
+                )
               ))}
             </Box>
           ) : (
@@ -249,7 +285,7 @@ export default function UserProfilePage() {
         {/* About (if present) */}
         {user.about_me && (
           <div style={box}>
-            <span style={{ ...lbl, display: 'block', marginBottom: 4 }}>ABOUT</span>
+            <span style={{ ...labelStyle, display: 'block', marginBottom: 4 }}>ABOUT</span>
             <Typography sx={{
               fontFamily: 'var(--font-serif)', fontStyle: 'italic',
               fontSize: '0.8125rem', lineHeight: 1.55,
