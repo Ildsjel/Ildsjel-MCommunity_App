@@ -32,8 +32,8 @@ interface User {
 
 interface Artist {
   name: string
-  spotify_id: string
-  genres: string[]
+  spotify_id?: string
+  genres?: string[]
   image_url: string | null
   rank: number
 }
@@ -77,9 +77,11 @@ export default function UserProfilePage() {
         })
         setUser(res.data)
 
-        // Fetch both users' top artists in parallel
+        // Fetch both users' top artists in parallel.
+        // Use the merged lastfm endpoint for self — it combines Spotify + Last.fm
+        // without filtering by time_range, so it works for either source.
         const [myRes, theirRes] = await Promise.allSettled([
-          axios.get(`${API_BASE}/api/v1/spotify/top/artists?limit=20`, {
+          axios.get(`${API_BASE}/api/v1/lastfm/top/artists?limit=20`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
           axios.get(`${API_BASE}/api/v1/spotify/top/artists/${userId}?limit=20`, {
@@ -127,8 +129,8 @@ export default function UserProfilePage() {
   const sharedArtists = theirArtists.filter(a => myArtistNames.has(a.name.toLowerCase()))
   const uniqueToThem = theirArtists.filter(a => !myArtistNames.has(a.name.toLowerCase())).slice(0, 3)
 
-  const myGenres = new Set(myArtists.flatMap(a => a.genres))
-  const sharedGenres = [...new Set(theirArtists.flatMap(a => a.genres))].filter(g => myGenres.has(g))
+  const myGenres = new Set(myArtists.flatMap(a => a.genres ?? []))
+  const sharedGenres = [...new Set(theirArtists.flatMap(a => a.genres ?? []))].filter(g => myGenres.has(g))
 
   const hasTheirMusic = theirArtists.length > 0
   const hasMyMusic = myArtists.length > 0
