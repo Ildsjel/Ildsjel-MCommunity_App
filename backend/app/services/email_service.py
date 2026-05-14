@@ -37,10 +37,10 @@ class EmailService:
         if not settings.RESEND_API_KEY:
             print(f"📧 [DEV MODE] Verification email for {email}")
             print(f"   Token: {token}")
-            print(f"   Link: {settings.FRONTEND_URL}/auth/verify?token={token}")
+            print(f"   Link: {settings.FRONTEND_URL}/auth/verify-email?token={token}")
             return
 
-        verification_link = f"{settings.FRONTEND_URL}/auth/verify?token={token}"
+        verification_link = f"{settings.FRONTEND_URL}/auth/verify-email?token={token}"
         subject = "Verify your Grimr account"
 
         html = EmailService._base_layout(f"""
