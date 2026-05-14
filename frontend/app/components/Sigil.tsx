@@ -80,9 +80,8 @@ export default function Sigil({
 
   // ── viewBox crops the 1000×1000 master space to just the seal area ──────────
   // Outer ring at R_OUTER=175, labels 22 units beyond → 197 from centre.
-  // At angle ~167° ("end" anchor), a 9-char label extends ~82 units left of x=308 → x=226.
-  // Use 215..785 (285 margin each side of 500) so no label clips.
-  const VB = '215 215 570 570'
+  // Expanded to 185..815 (630 span) to accommodate larger label font sizes.
+  const VB = '185 185 630 630'
 
   return (
     <svg
@@ -142,8 +141,8 @@ export default function Sigil({
                   <text x={lx} y={ly} textAnchor={anchor}
                     style={{
                       fontFamily: '"JetBrains Mono", monospace',
-                      fontSize: 10,
-                      letterSpacing: 1.2,
+                      fontSize: 14,
+                      letterSpacing: 1.0,
                       fill: BONE,
                     }}>
                     {genres[i]}
@@ -203,7 +202,7 @@ export default function Sigil({
                     style={{
                       fontFamily: '"EB Garamond", serif',
                       fontStyle: 'italic',
-                      fontSize: 10,
+                      fontSize: 13,
                       fill: BONE2,
                     }}>
                     {artists[i]}
@@ -217,21 +216,21 @@ export default function Sigil({
           <circle cx={CX} cy={CY} r={55} fill={BLOOD_FAINT} />
 
           {!compact && (
-            <text x={CX} y={CY - 18} textAnchor="middle"
+            <text x={CX} y={CY - 20} textAnchor="middle"
               style={{
                 fontFamily: '"EB Garamond", serif',
                 fontStyle: 'italic',
-                fontSize: 10,
+                fontSize: 12,
                 fill: BONE3,
               }}>
               — the reading of —
             </text>
           )}
 
-          <text x={CX} y={CY + (compact ? 6 : 4)} textAnchor="middle"
+          <text x={CX} y={CY + (compact ? 8 : 6)} textAnchor="middle"
             style={{
               fontFamily: '"Archivo Black", sans-serif',
-              fontSize: compact ? 16 : 22,
+              fontSize: compact ? 20 : 27,
               letterSpacing: 2,
               fill: BONE,
               textTransform: 'uppercase',
@@ -240,10 +239,10 @@ export default function Sigil({
           </text>
 
           {!compact && est && (
-            <text x={CX} y={CY + 20} textAnchor="middle"
+            <text x={CX} y={CY + 24} textAnchor="middle"
               style={{
                 fontFamily: '"JetBrains Mono", monospace',
-                fontSize: 7.5,
+                fontSize: 10,
                 letterSpacing: 1.6,
                 fill: BONE4,
                 textTransform: 'uppercase',
