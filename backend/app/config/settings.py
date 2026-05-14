@@ -71,10 +71,17 @@ class Settings(BaseSettings):
     # Admin bootstrap — set this to the email of the first superadmin
     SUPERADMIN_EMAIL: str = ""
 
-    # File uploads
-    # Local dev: /tmp/grimr_uploads (no sudo needed, survives reloads)
-    # Docker:    /app/uploads       (bind-mounted named volume)
+    # File uploads — local fallback (dev only)
     UPLOADS_DIR: str = "/tmp/grimr_uploads"
+
+    # Cloudflare R2 — persistent image storage
+    # Leave all empty to use local disk (dev mode).
+    # In production set these via Render env vars.
+    R2_ACCOUNT_ID: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET_NAME: str = ""
+    R2_PUBLIC_URL: str = ""   # e.g. https://pub-xxxx.r2.dev  or custom domain
 
     class Config:
         env_file = (".env", "../.env")   # backend/ dir OR project root
