@@ -23,16 +23,8 @@ interface NotifContextType {
 
 const NotifContext = createContext<NotifContextType | undefined>(undefined)
 
-const SEED: Notification[] = [
-  { id: 'n1', type: 'fit_received', fromHandle: 'MORDGRIMM',     fromInitial: 'M', timestamp: '12m', read: false },
-  { id: 'n2', type: 'fit_match',    fromHandle: 'VOIDWALKER',    fromInitial: 'V', timestamp: '1h',  read: false },
-  { id: 'n3', type: 'horns',        fromHandle: 'ASHES_42',      fromInitial: 'A', timestamp: '3h',  read: true  },
-  { id: 'n4', type: 'fit_received', fromHandle: 'SKALD_EIRIK',   fromInitial: 'S', timestamp: '5h',  read: true  },
-  { id: 'n5', type: 'comment',      fromHandle: 'MGLA_PURIST',   fromInitial: 'M', timestamp: '1d',  read: true  },
-]
-
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>(SEED)
+  const [notifications, setNotifications] = useState<Notification[]>([])
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
