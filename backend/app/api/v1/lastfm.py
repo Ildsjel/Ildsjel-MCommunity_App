@@ -155,6 +155,7 @@ async def get_merged_top_artists(
              collect(DISTINCT r.source) AS sources
         RETURN a.name               AS name,
                a.spotify_id         AS spotify_id,
+               a.genres             AS genres,
                a.lastfm_mbid        AS mbid,
                a.spotify_image_url  AS image_url,
                best_rank            AS rank,
@@ -172,6 +173,7 @@ async def get_merged_top_artists(
         artists.append({
             "name": r["name"],
             "spotify_id": r["spotify_id"],
+            "genres": r["genres"] or [],
             "mbid": r["mbid"],
             "image_url": r["image_url"],
             "rank": i,

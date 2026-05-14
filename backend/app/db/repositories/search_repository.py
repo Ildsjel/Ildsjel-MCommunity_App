@@ -89,15 +89,15 @@ class SearchRepository:
         WITH a
         LIMIT 5  // Consider top 5 matching artists
         
-        // Find users who listen to these artists
-        MATCH (u:User)-[r:LISTENS_TO]->(a)
+        // Find users who have these artists in their top artists
+        MATCH (u:User)-[r:TOP_ARTIST]->(a)
         WHERE u.id <> $requester_id
           AND u.is_active = true
           AND u.email_verified = true
           AND u.discoverable_by_music = true
 
-        WITH u, SUM(r.play_count) as total_plays, COLLECT({artist_id: a.id, artist_name: a.name, play_count: r.play_count}) as artists
-        
+        WITH u, MIN(r.rank) as best_rank, COLLECT({artist_id: a.id, artist_name: a.name, rank: r.rank}) as artists
+
         RETURN u.id as user_id,
                u.handle as handle,
                u.city as city,
@@ -106,8 +106,8 @@ class SearchRepository:
                u.profile_image_url as profile_image_url,
                u.last_active_at as last_active_at,
                artists,
-               total_plays
-        ORDER BY total_plays DESC
+               best_rank as total_plays
+        ORDER BY best_rank ASC
         SKIP $offset
         LIMIT $limit
         """
@@ -142,21 +142,15 @@ class SearchRepository:
             List of user dicts with genre info
         """
         cypher_query = """
-        // Find matching genres
-        CALL db.index.fulltext.queryNodes('genre_name_search', $genre_query)
-        YIELD node as g, score
-        WITH g
-        LIMIT 3
-        
-        // Find users who listen to artists in these genres
-        MATCH (u:User)-[:LISTENS_TO]->(a:Artist)-[:TAGGED_AS]->(g)
+        MATCH (u:User)-[:TOP_ARTIST]->(a:Artist)
         WHERE u.id <> $requester_id
           AND u.is_active = true
           AND u.email_verified = true
           AND u.discoverable_by_music = true
-
-        WITH u, COLLECT(DISTINCT g.name) as genres, COUNT(DISTINCT a) as artist_count
-        
+          AND a.genres IS NOT NULL
+          AND any(genre IN a.genres WHERE toLower(genre) CONTAINS toLower($genre_query))
+        WITH u, COLLECT(DISTINCT a) as matched_artists, COUNT(DISTINCT a) as artist_count
+        WITH u, REDUCE(s = [], a IN matched_artists | s + a.genres) as genres, artist_count
         RETURN u.id as user_id,
                u.handle as handle,
                u.city as city,
@@ -164,16 +158,16 @@ class SearchRepository:
                u.city_visible as city_visible,
                u.profile_image_url as profile_image_url,
                u.last_active_at as last_active_at,
-               genres,
+               [g IN genres WHERE toLower(g) CONTAINS toLower($genre_query)] as genres,
                artist_count
         ORDER BY artist_count DESC
         SKIP $offset
         LIMIT $limit
         """
-        
+
         result = self.session.run(
             cypher_query,
-            genre_query=f"{genre_query}*",
+            genre_query=genre_query,
             requester_id=requester_id,
             offset=offset,
             limit=limit
@@ -199,16 +193,15 @@ class SearchRepository:
             List of shared artist dicts with play counts
         """
         cypher_query = """
-        MATCH (u1:User {id: $requester_id})-[r1:LISTENS_TO]->(a1:Artist)
-        MATCH (u2:User {id: $target_id})-[r2:LISTENS_TO]->(a2:Artist)
-        WHERE a1.name = a2.name
-        WITH a1, a2, r1.play_count as count1, r2.play_count as count2
-        ORDER BY (count1 + count2) DESC
+        MATCH (u1:User {id: $requester_id})-[r1:TOP_ARTIST]->(a:Artist)
+              <-[r2:TOP_ARTIST]-(u2:User {id: $target_id})
+        WITH a, MIN(r1.rank) as rank1, MIN(r2.rank) as rank2
+        ORDER BY (rank1 + rank2) ASC
         LIMIT $limit
-        RETURN COALESCE(a1.id, a2.id) as artist_id,
-               a1.name as artist_name,
-               count1 as play_count_requester,
-               count2 as play_count_target
+        RETURN a.id as artist_id,
+               a.name as artist_name,
+               rank1 as play_count_requester,
+               rank2 as play_count_target
         """
         
         result = self.session.run(
@@ -238,12 +231,18 @@ class SearchRepository:
             List of genre names
         """
         cypher_query = """
-        MATCH (u1:User {id: $requester_id})-[:LISTENS_TO]->(a1:Artist)-[:TAGGED_AS]->(g:Genre)
-        <-[:TAGGED_AS]-(a2:Artist)<-[:LISTENS_TO]-(u2:User {id: $target_id})
-        WITH g, COUNT(DISTINCT a1) + COUNT(DISTINCT a2) as relevance
-        ORDER BY relevance DESC
+        MATCH (u1:User {id: $requester_id})-[:TOP_ARTIST]->(a1:Artist)
+        WHERE a1.genres IS NOT NULL AND size(a1.genres) > 0
+        WITH a1.genres as genre_list1
+        UNWIND genre_list1 as g1
+        WITH COLLECT(DISTINCT g1) as genres1
+        MATCH (u2:User {id: $target_id})-[:TOP_ARTIST]->(a2:Artist)
+        WHERE a2.genres IS NOT NULL AND size(a2.genres) > 0
+        UNWIND a2.genres as g2
+        WITH genres1, g2
+        WHERE g2 IN genres1
+        RETURN DISTINCT g2 as genre_name
         LIMIT $limit
-        RETURN g.name as genre_name
         """
         
         result = self.session.run(
@@ -272,27 +271,18 @@ class SearchRepository:
             Compatibility score 0-100, or None if insufficient data
         """
         cypher_query = """
-        // Get shared artists (by name to handle duplicate artist nodes)
-        MATCH (u1:User {id: $requester_id})-[r1:LISTENS_TO]->(a1:Artist)
-        MATCH (u2:User {id: $target_id})-[r2:LISTENS_TO]->(a2:Artist)
-        WHERE a1.name = a2.name
-        WITH COUNT(DISTINCT a1.name) as shared_artists,
-             SUM(r1.play_count * r2.play_count) as weighted_overlap
-        
-        // Get total artists for each user
-        MATCH (u1:User {id: $requester_id})-[:LISTENS_TO]->(a1:Artist)
+        MATCH (u1:User {id: $requester_id})-[r1:TOP_ARTIST]->(a:Artist)
+              <-[r2:TOP_ARTIST]-(u2:User {id: $target_id})
+        WITH COUNT(DISTINCT a) as shared_artists,
+             SUM((11.0 - r1.rank) * (11.0 - r2.rank)) as weighted_overlap
+
+        MATCH (u1:User {id: $requester_id})-[:TOP_ARTIST]->(a1:Artist)
         WITH shared_artists, weighted_overlap, COUNT(DISTINCT a1) as total_u1
-        
-        MATCH (u2:User {id: $target_id})-[:LISTENS_TO]->(a2:Artist)
+
+        MATCH (u2:User {id: $target_id})-[:TOP_ARTIST]->(a2:Artist)
         WITH shared_artists, weighted_overlap, total_u1, COUNT(DISTINCT a2) as total_u2
-        
-        // Get shared genres
-        MATCH (u1:User {id: $requester_id})-[:LISTENS_TO]->(:Artist)-[:TAGGED_AS]->(g:Genre)
-        <-[:TAGGED_AS]-(:Artist)<-[:LISTENS_TO]-(u2:User {id: $target_id})
-        WITH shared_artists, weighted_overlap, total_u1, total_u2, COUNT(DISTINCT g) as shared_genres
-        
+
         RETURN shared_artists,
-               shared_genres,
                total_u1,
                total_u2,
                weighted_overlap
@@ -309,23 +299,19 @@ class SearchRepository:
             return None
         
         shared_artists = record["shared_artists"]
-        shared_genres = record["shared_genres"]
         total_u1 = record["total_u1"]
         total_u2 = record["total_u2"]
-        
+
         if total_u1 == 0 or total_u2 == 0:
             return None
-        
+
         # Jaccard similarity for artists
         union_size = total_u1 + total_u2 - shared_artists
         artist_similarity = (shared_artists / union_size) if union_size > 0 else 0
-        
-        # Genre overlap bonus
-        genre_bonus = min(shared_genres / 5.0, 1.0)  # Cap at 5 shared genres
-        
+
         # Combined score (0-100)
-        score = (artist_similarity * 70 + genre_bonus * 30)
-        
+        score = artist_similarity * 100
+
         return round(score, 1)
     
     def get_activity_score(self, user_id: str, days: int = 30) -> float:
