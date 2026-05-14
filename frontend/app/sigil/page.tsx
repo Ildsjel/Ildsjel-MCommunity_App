@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, GlobalStyles } from '@mui/material'
 import Sigil from '@/app/components/Sigil'
-import SigilExplorer, { SigilCluster } from '@/app/components/SigilExplorer'
+import SigilExplorer, { SigilCluster, SigilFriend } from '@/app/components/SigilExplorer'
 import BottomNav from '@/app/components/BottomNav'
 import { useUser } from '@/app/context/UserContext'
 import axios from 'axios'
@@ -78,9 +78,11 @@ export default function SigilPage() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
-  const [entered, setEntered]   = useState(false)          // fullscreen overlay
-  const [layer, setLayer]       = useState<1|2|3>(1)       // LOD layer
-  const [pinnedArtist, setPinnedArtist] = useState<{name:string; cluster:string} | null>(null)
+  const [entered, setEntered]   = useState(false)
+  const [layer, setLayer]       = useState<1|2|3>(1)
+  const [pinnedArtist, setPinnedArtist] = useState<{name:string; cluster:string; natural:boolean} | null>(null)
+  const [pinnedFriend, setPinnedFriend] = useState<SigilFriend | null>(null)
+  const [friends, setFriends]   = useState<SigilFriend[]>([])
 
   useEffect(() => {
     if (userLoading) return
@@ -99,6 +101,11 @@ export default function SigilPage() {
         else setData({ genres: [], artists: [], total_artists: 0, clusters: [] })
       })
       .finally(() => setLoading(false))
+    // Fetch friend overlap data (non-blocking)
+    axios
+      .get(`${API_BASE}/api/v1/sigil/friends`, { headers: authHeaders() })
+      .then((r) => setFriends(r.data.friends ?? []))
+      .catch(() => setFriends([]))
   }
 
   const handleSync = () => {
@@ -542,36 +549,8 @@ export default function SigilPage() {
             </span>
           </Box>
 
-          {/* ── Layer switcher ────────────────────────────────────────────────── */}
-          <Box sx={{
-            position: 'relative', zIndex: 10, flexShrink: 0,
-            display: 'flex', gap: '1px', px: '16px', pb: '10px',
-          }}>
-            {([1,2,3] as const).map((l) => (
-              <button
-                key={l}
-                onClick={() => { setLayer(l); setPinnedArtist(null) }}
-                style={{
-                  flex: 1,
-                  padding: '7px 0',
-                  fontFamily: MONO,
-                  fontSize: '0.4375rem',
-                  letterSpacing: '0.16em',
-                  textTransform: 'uppercase',
-                  color: layer === l ? BONE : BONE4,
-                  background: layer === l ? 'rgba(199,80,80,0.12)' : 'transparent',
-                  border: `1px solid ${layer === l ? BLOOD : INK4}`,
-                  borderRadius: '2px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}>
-                L{l} · {l === 1 ? 'SEAL' : l === 2 ? 'SCENE' : 'ARTISTS'}
-              </button>
-            ))}
-          </Box>
-
           {/* ── Layer description ─────────────────────────────────────────────── */}
-          <Box sx={{ px: '16px', pb: '6px', flexShrink: 0 }}>
+          <Box sx={{ px: '20px', pb: '4px', flexShrink: 0 }}>
             <em style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '0.75rem', color: BONE4 }}>
               {layer === 1
                 ? '— the seal of identity · seven genres, seven artists —'
@@ -596,110 +575,214 @@ export default function SigilPage() {
               genres={data?.genres ?? []}
               artists={data?.artists ?? []}
               clusters={data?.clusters ?? []}
+              friends={friends}
               handle={handle}
               est={est}
               layer={layer}
               onArtistTap={layer === 3
-                ? (name, cluster) => setPinnedArtist({ name, cluster })
+                ? (name, cluster, natural) => { setPinnedArtist({ name, cluster, natural }); setPinnedFriend(null) }
+                : undefined
+              }
+              onFriendTap={layer === 3
+                ? (h) => {
+                    const f = friends.find(fr => fr.handle === h) ?? null
+                    setPinnedFriend(f)
+                    setPinnedArtist(null)
+                  }
                 : undefined
               }
             />
           </Box>
 
+          {/* ── +/− drill buttons ─────────────────────────────────────────────── */}
+          <Box sx={{
+            flexShrink: 0, display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            gap: '20px', py: '10px',
+          }}>
+            {/* − Surface */}
+            <button
+              onClick={() => layer > 1 && (setLayer((layer - 1) as 1|2|3), setPinnedArtist(null), setPinnedFriend(null))}
+              disabled={layer === 1}
+              style={{
+                width: 40, height: 40,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: layer === 1 ? 'transparent' : 'rgba(90,84,112,0.18)',
+                border: `1px solid ${layer === 1 ? INK4 : BONE4}`,
+                borderRadius: '3px', cursor: layer === 1 ? 'default' : 'pointer',
+                color: layer === 1 ? BONE4 : BONE,
+                fontSize: '1.25rem', lineHeight: 1, transition: 'all 0.2s',
+              }}>
+              −
+            </button>
+
+            {/* Layer indicator */}
+            <Box sx={{ textAlign: 'center', minWidth: '90px' }}>
+              <Box sx={{ fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.2em', color: BLOOD2, lineHeight: 1 }}>
+                L{layer}
+              </Box>
+              <Box sx={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: BONE4, mt: '3px' }}>
+                {layer === 1 ? 'SEAL' : layer === 2 ? 'SCENE' : 'ARTISTS'}
+              </Box>
+              <Box sx={{ mt: '4px', display: 'flex', justifyContent: 'center', gap: '4px' }}>
+                {[1,2,3].map(l => (
+                  <Box key={l} sx={{
+                    width: 5, height: 5, borderRadius: '50%',
+                    background: l === layer ? BLOOD2 : BONE4,
+                    opacity: l === layer ? 1 : 0.4,
+                    transition: 'all 0.2s',
+                  }} />
+                ))}
+              </Box>
+            </Box>
+
+            {/* + Deeper */}
+            <button
+              onClick={() => layer < 3 && (setLayer((layer + 1) as 1|2|3), setPinnedArtist(null), setPinnedFriend(null))}
+              disabled={layer === 3}
+              style={{
+                width: 40, height: 40,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: layer === 3 ? 'transparent' : 'rgba(199,80,80,0.15)',
+                border: `1px solid ${layer === 3 ? INK4 : BLOOD}`,
+                borderRadius: '3px', cursor: layer === 3 ? 'default' : 'pointer',
+                color: layer === 3 ? BONE4 : BONE,
+                fontSize: '1.25rem', lineHeight: 1, transition: 'all 0.2s',
+              }}>
+              +
+            </button>
+          </Box>
+
           {/* ── L3 hint ──────────────────────────────────────────────────────── */}
-          {layer === 3 && !pinnedArtist && (
-            <Box sx={{ textAlign: 'center', pb: '12px', flexShrink: 0 }}>
+          {layer === 3 && !pinnedArtist && !pinnedFriend && (
+            <Box sx={{ textAlign: 'center', pb: '6px', flexShrink: 0 }}>
               <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em', color: BONE4 }}>
-                TAP A DOT TO READ AN ARTIST
+                TAP A DOT · ARTISTS{friends.length > 0 ? ` · ${friends.length} FRIEND${friends.length > 1 ? 'S' : ''} ON SEAL` : ''}
               </span>
             </Box>
           )}
 
           {/* ── Artist detail bottom sheet (L3 tap) ──────────────────────────── */}
           {pinnedArtist && (
-            <Box
-              sx={{
-                position: 'relative', zIndex: 20, flexShrink: 0,
-                mx: '12px', mb: '12px',
-                background: INK2, border: `1px solid ${INK4}`,
-                borderRadius: '3px', padding: '14px 16px',
-                animation: 'sheetUp 0.25s ease forwards',
-                '@keyframes sheetUp': {
-                  from: { opacity: 0, transform: 'translateY(12px)' },
-                  to:   { opacity: 1, transform: 'translateY(0)' },
-                },
-              }}
-            >
-              {/* close */}
-              <button
-                onClick={() => setPinnedArtist(null)}
-                style={{
-                  position: 'absolute', top: 10, right: 12,
-                  fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em',
-                  color: BONE4, background: 'transparent', border: 'none', cursor: 'pointer',
-                }}>
-                ✕
-              </button>
+            <Box sx={{
+              position: 'relative', zIndex: 20, flexShrink: 0,
+              mx: '12px', mb: '12px',
+              background: INK2, border: `1px solid ${INK4}`,
+              borderRadius: '3px', padding: '14px 16px',
+              animation: 'sheetUp 0.25s ease forwards',
+              '@keyframes sheetUp': {
+                from: { opacity: 0, transform: 'translateY(10px)' },
+                to:   { opacity: 1, transform: 'translateY(0)' },
+              },
+            }}>
+              <button onClick={() => setPinnedArtist(null)} style={{
+                position: 'absolute', top: 10, right: 12,
+                fontFamily: MONO, fontSize: '0.4375rem', color: BONE4,
+                background: 'transparent', border: 'none', cursor: 'pointer',
+              }}>✕</button>
 
               <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
                 <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: BLOOD2 }}>
                   {pinnedArtist.cluster}
                 </span>
                 <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
+                {!pinnedArtist.natural && (
+                  <span style={{ fontFamily: MONO, fontSize: '0.375rem', letterSpacing: '0.1em', color: BONE4 }}>
+                    UNCLASSIFIED
+                  </span>
+                )}
               </Box>
 
-              <Box sx={{ fontFamily: DISPLAY, fontSize: '1.1rem', color: BONE, mb: '10px', letterSpacing: '0.02em' }}>
+              <Box sx={{ fontFamily: DISPLAY, fontSize: '1.1rem', color: BONE, mb: '10px' }}>
                 {pinnedArtist.name}
               </Box>
 
-              {/* weight bar */}
               {(() => {
-                const clusterData = (data?.clusters ?? []).find(c => c.label === pinnedArtist.cluster)
-                const artistData  = clusterData?.artists.find(a => a.name === pinnedArtist.name)
-                const w = artistData?.weight ?? 0
-                const rank = clusterData?.artists.findIndex(a => a.name === pinnedArtist.name) ?? -1
+                const cl = (data?.clusters ?? []).find(c => c.label === pinnedArtist.cluster)
+                const a  = cl?.artists.find(a => a.name === pinnedArtist.name)
+                const w  = a?.weight ?? 0
+                const rank = cl?.artists.findIndex(a => a.name === pinnedArtist.name) ?? -1
+                // friends who also listen to this artist
+                const sharedFriends = friends.filter(f => f.shared_artists.includes(pinnedArtist.name))
                 return (
                   <Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '4px' }}>
-                      <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.12em', color: BONE4 }}>
-                        LISTENING WEIGHT
-                      </span>
-                      <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE3 }}>
-                        {w}
-                      </span>
+                      <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE4 }}>LISTENING WEIGHT</span>
+                      <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE3 }}>{w}</span>
                     </Box>
                     <Box sx={{ height: '3px', background: INK4, borderRadius: '2px', mb: '10px' }}>
                       <Box sx={{ height: '100%', width: `${w}%`, background: BLOOD2, borderRadius: '2px', transition: 'width 0.4s ease' }} />
                     </Box>
-                    {rank >= 0 && (
-                      <Box sx={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        <span style={{
-                          fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.12em',
-                          color: BONE3, padding: '4px 8px',
-                          border: `1px solid ${INK4}`, borderRadius: '2px',
-                        }}>
+                    <Box sx={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {rank >= 0 && (
+                        <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE3, padding: '4px 8px', border: `1px solid ${INK4}`, borderRadius: '2px' }}>
                           #{rank + 1} IN CLUSTER
                         </span>
-                        {w >= 70 && (
-                          <span style={{
-                            fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.12em',
-                            color: BLOOD2, padding: '4px 8px',
-                            border: `1px solid rgba(199,80,80,0.35)`, borderRadius: '2px',
-                            background: BLOOD_FAINT,
-                          }}>
-                            CORE CHANNEL
-                          </span>
-                        )}
-                      </Box>
-                    )}
+                      )}
+                      {w >= 70 && (
+                        <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BLOOD2, padding: '4px 8px', border: `1px solid rgba(199,80,80,0.35)`, borderRadius: '2px', background: BLOOD_FAINT }}>
+                          CORE CHANNEL
+                        </span>
+                      )}
+                      {sharedFriends.map(f => (
+                        <span key={f.handle} style={{ fontFamily: MONO, fontSize: '0.4375rem', color: '#8BCAD4', padding: '4px 8px', border: '1px solid rgba(139,202,212,0.35)', borderRadius: '2px', background: 'rgba(139,202,212,0.08)' }}>
+                          {f.handle} ↔
+                        </span>
+                      ))}
+                    </Box>
                   </Box>
                 )
               })()}
             </Box>
           )}
 
+          {/* ── Friend detail bottom sheet (L3 friend-node tap) ──────────────── */}
+          {pinnedFriend && (
+            <Box sx={{
+              position: 'relative', zIndex: 20, flexShrink: 0,
+              mx: '12px', mb: '12px',
+              background: INK2, border: '1px solid rgba(139,202,212,0.3)',
+              borderRadius: '3px', padding: '14px 16px',
+              animation: 'sheetUp 0.25s ease forwards',
+            }}>
+              <button onClick={() => setPinnedFriend(null)} style={{
+                position: 'absolute', top: 10, right: 12,
+                fontFamily: MONO, fontSize: '0.4375rem', color: BONE4,
+                background: 'transparent', border: 'none', cursor: 'pointer',
+              }}>✕</button>
+
+              <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
+                <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: '#8BCAD4' }}>
+                  LISTENER
+                </span>
+                <Box sx={{ flex: 1, height: '1px', background: 'rgba(139,202,212,0.2)' }} />
+              </Box>
+
+              <Box sx={{ fontFamily: DISPLAY, fontSize: '1.1rem', color: BONE, mb: '10px' }}>
+                @{pinnedFriend.handle}
+              </Box>
+
+              <Box sx={{ mb: '6px' }}>
+                <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE4, letterSpacing: '0.12em' }}>
+                  SHARED ARTISTS
+                </span>
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                {pinnedFriend.shared_artists.map(name => (
+                  <span key={name} style={{
+                    fontFamily: SERIF, fontStyle: 'italic', fontSize: '0.8125rem',
+                    color: BONE2, padding: '3px 8px',
+                    border: `1px solid ${INK4}`, borderRadius: '2px',
+                  }}>
+                    {name}
+                  </span>
+                ))}
+              </Box>
+            </Box>
+          )}
+
           {/* ── Bottom layer labels (L2/L3 context) ─────────────────────────── */}
-          {layer !== 1 && !pinnedArtist && (
+          {layer !== 1 && !pinnedArtist && !pinnedFriend && (
             <Box sx={{ px: '16px', pb: '14px', flexShrink: 0 }}>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                 {layer === 2 && (data?.clusters ?? []).flatMap(cl =>

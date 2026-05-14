@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 
-// ── Master coordinate system (matches Sigil.tsx exactly) ─────────────────────
+// ── Master coordinate system ──────────────────────────────────────────────────
 const CX = 500, CY = 500
 const R_OUTER = 175
 const R_INNER = 100
@@ -25,12 +25,13 @@ function ringPoints(r: number, n = 7) {
 }
 
 // ── Deterministic artist-dot grid within a genre sector ──────────────────────
-// Grid: rings at r=70, 92, 115, 138, 155 with 1, 2, 3, 4, 4 positions each.
-// Sorted by weight desc → brightest closest to sector centre.
+// Rings at r = 70, 92, 115, 138, 155 — 1, 2, 3, 4, 4 slots each (total 14).
+// Natural (genre-matched) artists fill from centre outward.
+// Synthetic (unclustered) artists land in the outer rings, rendered dimmer.
 const DOT_GRID = [
-  [{ da: 0, r: 70 }],
-  [{ da: -0.26, r: 92 }, { da: 0.26, r: 92 }],
-  [{ da: -0.40, r: 115 }, { da: 0, r: 115 }, { da: 0.40, r: 115 }],
+  [{ da: 0,     r: 70  }],
+  [{ da: -0.26, r: 92  }, { da:  0.26, r: 92  }],
+  [{ da: -0.40, r: 115 }, { da:  0,    r: 115 }, { da: 0.40, r: 115 }],
   [{ da: -0.50, r: 138 }, { da: -0.17, r: 138 }, { da: 0.17, r: 138 }, { da: 0.50, r: 138 }],
   [{ da: -0.50, r: 155 }, { da: -0.17, r: 155 }, { da: 0.17, r: 155 }, { da: 0.50, r: 155 }],
 ]
@@ -45,9 +46,9 @@ function artistPos(j: number, centerAngle: number): { x: number; y: number } {
     }
     idx -= ring.length
   }
-  // Overflow beyond 14 — spread at r=165
+  // Overflow beyond slot 14
   const da = ((j - 14) % 5 - 2) * 0.12
-  return { x: CX + Math.cos(centerAngle + da) * 165, y: CY + Math.sin(centerAngle + da) * 165 }
+  return { x: CX + Math.cos(centerAngle + da) * 163, y: CY + Math.sin(centerAngle + da) * 163 }
 }
 
 // ── Design palette ────────────────────────────────────────────────────────────
@@ -57,26 +58,39 @@ const BONE3       = '#8B8298'
 const BONE4       = '#5A5470'
 const BLOOD2      = '#C75050'
 const BLOOD_FAINT = 'rgba(168,58,58,0.10)'
+const FRIEND_COL  = '#8BCAD4'   // icy steel-blue for friend nodes
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface SigilSubgenre  { label: string; pct: number }
-export interface SigilClusterArtist { name: string; weight: number }
+export interface SigilClusterArtist {
+  name: string
+  weight: number
+  natural?: boolean   // false = synthetically distributed unclustered artist
+}
 export interface SigilCluster {
   label: string
   artist_count: number
   subgenres: SigilSubgenre[]
   artists: SigilClusterArtist[]
 }
+export interface SigilFriend {
+  handle: string
+  avatar_url?: string
+  shared_artists: string[]
+  primary_artist?: string
+}
 
 export interface SigilExplorerProps {
   size: number
   genres: string[]
-  artists: string[]      // top 7 — used for L1 inner-ring labels
+  artists: string[]        // top 7 — L1 inner-ring labels
   handle: string
   est?: string
   clusters: SigilCluster[]
+  friends?: SigilFriend[]
   layer: 1 | 2 | 3
-  onArtistTap?: (name: string, clusterLabel: string) => void
+  onArtistTap?: (name: string, clusterLabel: string, natural: boolean) => void
+  onFriendTap?: (handle: string) => void
   style?: React.CSSProperties
   className?: string
 }
@@ -89,8 +103,10 @@ export default function SigilExplorer({
   handle,
   est,
   clusters,
+  friends = [],
   layer,
   onArtistTap,
+  onFriendTap,
   style,
   className,
 }: SigilExplorerProps) {
@@ -105,14 +121,13 @@ export default function SigilExplorer({
   const heptD    = heptagramPath(CX, CY, R_INNER)
   const midR     = (R_OUTER + R_INNER) / 2
 
-  // Per-layer viewBox — L2 zooms out to reveal satellites outside the outer ring
+  // Per-layer viewBox
   const VB = layer === 2
-    ? '158 158 684 684'   // satellite max-r ≈ 175+28+4*19=279; 500-279=221 > 158 ✓
+    ? '158 158 684 684'   // zoom out to reveal satellites (max r ≈ 279)
     : layer === 3
-    ? '220 220 560 560'   // same as L1 but tighter — emphasises inner dots
+    ? '218 218 564 564'   // tighter — emphasises inner artist space
     : '215 215 570 570'   // L1 default
 
-  // CSS opacity per layer (smooth 450ms cross-fade)
   const fade = (visible: boolean): React.CSSProperties => ({
     opacity: visible ? 1 : 0,
     transition: 'opacity 0.45s ease',
@@ -122,6 +137,41 @@ export default function SigilExplorer({
   const showL1 = layer === 1
   const showL2 = layer === 2
   const showL3 = layer === 3
+
+  // ── Build artist position lookup (used for friend connection lines) ───────
+  const artistPosLookup = useMemo<Record<string, {x:number;y:number;ci:number}>>(() => {
+    const map: Record<string, {x:number;y:number;ci:number}> = {}
+    clusters.forEach((cl, ci) => {
+      const ca = outerPts[ci]?.a ?? (-Math.PI / 2 + (ci / 7) * Math.PI * 2)
+      cl.artists.forEach((a, j) => {
+        map[a.name] = { ...artistPos(j, ca), ci }
+      })
+    })
+    return map
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clusters])
+
+  // ── Group friends by their primary cluster ───────────────────────────────
+  const friendsByCluster = useMemo<Record<number, {friend:SigilFriend; connPts:{x:number;y:number}[]}[]>>(() => {
+    const out: Record<number, {friend:SigilFriend; connPts:{x:number;y:number}[]}[]> = {}
+    friends.forEach(f => {
+      let primaryCi = -1
+      for (const name of f.shared_artists) {
+        if (artistPosLookup[name] !== undefined) {
+          primaryCi = artistPosLookup[name].ci
+          break
+        }
+      }
+      if (primaryCi < 0) return
+      const connPts = f.shared_artists
+        .filter(n => artistPosLookup[n])
+        .map(n => artistPosLookup[n])
+        .slice(0, 4)
+      if (!out[primaryCi]) out[primaryCi] = []
+      out[primaryCi].push({ friend: f, connPts })
+    })
+    return out
+  }, [friends, artistPosLookup])
 
   return (
     <svg
@@ -147,14 +197,12 @@ export default function SigilExplorer({
         opacity={0.3} vectorEffect="non-scaling-stroke"
       />
 
-      {/* ── ALWAYS: outer-point tick marks + dots + per-layer label/satellite ─ */}
+      {/* ── ALWAYS: outer-point tick + dot + per-layer label / L2 satellites ─ */}
       {outerPts.map((p, i) => {
         const labelDist = 22
-        const lx      = p.x + Math.cos(p.a) * labelDist
-        const ly      = p.y + Math.sin(p.a) * labelDist + 3
-        const anchor  = Math.cos(p.a) > 0.3 ? 'start'
-                      : Math.cos(p.a) < -0.3 ? 'end'
-                      : 'middle'
+        const lx     = p.x + Math.cos(p.a) * labelDist
+        const ly     = p.y + Math.sin(p.a) * labelDist + 3
+        const anchor = Math.cos(p.a) > 0.3 ? 'start' : Math.cos(p.a) < -0.3 ? 'end' : 'middle'
         const cluster = clusters[i]
 
         return (
@@ -168,15 +216,13 @@ export default function SigilExplorer({
             {/* dot */}
             <circle cx={p.x} cy={p.y} r={2.2} fill={BONE} />
 
-            {/* genre label — visible in L1 (full), L3 (faded), hidden in L2 */}
+            {/* Genre label — full in L1, faded in L3, hidden in L2 */}
             {genres[i] && (
               <text
-                x={lx} y={ly}
-                textAnchor={anchor}
+                x={lx} y={ly} textAnchor={anchor}
                 style={{
                   fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: 10,
-                  letterSpacing: 1.2,
+                  fontSize: 10, letterSpacing: 1.2,
                   fill: showL3 ? BONE4 : BONE,
                   opacity: showL2 ? 0 : 1,
                   transition: 'opacity 0.4s ease, fill 0.4s ease',
@@ -186,22 +232,20 @@ export default function SigilExplorer({
               </text>
             )}
 
-            {/* L2: subgenre satellites radiating outward from each outer point */}
+            {/* L2: subgenre satellites */}
             {cluster?.subgenres.map((sg, si) => {
-              const satR = R_OUTER + 28 + si * 19   // 203, 222, 241, 260, 279
+              const satR = R_OUTER + 28 + si * 19
               const sx   = CX + Math.cos(p.a) * satR
               const sy   = CY + Math.sin(p.a) * satR + 3
               return (
                 <g key={si} style={fade(showL2)}>
-                  {/* connector dot chain */}
                   <circle
                     cx={CX + Math.cos(p.a) * (R_OUTER + 10 + si * 19)}
                     cy={CY + Math.sin(p.a) * (R_OUTER + 10 + si * 19)}
                     r={1.0} fill={BONE4} opacity={0.5}
                   />
                   <text
-                    x={sx} y={sy}
-                    textAnchor={anchor}
+                    x={sx} y={sy} textAnchor={anchor}
                     style={{
                       fontFamily: '"EB Garamond", serif',
                       fontStyle: 'italic',
@@ -215,19 +259,14 @@ export default function SigilExplorer({
               )
             })}
 
-            {/* L2: cluster artist count badge at inner edge of each genre point */}
+            {/* L2: artist-count badge */}
             {cluster && (
               <g style={fade(showL2)}>
                 <text
                   x={CX + Math.cos(p.a) * (R_OUTER - 18)}
                   y={CY + Math.sin(p.a) * (R_OUTER - 18) + 3}
                   textAnchor="middle"
-                  style={{
-                    fontFamily: '"JetBrains Mono", monospace',
-                    fontSize: 7,
-                    fill: BONE4,
-                    letterSpacing: 0.5,
-                  }}
+                  style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 7, fill: BONE4, letterSpacing: 0.5 }}
                 >
                   {cluster.artist_count}
                 </text>
@@ -238,64 +277,45 @@ export default function SigilExplorer({
       })}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          L1 — SEAL: inner ring + heptagram + artist labels + center text
+          L1 — SEAL
           ══════════════════════════════════════════════════════════════════════ */}
       <g style={fade(showL1)}>
-        {/* inner solid ring — draw-in animation */}
+        {/* inner ring */}
         <circle
           cx={CX} cy={CY} r={R_INNER}
-          fill="none" stroke={BONE3} strokeWidth={0.7}
-          opacity={0.9} pathLength={1}
-          strokeDasharray={1} strokeDashoffset={drawn ? 0 : 1}
+          fill="none" stroke={BONE3} strokeWidth={0.7} opacity={0.9}
+          pathLength={1} strokeDasharray={1} strokeDashoffset={drawn ? 0 : 1}
           style={{ transition: 'stroke-dashoffset 0.7s ease' }}
           vectorEffect="non-scaling-stroke"
         />
-
-        {/* heptagram {7/3} — draw-in animation, slight delay */}
+        {/* heptagram */}
         <path
-          d={heptD}
-          fill="none" stroke={BONE2} strokeWidth={0.6}
+          d={heptD} fill="none" stroke={BONE2} strokeWidth={0.6}
           strokeLinejoin="miter" opacity={0.9}
           pathLength={1} strokeDasharray={1} strokeDashoffset={drawn ? 0 : 1}
           style={{ transition: 'stroke-dashoffset 1s ease 0.15s' }}
           vectorEffect="non-scaling-stroke"
         />
-
-        {/* inner ring: artist dots + labels */}
+        {/* inner-ring artist dots + labels */}
         {innerPts.map((p, i) => {
           const lx     = p.x + Math.cos(p.a) * 16
           const ly     = p.y + Math.sin(p.a) * 16 + 3
-          const anchor = Math.cos(p.a) > 0.3 ? 'start'
-                       : Math.cos(p.a) < -0.3 ? 'end'
-                       : 'middle'
+          const anchor = Math.cos(p.a) > 0.3 ? 'start' : Math.cos(p.a) < -0.3 ? 'end' : 'middle'
           return (
             <g key={i}>
               <circle cx={p.x} cy={p.y} r={3} fill={BONE} />
-              <circle
-                cx={p.x} cy={p.y} r={5}
-                fill="none" stroke={BONE3} strokeWidth={0.4}
-                opacity={0.6} vectorEffect="non-scaling-stroke"
-              />
+              <circle cx={p.x} cy={p.y} r={5} fill="none" stroke={BONE3} strokeWidth={0.4} opacity={0.6} vectorEffect="non-scaling-stroke" />
               {artists[i] && (
-                <text
-                  x={lx} y={ly} textAnchor={anchor}
-                  style={{
-                    fontFamily: '"EB Garamond", serif',
-                    fontStyle: 'italic',
-                    fontSize: 10,
-                    fill: BONE2,
-                  }}
-                >
+                <text x={lx} y={ly} textAnchor={anchor}
+                  style={{ fontFamily: '"EB Garamond", serif', fontStyle: 'italic', fontSize: 10, fill: BONE2 }}>
                   {artists[i]}
                 </text>
               )}
             </g>
           )
         })}
-
-        {/* center halo */}
+        {/* center */}
         <circle cx={CX} cy={CY} r={55} fill={BLOOD_FAINT} />
-
         <text x={CX} y={CY - 18} textAnchor="middle"
           style={{ fontFamily: '"EB Garamond", serif', fontStyle: 'italic', fontSize: 10, fill: BONE3 }}>
           — the reading of —
@@ -313,7 +333,7 @@ export default function SigilExplorer({
       </g>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          L2 — SCENE: center label showing genre name
+          L2 — SCENE: center label
           ══════════════════════════════════════════════════════════════════════ */}
       <g style={fade(showL2)}>
         <circle cx={CX} cy={CY} r={48} fill={BLOOD_FAINT} />
@@ -328,10 +348,10 @@ export default function SigilExplorer({
       </g>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          L3 — ARTISTS: dots in genre sectors, sized by listening weight
+          L3 — ARTISTS: all artist dots + friend nodes
           ══════════════════════════════════════════════════════════════════════ */}
       <g style={fade(showL3)}>
-        {/* blood halo */}
+        {/* blood halo + center label */}
         <circle cx={CX} cy={CY} r={52} fill={BLOOD_FAINT} opacity={0.7} />
         <text x={CX} y={CY - 8} textAnchor="middle"
           style={{ fontFamily: '"EB Garamond", serif', fontStyle: 'italic', fontSize: 9, fill: BONE3 }}>
@@ -342,37 +362,110 @@ export default function SigilExplorer({
           L · III
         </text>
 
-        {/* Artist dots per cluster */}
+        {/* ── Artist dots ─────────────────────────────────────────────────── */}
         {clusters.map((cluster, ci) => {
-          const centerAngle = outerPts[ci]?.a ?? (-Math.PI / 2 + (ci / 7) * Math.PI * 2)
+          const ca = outerPts[ci]?.a ?? (-Math.PI / 2 + (ci / 7) * Math.PI * 2)
           return cluster.artists.map((a, j) => {
-            const pos    = artistPos(j, centerAngle)
-            const dotR   = 2.2 + (a.weight / 100) * 6.5   // 2.2 → 8.7 px
-            const isTop  = j === 0
-            const isDim  = a.weight < 30
+            const pos      = artistPos(j, ca)
+            const isNatural = a.natural !== false
+            const dotR     = isNatural
+              ? 2.2 + (a.weight / 100) * 6.5    // natural: 2.2–8.7
+              : 1.8 + (a.weight / 100) * 3.0     // synthetic: 1.8–4.8 (smaller)
+            const isTop    = j === 0
+            const isDim    = a.weight < 30
+
             return (
               <g
                 key={`${ci}-${j}`}
-                onClick={() => onArtistTap?.(a.name, cluster.label)}
+                onClick={() => onArtistTap?.(a.name, cluster.label, isNatural)}
                 style={{ cursor: onArtistTap ? 'pointer' : 'default' }}
               >
-                {/* outer glow ring for top artist in each cluster */}
-                {isTop && (
+                {/* glow ring for #1 natural artist per cluster */}
+                {isTop && isNatural && (
                   <circle
                     cx={pos.x} cy={pos.y} r={dotR + 4.5}
                     fill="none" stroke={BLOOD2} strokeWidth={0.6}
                     opacity={0.45} vectorEffect="non-scaling-stroke"
                   />
                 )}
-                {/* main dot */}
                 <circle
                   cx={pos.x} cy={pos.y} r={dotR}
-                  fill={isTop ? BONE : isDim ? BONE4 : BONE2}
-                  opacity={isDim ? 0.55 : 0.85}
+                  fill={isNatural
+                    ? (isTop ? BONE : isDim ? BONE4 : BONE2)
+                    : BONE4}
+                  opacity={isNatural ? (isDim ? 0.55 : 0.85) : 0.3}
                 />
-                {/* hit-area for tap */}
+                {/* invisible hit target — easier to tap small dots */}
                 {onArtistTap && (
-                  <circle cx={pos.x} cy={pos.y} r={Math.max(dotR, 8)} fill="transparent" />
+                  <circle cx={pos.x} cy={pos.y} r={Math.max(dotR + 2, 9)} fill="transparent" />
+                )}
+              </g>
+            )
+          })
+        })}
+
+        {/* ── Friend nodes: connection lines first (drawn under nodes) ──────── */}
+        {Object.entries(friendsByCluster).map(([ciStr, friendList]) => {
+          const ci = parseInt(ciStr)
+          const ca = outerPts[ci]?.a ?? (-Math.PI / 2 + (ci / 7) * Math.PI * 2)
+          const count = friendList.length
+          return friendList.map(({ friend, connPts }, j) => {
+            const spread = count === 1 ? 0 : (j - (count - 1) / 2) * 0.22
+            const angle  = ca + spread
+            const fx     = CX + Math.cos(angle) * 165
+            const fy     = CY + Math.sin(angle) * 165
+            return connPts.map((pt, si) => (
+              <line
+                key={`${friend.handle}-conn-${si}`}
+                x1={fx} y1={fy} x2={pt.x} y2={pt.y}
+                stroke={FRIEND_COL} strokeWidth={0.55}
+                opacity={si === 0 ? 0.5 : 0.2}
+                strokeDasharray={si === 0 ? 'none' : '2 2'}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))
+          })
+        })}
+
+        {/* ── Friend nodes: circles + handle labels ─────────────────────────── */}
+        {Object.entries(friendsByCluster).map(([ciStr, friendList]) => {
+          const ci = parseInt(ciStr)
+          const ca = outerPts[ci]?.a ?? (-Math.PI / 2 + (ci / 7) * Math.PI * 2)
+          const count = friendList.length
+          return friendList.map(({ friend }, j) => {
+            const spread  = count === 1 ? 0 : (j - (count - 1) / 2) * 0.22
+            const angle   = ca + spread
+            const fx      = CX + Math.cos(angle) * 165
+            const fy      = CY + Math.sin(angle) * 165
+            const initials = friend.handle.slice(0, 3).toUpperCase()
+            return (
+              <g
+                key={friend.handle}
+                onClick={() => onFriendTap?.(friend.handle)}
+                style={{ cursor: onFriendTap ? 'pointer' : 'default' }}
+              >
+                {/* outer glow */}
+                <circle cx={fx} cy={fy} r={11}
+                  fill="none" stroke={FRIEND_COL} strokeWidth={0.4}
+                  opacity={0.25} vectorEffect="non-scaling-stroke" />
+                {/* node circle */}
+                <circle cx={fx} cy={fy} r={8}
+                  fill="rgba(139,202,212,0.15)"
+                  stroke={FRIEND_COL} strokeWidth={0.8}
+                  vectorEffect="non-scaling-stroke" />
+                {/* handle initials */}
+                <text x={fx} y={fy + 2.5} textAnchor="middle"
+                  style={{
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 5.5,
+                    fill: FRIEND_COL,
+                    letterSpacing: 0.3,
+                  }}>
+                  {initials}
+                </text>
+                {/* hit area */}
+                {onFriendTap && (
+                  <circle cx={fx} cy={fy} r={14} fill="transparent" />
                 )}
               </g>
             )

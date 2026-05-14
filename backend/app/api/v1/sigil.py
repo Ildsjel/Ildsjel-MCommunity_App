@@ -310,11 +310,15 @@ async def get_sigil_data(
                         cluster_map[cl]["subgenre_counts"].get(key, 0) + 1
                     )
 
+    # ── Build initial clusters list ────────────────────────────────────────────
     clusters = []
     for g in genres:
         cm = cluster_map[g]
         n = len(cm["artists"]) or 1
         sorted_sg = sorted(cm["subgenre_counts"].items(), key=lambda x: -x[1])
+        # Mark naturally-assigned artists
+        for a in cm["artists"]:
+            a["natural"] = True
         clusters.append(
             {
                 "label": g,
@@ -322,11 +326,40 @@ async def get_sigil_data(
                 "subgenres": [
                     {"label": _format_subgenre(raw), "pct": round(c / n * 100)}
                     for raw, c in sorted_sg[:5]
-                    if _format_subgenre(raw) != g  # skip if identical to cluster label
+                    if _format_subgenre(raw) != g
                 ],
-                "artists": cm["artists"][:14],  # max 14 per cluster for L3 grid
+                "artists": sorted(cm["artists"], key=lambda x: -x["weight"]),
             }
         )
+
+    # ── Distribute unclustered artists into smallest clusters ───────────────────
+    # This ensures ALL tracked artists appear in L3, even those with no genre tags.
+    # They land in the outer DOT_GRID rings (j ≥ natural_count) and render dimmer.
+    if genres:  # only if we have genre data
+        clustered_names = {a["name"] for cl in clusters for a in cl["artists"]}
+        unclustered = sorted(
+            [
+                {"name": a["name"], "weight": a["weight"], "natural": False}
+                for a in all_artists
+                if a["name"] not in clustered_names
+            ],
+            key=lambda x: -x["weight"],
+        )
+        for artist in unclustered:
+            # Pick the cluster currently holding the fewest artists (≤ 14 cap)
+            target_cl = min(
+                [cl for cl in clusters if len(cl["artists"]) < 14],
+                key=lambda cl: len(cl["artists"]),
+                default=None,
+            )
+            if target_cl is not None:
+                target_cl["artists"].append(artist)
+
+    # Finalise each cluster: natural first (by weight desc), then synthetic, cap at 14
+    for cl in clusters:
+        natural   = sorted([a for a in cl["artists"] if a.get("natural", True)],  key=lambda x: -x["weight"])
+        synthetic = sorted([a for a in cl["artists"] if not a.get("natural", True)], key=lambda x: -x["weight"])
+        cl["artists"] = (natural + synthetic)[:14]
 
     return {
         "genres": genres,
@@ -334,6 +367,42 @@ async def get_sigil_data(
         "total_artists": total_artists,
         "clusters": clusters,
     }
+
+
+@router.get("/friends")
+async def get_sigil_friends(
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Return accepted friends who share at least one top artist with the current user,
+    along with the list of shared artist names (for drawing connections in L3).
+    """
+    uid = current_user["id"]
+    result = session.run(
+        """
+        MATCH (me:User {id: $uid})-[:FRIEND_REQUEST {status: 'accepted'}]-(friend:User)
+        OPTIONAL MATCH (me)-[:TOP_ARTIST]->(shared:Artist)<-[:TOP_ARTIST]-(friend)
+        WITH friend, collect(DISTINCT shared.name) AS shared_artists
+        WHERE size(shared_artists) > 0
+        RETURN friend.handle AS handle,
+               friend.profile_image_url AS avatar_url,
+               shared_artists[0..6] AS shared_artists
+        ORDER BY size(shared_artists) DESC
+        LIMIT 10
+        """,
+        uid=uid,
+    )
+    friends = [
+        {
+            "handle": r["handle"],
+            "avatar_url": r["avatar_url"],
+            "shared_artists": list(r["shared_artists"]),
+            "primary_artist": r["shared_artists"][0] if r["shared_artists"] else None,
+        }
+        for r in result
+    ]
+    return {"friends": friends}
 
 
 @router.post("/sync")
