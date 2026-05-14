@@ -97,7 +97,7 @@ export default function SwipeFeed() {
 
   const dismiss = (dir: 'left' | 'right') => {
     if (dir === 'right' && profile) {
-      addNotification({ type: 'fit_match', fromHandle: profile.handle, fromInitial: profile.initial, timestamp: 'now' })
+      addNotification({ type: 'match', fromHandle: profile.handle, fromInitial: profile.initial })
     }
     setExitDir(dir)
     setTimeout(() => {
