@@ -73,7 +73,18 @@ async def get_sigil_data(
 
     genres = list(dict.fromkeys(_normalize_genre(g) for g in raw_genres if g))[:7]
 
-    return {"genres": genres, "artists": artists}
+    # Total connected artist count (not capped at 8)
+    count_rec = session.run(
+        "MATCH (u:User {id: $uid})-[:TOP_ARTIST]->() RETURN count(*) AS n",
+        uid=uid,
+    ).single()
+    total_artists = count_rec["n"] if count_rec else len(artists)
+
+    return {
+        "genres": genres,
+        "artists": artists,
+        "total_artists": total_artists,
+    }
 
 
 @router.post("/sync")

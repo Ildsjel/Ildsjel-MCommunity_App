@@ -188,9 +188,8 @@ function StepOne({ onNext, onSignIn }: { onNext: () => void; onSignIn: () => voi
         >
           <Sigil
             size={220}
-            loading={true}
-            centerTop="?"
-            centerBottom="UNREAD"
+            loading
+            handle="?"
           />
         </Box>
         <em style={{
@@ -1064,10 +1063,10 @@ function StepFive({
           <Sigil
             size={230}
             loading={genres.length === 0}
-            genres={genres.length > 0 ? genres : undefined}
-            artists={artists.length > 0 ? artists : undefined}
-            centerTop={displayHandle.slice(0, 6).toUpperCase()}
-            centerBottom="METAL-ID"
+            genres={genres.length > 0 ? genres : []}
+            artists={artists.length > 0 ? artists : []}
+            handle={displayHandle.slice(0, 8).toUpperCase()}
+            compact
           />
         </Box>
 

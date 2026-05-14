@@ -187,13 +187,17 @@ export default function ProfilePage() {
           <span style={lbl}>ME</span>
         </Box>
 
-        <Box sx={{ height: 160, display: 'flex', justifyContent: 'center', mb: 0 }}>
+        <Box
+          sx={{ height: 160, display: 'flex', justifyContent: 'center', mb: 0, cursor: 'pointer' }}
+          onClick={() => router.push('/sigil')}
+          title="Open your Sigil"
+        >
           <Sigil
             size={200}
-            centerTop={user.handle}
-            centerBottom="metal-id"
-            genres={sigilData.genres.length > 0 ? sigilData.genres : undefined}
-            artists={sigilData.artists.length > 0 ? sigilData.artists : undefined}
+            compact
+            handle={user.handle}
+            genres={sigilData.genres.length > 0 ? sigilData.genres : []}
+            artists={sigilData.artists.length > 0 ? sigilData.artists : []}
             loading={sigilData.genres.length === 0 && sigilData.artists.length === 0}
           />
         </Box>

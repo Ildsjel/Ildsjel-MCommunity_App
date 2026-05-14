@@ -145,11 +145,8 @@ export default function Home() {
           <Box sx={{ width: '100%', maxWidth: 220, aspectRatio: '1' }}>
             <Sigil
               size={240}
-              genres={['?', '?', '?', '?', '?']}
-              artists={['', '', '', '', '', '']}
-              centerTop="☩"
-              centerBottom="GRIMR"
-              loading={true}
+              loading
+              handle="GRIMR"
             />
           </Box>
         </Box>
