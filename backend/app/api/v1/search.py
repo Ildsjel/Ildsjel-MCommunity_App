@@ -40,7 +40,7 @@ async def get_random_profiles(
             WHERE u.id <> $requester_id
               AND u.is_active = true
               AND u.email_verified = true
-              AND u.onboarding_complete = true
+              AND coalesce(u.onboarding_complete, true) = true
               AND (u.discoverable_by_name = true OR u.discoverable_by_music = true)
             WITH u, rand() as random
             ORDER BY random

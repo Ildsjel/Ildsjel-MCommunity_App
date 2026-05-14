@@ -46,7 +46,7 @@ async def get_globe_data(
         MATCH (u:User)
         WHERE u.is_active = true
           AND u.email_verified = true
-          AND u.onboarding_complete = true
+          AND coalesce(u.onboarding_complete, true) = true
           AND (u.discoverable_by_name = true OR u.discoverable_by_music = true)
           AND u.city IS NOT NULL
           AND u.city_visible <> 'hidden'
@@ -94,7 +94,7 @@ async def get_nearby_users(
         MATCH (u:User)
         WHERE u.is_active = true
           AND u.email_verified = true
-          AND u.onboarding_complete = true
+          AND coalesce(u.onboarding_complete, true) = true
           AND (u.discoverable_by_name = true OR u.discoverable_by_music = true)
           AND u.latitude  IS NOT NULL
           AND u.longitude IS NOT NULL
