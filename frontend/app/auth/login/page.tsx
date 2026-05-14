@@ -69,9 +69,9 @@ export default function LoginPage() {
         <Typography
           component={Link}
           href="/"
-          className="grimr-glow grimr-wordmark"
+          className="grimr-glow"
           sx={{
-            fontFamily: 'var(--font-medieval, "UnifrakturCook", serif)',
+            fontFamily: '"Archivo Black", sans-serif',
             fontSize: { xs: '2.8rem', md: '3.5rem' },
             letterSpacing: '0.04em',
             color: 'text.primary',
