@@ -250,20 +250,14 @@ def _assign_cluster(raw_genres: list[str], top_genres: list[str]) -> str | None:
     return None
 
 
-@router.get("")
-async def get_sigil_data(
-    session=Depends(get_neo4j_session),
-    current_user: dict = Depends(get_current_user),
-):
+async def _build_sigil_for_user(uid: str, session) -> dict:
     """
-    Return merged genre + artist data for the user's Metal-ID sigil (L1–L3).
+    Build and return sigil data for the given user id.
 
     Artists: top 7, ordered by play_count > rank across all sources.
     Genres: top 7, aggregated from Spotify genre tags on the top 20 artists.
     Clusters: per-genre subgenre breakdown + artist list (for L2/L3 rendering).
     """
-    uid = current_user["id"]
-
     # ── Top 7 artists for L1 inner ring labels ─────────────────────────────────
     artist_result = session.run(
         """
@@ -395,6 +389,14 @@ async def get_sigil_data(
     }
 
 
+@router.get("")
+async def get_sigil_data(
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    return await _build_sigil_for_user(current_user["id"], session)
+
+
 @router.get("/friends")
 async def get_sigil_friends(
     session=Depends(get_neo4j_session),
@@ -429,6 +431,15 @@ async def get_sigil_friends(
         for r in result
     ]
     return {"friends": friends}
+
+
+@router.get("/{user_id}")
+async def get_user_sigil_data(
+    user_id: str,
+    session=Depends(get_neo4j_session),
+    _: dict = Depends(get_current_user),  # requires auth only
+):
+    return await _build_sigil_for_user(user_id, session)
 
 
 @router.post("/sync")
