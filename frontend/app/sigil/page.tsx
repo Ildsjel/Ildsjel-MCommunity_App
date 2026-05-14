@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, GlobalStyles } from '@mui/material'
 import Sigil from '@/app/components/Sigil'
-import SigilExplorer, { SigilCluster, SigilFriend } from '@/app/components/SigilExplorer'
+import SigilExplorer, { SigilCluster, SigilFriend, FocusedNode } from '@/app/components/SigilExplorer'
 import BottomNav from '@/app/components/BottomNav'
 import { useUser } from '@/app/context/UserContext'
 import axios from 'axios'
@@ -24,6 +24,7 @@ const BLOOD      = '#A83A3A'
 const BLOOD2     = '#C75050'
 const BLOOD3     = '#6E2424'
 const BLOOD_FAINT = 'rgba(168,58,58,0.10)'
+const FRIEND_COL = '#8BCAD4'
 
 // ── Type shorthands ───────────────────────────────────────────────────────────
 const DISPLAY = '"Archivo Black", sans-serif'
@@ -80,8 +81,7 @@ export default function SigilPage() {
   const [syncMsg, setSyncMsg] = useState('')
   const [entered, setEntered]   = useState(false)
   const [layer, setLayer]       = useState<1|2|3>(1)
-  const [pinnedArtist, setPinnedArtist] = useState<{name:string; cluster:string; natural:boolean} | null>(null)
-  const [pinnedFriend, setPinnedFriend] = useState<SigilFriend | null>(null)
+  const [focusedNode, setFocusedNode] = useState<FocusedNode>(null)
   const [friends, setFriends]   = useState<SigilFriend[]>([])
 
   useEffect(() => {
@@ -121,6 +121,15 @@ export default function SigilPage() {
       .catch(() => { setSyncing(false); setSyncMsg('◉ SYNC FAILED') })
   }
 
+  // ── onNodeClick handler ───────────────────────────────────────────────────
+  const handleNodeClick = (node: FocusedNode) => {
+    // Genre click in L1/L2 → jump to L3 and focus that genre
+    if (node?.type === 'genre' && layer !== 3) {
+      setLayer(3)
+    }
+    setFocusedNode(node)
+  }
+
   const hasData   = (data?.genres.length ?? 0) > 0
   const handle    = user?.handle ?? ''
   const year      = user?.created_at ? new Date(user.created_at).getFullYear() : new Date().getFullYear()
@@ -128,6 +137,22 @@ export default function SigilPage() {
   const dominant  = data?.genres[0] ?? ''
   const totalArtists = data?.total_artists ?? data?.artists.length ?? 0
   const genreCount   = data?.genres.length ?? 0
+
+  // ── Chip style helpers ────────────────────────────────────────────────────
+  const chipStyle = (color = BONE3, bg = 'transparent', borderColor = INK4): React.CSSProperties => ({
+    fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.12em',
+    color, padding: '4px 8px',
+    border: `1px solid ${borderColor}`,
+    borderRadius: '2px', background: bg,
+    cursor: 'pointer', textTransform: 'uppercase' as const,
+  })
+
+  const artistChipStyle: React.CSSProperties = {
+    fontFamily: SERIF, fontStyle: 'italic', fontSize: '0.8125rem',
+    color: BONE2, padding: '3px 8px',
+    border: `1px solid ${INK4}`, borderRadius: '2px',
+    cursor: 'pointer', background: 'transparent',
+  }
 
   return (
     <>
@@ -251,7 +276,6 @@ export default function SigilPage() {
               {/* Sigil canvas */}
               <Box sx={{
                 height: 420, position: 'relative', mx: 0,
-                // Remove `showCenterSeal` — the handle + decor is shown above
               }}>
                 <Sigil
                   size={402}
@@ -529,7 +553,7 @@ export default function SigilPage() {
             background: 'linear-gradient(180deg, rgba(11,8,20,0.95) 0%, rgba(11,8,20,0.6) 100%)',
           }}>
             <button
-              onClick={() => { setEntered(false); setLayer(1); setPinnedArtist(null) }}
+              onClick={() => { setEntered(false); setLayer(1); setFocusedNode(null) }}
               style={{
                 fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.18em',
                 textTransform: 'uppercase', color: BONE3,
@@ -579,18 +603,8 @@ export default function SigilPage() {
               handle={handle}
               est={est}
               layer={layer}
-              onArtistTap={layer === 3
-                ? (name, cluster, natural) => { setPinnedArtist({ name, cluster, natural }); setPinnedFriend(null) }
-                : undefined
-              }
-              onFriendTap={layer === 3
-                ? (h) => {
-                    const f = friends.find(fr => fr.handle === h) ?? null
-                    setPinnedFriend(f)
-                    setPinnedArtist(null)
-                  }
-                : undefined
-              }
+              focusedNode={focusedNode}
+              onNodeClick={handleNodeClick}
             />
           </Box>
 
@@ -602,7 +616,12 @@ export default function SigilPage() {
           }}>
             {/* − Surface */}
             <button
-              onClick={() => layer > 1 && (setLayer((layer - 1) as 1|2|3), setPinnedArtist(null), setPinnedFriend(null))}
+              onClick={() => {
+                if (layer > 1) {
+                  setLayer((layer - 1) as 1|2|3)
+                  setFocusedNode(null)
+                }
+              }}
               disabled={layer === 1}
               style={{
                 width: 40, height: 40,
@@ -638,7 +657,12 @@ export default function SigilPage() {
 
             {/* + Deeper */}
             <button
-              onClick={() => layer < 3 && (setLayer((layer + 1) as 1|2|3), setPinnedArtist(null), setPinnedFriend(null))}
+              onClick={() => {
+                if (layer < 3) {
+                  setLayer((layer + 1) as 1|2|3)
+                  setFocusedNode(null)
+                }
+              }}
               disabled={layer === 3}
               style={{
                 width: 40, height: 40,
@@ -653,8 +677,8 @@ export default function SigilPage() {
             </button>
           </Box>
 
-          {/* ── L3 hint ──────────────────────────────────────────────────────── */}
-          {layer === 3 && !pinnedArtist && !pinnedFriend && (
+          {/* ── L3 hint (no focus) ────────────────────────────────────────────── */}
+          {layer === 3 && !focusedNode && (
             <Box sx={{ textAlign: 'center', pb: '6px', flexShrink: 0 }}>
               <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em', color: BONE4 }}>
                 TAP A DOT · ARTISTS{friends.length > 0 ? ` · ${friends.length} FRIEND${friends.length > 1 ? 'S' : ''} ON SEAL` : ''}
@@ -662,127 +686,269 @@ export default function SigilPage() {
             </Box>
           )}
 
-          {/* ── Artist detail bottom sheet (L3 tap) ──────────────────────────── */}
-          {pinnedArtist && (
-            <Box sx={{
-              position: 'relative', zIndex: 20, flexShrink: 0,
-              mx: '12px', mb: '12px',
-              background: INK2, border: `1px solid ${INK4}`,
-              borderRadius: '3px', padding: '14px 16px',
-              animation: 'sheetUp 0.25s ease forwards',
-              '@keyframes sheetUp': {
-                from: { opacity: 0, transform: 'translateY(10px)' },
-                to:   { opacity: 1, transform: 'translateY(0)' },
-              },
-            }}>
-              <button onClick={() => setPinnedArtist(null)} style={{
-                position: 'absolute', top: 10, right: 12,
-                fontFamily: MONO, fontSize: '0.4375rem', color: BONE4,
-                background: 'transparent', border: 'none', cursor: 'pointer',
-              }}>✕</button>
+          {/* ══════════════════════════════════════════════════════════════════
+              UNIFIED DETAIL SHEET — based on focusedNode type
+              ══════════════════════════════════════════════════════════════════ */}
+          {focusedNode && (() => {
+            const clusters = data?.clusters ?? []
 
-              <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
-                <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: BLOOD2 }}>
-                  {pinnedArtist.cluster}
-                </span>
-                <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
-                {!pinnedArtist.natural && (
-                  <span style={{ fontFamily: MONO, fontSize: '0.375rem', letterSpacing: '0.1em', color: BONE4 }}>
-                    UNCLASSIFIED
-                  </span>
-                )}
-              </Box>
+            // ── ARTIST FOCUSED ─────────────────────────────────────────────
+            if (focusedNode.type === 'artist') {
+              const { name, ci } = focusedNode
+              const cl = clusters[ci]
+              const artist = cl?.artists.find(a => a.name === name)
+              const w = artist?.weight ?? 0
+              const isNatural = artist?.natural !== false
+              const rank = cl?.artists.findIndex(a => a.name === name) ?? -1
+              const sharedFriends = friends.filter(f => f.shared_artists.includes(name))
+              const sameClusterArtists = (cl?.artists ?? [])
+                .filter(a => a.name !== name)
+                .slice(0, 3)
 
-              <Box sx={{ fontFamily: DISPLAY, fontSize: '1.1rem', color: BONE, mb: '10px' }}>
-                {pinnedArtist.name}
-              </Box>
+              return (
+                <Box sx={{
+                  position: 'relative', zIndex: 20, flexShrink: 0,
+                  mx: '12px', mb: '12px',
+                  background: INK2, border: `1px solid ${INK4}`,
+                  borderRadius: '3px', padding: '14px 16px',
+                  animation: 'sheetUp 0.25s ease forwards',
+                  '@keyframes sheetUp': {
+                    from: { opacity: 0, transform: 'translateY(10px)' },
+                    to:   { opacity: 1, transform: 'translateY(0)' },
+                  },
+                }}>
+                  <button onClick={() => setFocusedNode(null)} style={{
+                    position: 'absolute', top: 10, right: 12,
+                    fontFamily: MONO, fontSize: '0.4375rem', color: BONE4,
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                  }}>✕</button>
 
-              {(() => {
-                const cl = (data?.clusters ?? []).find(c => c.label === pinnedArtist.cluster)
-                const a  = cl?.artists.find(a => a.name === pinnedArtist.name)
-                const w  = a?.weight ?? 0
-                const rank = cl?.artists.findIndex(a => a.name === pinnedArtist.name) ?? -1
-                // friends who also listen to this artist
-                const sharedFriends = friends.filter(f => f.shared_artists.includes(pinnedArtist.name))
-                return (
-                  <Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '4px' }}>
-                      <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE4 }}>LISTENING WEIGHT</span>
-                      <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE3 }}>{w}</span>
-                    </Box>
-                    <Box sx={{ height: '3px', background: INK4, borderRadius: '2px', mb: '10px' }}>
-                      <Box sx={{ height: '100%', width: `${w}%`, background: BLOOD2, borderRadius: '2px', transition: 'width 0.4s ease' }} />
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {rank >= 0 && (
-                        <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE3, padding: '4px 8px', border: `1px solid ${INK4}`, borderRadius: '2px' }}>
-                          #{rank + 1} IN CLUSTER
-                        </span>
-                      )}
-                      {w >= 70 && (
-                        <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BLOOD2, padding: '4px 8px', border: `1px solid rgba(199,80,80,0.35)`, borderRadius: '2px', background: BLOOD_FAINT }}>
-                          CORE CHANNEL
-                        </span>
-                      )}
-                      {sharedFriends.map(f => (
-                        <span key={f.handle} style={{ fontFamily: MONO, fontSize: '0.4375rem', color: '#8BCAD4', padding: '4px 8px', border: '1px solid rgba(139,202,212,0.35)', borderRadius: '2px', background: 'rgba(139,202,212,0.08)' }}>
-                          {f.handle} ↔
+                  {/* Header */}
+                  <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
+                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: BLOOD2 }}>
+                      {cl?.label ?? ''}
+                    </span>
+                    <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
+                    {!isNatural && (
+                      <span style={{ fontFamily: MONO, fontSize: '0.375rem', letterSpacing: '0.1em', color: BONE4 }}>
+                        UNCLASSIFIED
+                      </span>
+                    )}
+                  </Box>
+
+                  <Box sx={{ fontFamily: DISPLAY, fontSize: '1.1rem', color: BONE, mb: '8px' }}>
+                    {name}
+                  </Box>
+
+                  {/* Weight bar */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '4px' }}>
+                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE4 }}>LISTENING WEIGHT</span>
+                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE3 }}>{w}</span>
+                  </Box>
+                  <Box sx={{ height: '3px', background: INK4, borderRadius: '2px', mb: '10px' }}>
+                    <Box sx={{ height: '100%', width: `${w}%`, background: BLOOD2, borderRadius: '2px', transition: 'width 0.4s ease' }} />
+                  </Box>
+
+                  {/* Chips row */}
+                  <Box sx={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {/* Cluster chip */}
+                    {cl && (
+                      <button
+                        onClick={() => setFocusedNode({ type: 'genre', ci })}
+                        style={chipStyle(BLOOD2, BLOOD_FAINT, 'rgba(199,80,80,0.35)')}>
+                        ↗ {cl.label}
+                      </button>
+                    )}
+                    {/* Rank chip */}
+                    {rank >= 0 && (
+                      <span style={chipStyle(BONE3, 'transparent', INK4)}>
+                        #{rank + 1} IN CLUSTER
+                      </span>
+                    )}
+                    {/* Core channel badge */}
+                    {w >= 70 && (
+                      <span style={chipStyle(BLOOD2, BLOOD_FAINT, 'rgba(199,80,80,0.35)')}>
+                        CORE CHANNEL
+                      </span>
+                    )}
+                    {/* Same-cluster artist chips */}
+                    {sameClusterArtists.map(a => (
+                      <button
+                        key={a.name}
+                        onClick={() => setFocusedNode({ type: 'artist', name: a.name, ci })}
+                        style={artistChipStyle}>
+                        {a.name}
+                      </button>
+                    ))}
+                    {/* Shared friend chips */}
+                    {sharedFriends.map(f => (
+                      <button
+                        key={f.handle}
+                        onClick={() => setFocusedNode({ type: 'friend', handle: f.handle })}
+                        style={chipStyle(FRIEND_COL, 'rgba(139,202,212,0.08)', 'rgba(139,202,212,0.35)')}>
+                        {f.handle} ↔
+                      </button>
+                    ))}
+                  </Box>
+                </Box>
+              )
+            }
+
+            // ── GENRE FOCUSED ──────────────────────────────────────────────
+            if (focusedNode.type === 'genre') {
+              const { ci } = focusedNode
+              const cl = clusters[ci]
+              if (!cl) return null
+              const topSubgenres = cl.subgenres.slice(0, 4)
+              const topArtists = cl.artists.slice(0, 4)
+              const genreFriends = friends.filter(f =>
+                f.shared_artists.some(name => cl.artists.find(a => a.name === name))
+              )
+
+              return (
+                <Box sx={{
+                  position: 'relative', zIndex: 20, flexShrink: 0,
+                  mx: '12px', mb: '12px',
+                  background: INK2, border: `1px solid ${INK4}`,
+                  borderRadius: '3px', padding: '14px 16px',
+                  animation: 'sheetUp 0.25s ease forwards',
+                  '@keyframes sheetUp': {
+                    from: { opacity: 0, transform: 'translateY(10px)' },
+                    to:   { opacity: 1, transform: 'translateY(0)' },
+                  },
+                }}>
+                  <button onClick={() => setFocusedNode(null)} style={{
+                    position: 'absolute', top: 10, right: 12,
+                    fontFamily: MONO, fontSize: '0.4375rem', color: BONE4,
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                  }}>✕</button>
+
+                  {/* Header */}
+                  <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
+                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: BLOOD2 }}>
+                      {cl.label}
+                    </span>
+                    <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
+                  </Box>
+
+                  <Box sx={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE3, mb: '10px', letterSpacing: '0.12em' }}>
+                    {cl.artist_count} ARTISTS · {cl.subgenres.length} SUBGENRES
+                  </Box>
+
+                  {/* Subgenre chips */}
+                  {topSubgenres.length > 0 && (
+                    <Box sx={{ display: 'flex', gap: '5px', flexWrap: 'wrap', mb: '8px' }}>
+                      {topSubgenres.map(sg => (
+                        <span key={sg.label} style={{
+                          fontFamily: SERIF, fontStyle: 'italic', fontSize: '0.8125rem',
+                          color: BONE3, padding: '3px 8px',
+                          border: `1px solid ${INK4}`, borderRadius: '2px',
+                        }}>
+                          {sg.label}{sg.pct > 0 ? ` · ${sg.pct}%` : ''}
                         </span>
                       ))}
                     </Box>
+                  )}
+
+                  {/* Artist chips */}
+                  <Box sx={{ display: 'flex', gap: '5px', flexWrap: 'wrap', mb: genreFriends.length > 0 ? '8px' : 0 }}>
+                    {topArtists.map(a => (
+                      <button
+                        key={a.name}
+                        onClick={() => setFocusedNode({ type: 'artist', name: a.name, ci })}
+                        style={artistChipStyle}>
+                        {a.name}
+                      </button>
+                    ))}
                   </Box>
-                )
-              })()}
-            </Box>
-          )}
 
-          {/* ── Friend detail bottom sheet (L3 friend-node tap) ──────────────── */}
-          {pinnedFriend && (
-            <Box sx={{
-              position: 'relative', zIndex: 20, flexShrink: 0,
-              mx: '12px', mb: '12px',
-              background: INK2, border: '1px solid rgba(139,202,212,0.3)',
-              borderRadius: '3px', padding: '14px 16px',
-              animation: 'sheetUp 0.25s ease forwards',
-            }}>
-              <button onClick={() => setPinnedFriend(null)} style={{
-                position: 'absolute', top: 10, right: 12,
-                fontFamily: MONO, fontSize: '0.4375rem', color: BONE4,
-                background: 'transparent', border: 'none', cursor: 'pointer',
-              }}>✕</button>
+                  {/* Friend chips */}
+                  {genreFriends.length > 0 && (
+                    <Box sx={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                      {genreFriends.map(f => (
+                        <button
+                          key={f.handle}
+                          onClick={() => setFocusedNode({ type: 'friend', handle: f.handle })}
+                          style={chipStyle(FRIEND_COL, 'rgba(139,202,212,0.08)', 'rgba(139,202,212,0.35)')}>
+                          {f.handle}
+                        </button>
+                      ))}
+                    </Box>
+                  )}
+                </Box>
+              )
+            }
 
-              <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
-                <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: '#8BCAD4' }}>
-                  LISTENER
-                </span>
-                <Box sx={{ flex: 1, height: '1px', background: 'rgba(139,202,212,0.2)' }} />
-              </Box>
+            // ── FRIEND FOCUSED ─────────────────────────────────────────────
+            if (focusedNode.type === 'friend') {
+              const { handle: friendHandle } = focusedNode
+              const f = friends.find(fr => fr.handle === friendHandle)
+              if (!f) return null
 
-              <Box sx={{ fontFamily: DISPLAY, fontSize: '1.1rem', color: BONE, mb: '10px' }}>
-                @{pinnedFriend.handle}
-              </Box>
+              return (
+                <Box sx={{
+                  position: 'relative', zIndex: 20, flexShrink: 0,
+                  mx: '12px', mb: '12px',
+                  background: INK2, border: '1px solid rgba(139,202,212,0.3)',
+                  borderRadius: '3px', padding: '14px 16px',
+                  animation: 'sheetUp 0.25s ease forwards',
+                  '@keyframes sheetUp': {
+                    from: { opacity: 0, transform: 'translateY(10px)' },
+                    to:   { opacity: 1, transform: 'translateY(0)' },
+                  },
+                }}>
+                  <button onClick={() => setFocusedNode(null)} style={{
+                    position: 'absolute', top: 10, right: 12,
+                    fontFamily: MONO, fontSize: '0.4375rem', color: BONE4,
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                  }}>✕</button>
 
-              <Box sx={{ mb: '6px' }}>
-                <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE4, letterSpacing: '0.12em' }}>
-                  SHARED ARTISTS
-                </span>
-              </Box>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                {pinnedFriend.shared_artists.map(name => (
-                  <span key={name} style={{
-                    fontFamily: SERIF, fontStyle: 'italic', fontSize: '0.8125rem',
-                    color: BONE2, padding: '3px 8px',
-                    border: `1px solid ${INK4}`, borderRadius: '2px',
-                  }}>
-                    {name}
-                  </span>
-                ))}
-              </Box>
-            </Box>
-          )}
+                  {/* Header */}
+                  <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
+                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: FRIEND_COL }}>
+                      LISTENER
+                    </span>
+                    <Box sx={{ flex: 1, height: '1px', background: 'rgba(139,202,212,0.2)' }} />
+                  </Box>
 
-          {/* ── Bottom layer labels (L2/L3 context) ─────────────────────────── */}
-          {layer !== 1 && !pinnedArtist && !pinnedFriend && (
+                  <Box sx={{ fontFamily: DISPLAY, fontSize: '1.1rem', color: BONE, mb: '10px' }}>
+                    @{friendHandle}
+                  </Box>
+
+                  <Box sx={{ mb: '6px' }}>
+                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE4, letterSpacing: '0.12em' }}>
+                      SHARED ARTISTS
+                    </span>
+                  </Box>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                    {f.shared_artists.map(name => {
+                      // Find which cluster this artist belongs to
+                      let artistCi = 0
+                      for (let i = 0; i < clusters.length; i++) {
+                        if (clusters[i].artists.find(a => a.name === name)) {
+                          artistCi = i
+                          break
+                        }
+                      }
+                      return (
+                        <button
+                          key={name}
+                          onClick={() => setFocusedNode({ type: 'artist', name, ci: artistCi })}
+                          style={artistChipStyle}>
+                          {name}
+                        </button>
+                      )
+                    })}
+                  </Box>
+                </Box>
+              )
+            }
+
+            return null
+          })()}
+
+          {/* ── Bottom layer labels (L2/L3 context — only when no focus) ──────── */}
+          {layer !== 1 && !focusedNode && (
             <Box sx={{ px: '16px', pb: '14px', flexShrink: 0 }}>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                 {layer === 2 && (data?.clusters ?? []).flatMap(cl =>

@@ -80,6 +80,12 @@ export interface SigilFriend {
   primary_artist?: string
 }
 
+export type FocusedNode =
+  | { type: 'artist'; name: string; ci: number }
+  | { type: 'genre'; ci: number }
+  | { type: 'friend'; handle: string }
+  | null
+
 export interface SigilExplorerProps {
   size: number
   genres: string[]
@@ -89,8 +95,8 @@ export interface SigilExplorerProps {
   clusters: SigilCluster[]
   friends?: SigilFriend[]
   layer: 1 | 2 | 3
-  onArtistTap?: (name: string, clusterLabel: string, natural: boolean) => void
-  onFriendTap?: (handle: string) => void
+  focusedNode?: FocusedNode
+  onNodeClick?: (node: FocusedNode) => void  // null = deselect
   style?: React.CSSProperties
   className?: string
 }
@@ -105,8 +111,8 @@ export default function SigilExplorer({
   clusters,
   friends = [],
   layer,
-  onArtistTap,
-  onFriendTap,
+  focusedNode,
+  onNodeClick,
   style,
   className,
 }: SigilExplorerProps) {
@@ -138,7 +144,7 @@ export default function SigilExplorer({
   const showL2 = layer === 2
   const showL3 = layer === 3
 
-  // ── Build artist position lookup (used for friend connection lines) ───────
+  // ── Build artist position lookup (used for connection lines) ──────────────
   const artistPosLookup = useMemo<Record<string, {x:number;y:number;ci:number}>>(() => {
     const map: Record<string, {x:number;y:number;ci:number}> = {}
     clusters.forEach((cl, ci) => {
@@ -173,6 +179,97 @@ export default function SigilExplorer({
     return out
   }, [friends, artistPosLookup])
 
+  // ── Friend position lookup ─────────────────────────────────────────────────
+  const friendPosLookup = useMemo<Record<string, {x:number;y:number}>>(() => {
+    const map: Record<string, {x:number;y:number}> = {}
+    Object.entries(friendsByCluster).forEach(([ciStr, friendList]) => {
+      const ci = parseInt(ciStr)
+      const ca = outerPts[ci]?.a ?? (-Math.PI / 2 + (ci / 7) * Math.PI * 2)
+      const count = friendList.length
+      friendList.forEach(({ friend }, j) => {
+        const spread = count === 1 ? 0 : (j - (count - 1) / 2) * 0.22
+        const angle = ca + spread
+        map[friend.handle] = {
+          x: CX + Math.cos(angle) * 165,
+          y: CY + Math.sin(angle) * 165,
+        }
+      })
+    })
+    return map
+  }, [friendsByCluster, outerPts])
+
+  // ── Compute connected nodes for focus mode ────────────────────────────────
+  const connected = useMemo<{
+    genreCis: Set<number>
+    artists: Set<string>
+    friends: Set<string>
+  } | null>(() => {
+    if (!focusedNode) return null
+
+    const genreCis = new Set<number>()
+    const artistSet = new Set<string>()
+    const friendSet = new Set<string>()
+
+    if (focusedNode.type === 'artist') {
+      const { name, ci } = focusedNode
+      genreCis.add(ci)
+      // same-cluster artists
+      const cl = clusters[ci]
+      if (cl) {
+        cl.artists.forEach(a => artistSet.add(a.name))
+      }
+      // friends sharing this artist
+      friends.forEach(f => {
+        if (f.shared_artists.includes(name)) friendSet.add(f.handle)
+      })
+    } else if (focusedNode.type === 'genre') {
+      const { ci } = focusedNode
+      genreCis.add(ci)
+      const cl = clusters[ci]
+      if (cl) {
+        cl.artists.forEach(a => {
+          artistSet.add(a.name)
+          // friends who share any of these artists
+          friends.forEach(f => {
+            if (f.shared_artists.includes(a.name)) friendSet.add(f.handle)
+          })
+        })
+      }
+    } else if (focusedNode.type === 'friend') {
+      const { handle } = focusedNode
+      friendSet.add(handle)
+      const f = friends.find(fr => fr.handle === handle)
+      if (f) {
+        f.shared_artists.forEach(name => {
+          artistSet.add(name)
+          const pos = artistPosLookup[name]
+          if (pos) genreCis.add(pos.ci)
+        })
+      }
+    }
+
+    return { genreCis, artists: artistSet, friends: friendSet }
+  }, [focusedNode, clusters, friends, artistPosLookup])
+
+  // ── Helper: get artist opacity in focus mode ───────────────────────────────
+  const getArtistOpacity = (name: string, isNatural: boolean, isDim: boolean): number => {
+    if (connected === null) return isNatural ? (isDim ? 0.55 : 0.85) : 0.3
+    if (connected.artists.has(name)) return 0.9
+    return 0.08
+  }
+
+  // ── Helper: get genre tick opacity ────────────────────────────────────────
+  const getGenreOpacity = (ci: number): number => {
+    if (connected === null) return 1
+    return connected.genreCis.has(ci) ? 1 : 0.1
+  }
+
+  // ── Helper: get friend opacity ────────────────────────────────────────────
+  const getFriendOpacity = (handle: string): number => {
+    if (connected === null) return 1
+    return connected.friends.has(handle) ? 1 : 0.08
+  }
+
   return (
     <svg
       width={size}
@@ -182,6 +279,27 @@ export default function SigilExplorer({
       className={className}
       aria-label={`Metal-ID Sigil — Layer ${layer}`}
     >
+      {/* Pulse animation keyframes */}
+      <defs>
+        <style>{`
+          @keyframes sigilNodePulse {
+            0%,100% { opacity: 0.6 }
+            50% { opacity: 0.15 }
+          }
+          @keyframes sigilFriendPulse {
+            0%,100% { opacity: 0.5 }
+            50% { opacity: 0.15 }
+          }
+        `}</style>
+      </defs>
+
+      {/* Background deselect — invisible rect behind everything */}
+      <rect
+        x={0} y={0} width={1000} height={1000}
+        fill="transparent"
+        onClick={() => onNodeClick?.(null)}
+      />
+
       {/* ── ALWAYS: outer dashed ring ──────────────────────────────────────── */}
       <circle
         cx={CX} cy={CY} r={R_OUTER}
@@ -204,9 +322,21 @@ export default function SigilExplorer({
         const ly     = p.y + Math.sin(p.a) * labelDist + 3
         const anchor = Math.cos(p.a) > 0.3 ? 'start' : Math.cos(p.a) < -0.3 ? 'end' : 'middle'
         const cluster = clusters[i]
+        const gOpacity = getGenreOpacity(i)
+        const isFocusedGenre = focusedNode?.type === 'genre' && focusedNode.ci === i
 
         return (
-          <g key={i}>
+          <g
+            key={i}
+            onClick={(e) => {
+              e.stopPropagation()
+              onNodeClick?.({ type: 'genre', ci: i })
+            }}
+            style={{ cursor: onNodeClick ? 'pointer' : 'default', opacity: gOpacity, transition: 'opacity 0.3s ease' }}
+          >
+            {/* Larger transparent hit target */}
+            <circle cx={p.x} cy={p.y} r={14} fill="transparent" />
+
             {/* tick */}
             <line
               x1={p.x - Math.cos(p.a) * 3} y1={p.y - Math.sin(p.a) * 3}
@@ -215,6 +345,15 @@ export default function SigilExplorer({
             />
             {/* dot */}
             <circle cx={p.x} cy={p.y} r={2.2} fill={BONE} />
+
+            {/* Focused genre highlight ring */}
+            {isFocusedGenre && (
+              <circle
+                cx={p.x} cy={p.y} r={5}
+                fill="none" stroke={BLOOD2} strokeWidth={1.2}
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
 
             {/* Genre label — full in L1, faded in L3, hidden in L2 */}
             {genres[i] && (
@@ -362,6 +501,85 @@ export default function SigilExplorer({
           L · III
         </text>
 
+        {/* ── Connection lines (drawn BEFORE nodes) ─────────────────────────── */}
+        {focusedNode?.type === 'artist' && (() => {
+          const { name, ci } = focusedNode
+          const focusedPos = artistPosLookup[name]
+          if (!focusedPos) return null
+          const outerPt = outerPts[ci]
+          const lines: React.ReactNode[] = []
+          // Line to genre outer point
+          if (outerPt) {
+            lines.push(
+              <line key="genre-line"
+                x1={focusedPos.x} y1={focusedPos.y}
+                x2={outerPt.x} y2={outerPt.y}
+                stroke={BLOOD2} strokeWidth={1} opacity={0.6}
+                vectorEffect="non-scaling-stroke"
+              />
+            )
+          }
+          // Lines to connected friends
+          if (connected) {
+            connected.friends.forEach(handle => {
+              const fPos = friendPosLookup[handle]
+              if (fPos) {
+                lines.push(
+                  <line key={`friend-${handle}`}
+                    x1={focusedPos.x} y1={focusedPos.y}
+                    x2={fPos.x} y2={fPos.y}
+                    stroke={FRIEND_COL} strokeWidth={0.7} opacity={0.45}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )
+              }
+            })
+          }
+          return lines
+        })()}
+
+        {focusedNode?.type === 'genre' && connected && (() => {
+          const { ci } = focusedNode
+          const outerPt = outerPts[ci]
+          if (!outerPt) return null
+          const lines: React.ReactNode[] = []
+          connected.artists.forEach(name => {
+            const aPos = artistPosLookup[name]
+            if (aPos) {
+              lines.push(
+                <line key={`genre-artist-${name}`}
+                  x1={outerPt.x} y1={outerPt.y}
+                  x2={aPos.x} y2={aPos.y}
+                  stroke={BLOOD2} strokeWidth={0.6} opacity={0.3}
+                  vectorEffect="non-scaling-stroke"
+                />
+              )
+            }
+          })
+          return lines
+        })()}
+
+        {focusedNode?.type === 'friend' && connected && (() => {
+          const { handle } = focusedNode
+          const fPos = friendPosLookup[handle]
+          if (!fPos) return null
+          const lines: React.ReactNode[] = []
+          connected.artists.forEach(name => {
+            const aPos = artistPosLookup[name]
+            if (aPos) {
+              lines.push(
+                <line key={`friend-artist-${name}`}
+                  x1={fPos.x} y1={fPos.y}
+                  x2={aPos.x} y2={aPos.y}
+                  stroke={FRIEND_COL} strokeWidth={0.7} opacity={0.45}
+                  vectorEffect="non-scaling-stroke"
+                />
+              )
+            }
+          })
+          return lines
+        })()}
+
         {/* ── Artist dots ─────────────────────────────────────────────────── */}
         {clusters.map((cluster, ci) => {
           const ca = outerPts[ci]?.a ?? (-Math.PI / 2 + (ci / 7) * Math.PI * 2)
@@ -373,19 +591,33 @@ export default function SigilExplorer({
               : 1.8 + (a.weight / 100) * 3.0     // synthetic: 1.8–4.8 (smaller)
             const isTop    = j === 0
             const isDim    = a.weight < 30
+            const isFocused = focusedNode?.type === 'artist' && focusedNode.name === a.name
+            const opacity  = isFocused ? 1.0 : getArtistOpacity(a.name, isNatural, isDim)
 
             return (
               <g
                 key={`${ci}-${j}`}
-                onClick={() => onArtistTap?.(a.name, cluster.label, isNatural)}
-                style={{ cursor: onArtistTap ? 'pointer' : 'default' }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onNodeClick?.({ type: 'artist', name: a.name, ci })
+                }}
+                style={{ cursor: onNodeClick ? 'pointer' : 'default', opacity, transition: 'opacity 0.3s ease' }}
               >
+                {/* Focused artist pulse ring */}
+                {isFocused && (
+                  <circle
+                    cx={pos.x} cy={pos.y} r={dotR + 8}
+                    fill="none" stroke={BLOOD2} strokeWidth={0.8}
+                    style={{ animation: 'sigilNodePulse 1.5s ease-in-out infinite' }}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
                 {/* glow ring for #1 natural artist per cluster */}
                 {isTop && isNatural && (
                   <circle
                     cx={pos.x} cy={pos.y} r={dotR + 4.5}
                     fill="none" stroke={BLOOD2} strokeWidth={0.6}
-                    opacity={0.45} vectorEffect="non-scaling-stroke"
+                    opacity={isFocused ? 0.8 : 0.45} vectorEffect="non-scaling-stroke"
                   />
                 )}
                 <circle
@@ -396,16 +628,14 @@ export default function SigilExplorer({
                   opacity={isNatural ? (isDim ? 0.55 : 0.85) : 0.3}
                 />
                 {/* invisible hit target — easier to tap small dots */}
-                {onArtistTap && (
-                  <circle cx={pos.x} cy={pos.y} r={Math.max(dotR + 2, 9)} fill="transparent" />
-                )}
+                <circle cx={pos.x} cy={pos.y} r={Math.max(dotR + 2, 9)} fill="transparent" />
               </g>
             )
           })
         })}
 
-        {/* ── Friend nodes: connection lines first (drawn under nodes) ──────── */}
-        {Object.entries(friendsByCluster).map(([ciStr, friendList]) => {
+        {/* ── Friend nodes: existing connection lines (drawn under nodes) ───── */}
+        {!focusedNode && Object.entries(friendsByCluster).map(([ciStr, friendList]) => {
           const ci = parseInt(ciStr)
           const ca = outerPts[ci]?.a ?? (-Math.PI / 2 + (ci / 7) * Math.PI * 2)
           const count = friendList.length
@@ -438,12 +668,24 @@ export default function SigilExplorer({
             const fx      = CX + Math.cos(angle) * 165
             const fy      = CY + Math.sin(angle) * 165
             const initials = friend.handle.slice(0, 3).toUpperCase()
+            const isFocusedFriend = focusedNode?.type === 'friend' && focusedNode.handle === friend.handle
+            const fOpacity = getFriendOpacity(friend.handle)
             return (
               <g
                 key={friend.handle}
-                onClick={() => onFriendTap?.(friend.handle)}
-                style={{ cursor: onFriendTap ? 'pointer' : 'default' }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onNodeClick?.({ type: 'friend', handle: friend.handle })
+                }}
+                style={{ cursor: onNodeClick ? 'pointer' : 'default', opacity: fOpacity, transition: 'opacity 0.3s ease' }}
               >
+                {/* Focused friend pulse ring */}
+                {isFocusedFriend && (
+                  <circle cx={fx} cy={fy} r={13}
+                    fill="none" stroke={FRIEND_COL} strokeWidth={1.2}
+                    style={{ animation: 'sigilFriendPulse 1.5s ease-in-out infinite' }}
+                    vectorEffect="non-scaling-stroke" />
+                )}
                 {/* outer glow */}
                 <circle cx={fx} cy={fy} r={11}
                   fill="none" stroke={FRIEND_COL} strokeWidth={0.4}
@@ -464,9 +706,7 @@ export default function SigilExplorer({
                   {initials}
                 </text>
                 {/* hit area */}
-                {onFriendTap && (
-                  <circle cx={fx} cy={fy} r={14} fill="transparent" />
-                )}
+                <circle cx={fx} cy={fy} r={14} fill="transparent" />
               </g>
             )
           })
