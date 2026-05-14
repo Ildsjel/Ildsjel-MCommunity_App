@@ -59,7 +59,7 @@ function mapHit(hit: ApiHit): Profile {
 
 const labelStyle: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -163,7 +163,7 @@ export default function SwipeFeed() {
           <Box component="button" onClick={() => setIdx(0)} sx={{
             mt: 1, border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
             px: 2, py: 0.75, background: 'transparent', cursor: 'pointer',
-            fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em',
+            fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.12em',
             color: 'var(--ink)',
           }}>
             RESTART
@@ -276,7 +276,7 @@ export default function SwipeFeed() {
               cursor: 'pointer',
             }}
           >
-            <span style={{ ...labelStyle, color: 'var(--ink)', fontSize: '0.5rem' }}>
+            <span style={{ ...labelStyle, color: 'var(--ink)', fontSize: '0.625rem' }}>
               ☍ {profileComments.length > 0 ? profileComments.length : 'COMMENT'}
             </span>
           </Box>
@@ -312,7 +312,7 @@ export default function SwipeFeed() {
                   <Box key={a} sx={{
                     border: '1.5px solid rgba(216,207,184,0.25)', borderRadius: '3px',
                     px: 0.75, height: 22, display: 'inline-flex', alignItems: 'center',
-                    fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.1em',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em',
                     textTransform: 'uppercase', color: 'var(--ink)',
                   }}>
                     {a}
@@ -328,7 +328,7 @@ export default function SwipeFeed() {
                   <Box key={g} sx={{
                     border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
                     px: 0.75, height: 20, display: 'inline-flex', alignItems: 'center',
-                    fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.08em',
                     textTransform: 'uppercase', color: 'var(--muted)',
                   }}>
                     {g}
@@ -338,7 +338,7 @@ export default function SwipeFeed() {
             )}
 
             {profile.lastActive && (
-              <span style={{ ...labelStyle, fontSize: '0.4375rem', display: 'block' }}>
+              <span style={{ ...labelStyle, fontSize: '0.5625rem', display: 'block' }}>
                 {profile.lastActive}
               </span>
             )}
@@ -421,13 +421,13 @@ export default function SwipeFeed() {
                       width: 20, height: 20, flexShrink: 0,
                       border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '2px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'var(--font-display)', fontSize: '0.5rem', color: '#ece5d3',
+                      fontFamily: 'var(--font-display)', fontSize: '0.625rem', color: '#ece5d3',
                       backgroundColor: '#120e18',
                     }}>
                       {c.user.charAt(0)}
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                      <span style={{ ...labelStyle, fontSize: '0.4375rem' }}>{c.user} · {c.time}</span>
+                      <span style={{ ...labelStyle, fontSize: '0.5625rem' }}>{c.user} · {c.time}</span>
                       <Typography sx={{ fontFamily: 'var(--font-serif)', fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.45, mt: 0.25 }}>
                         {c.text}
                       </Typography>
@@ -457,7 +457,7 @@ export default function SwipeFeed() {
               <Box component="button" onClick={addComment} sx={{
                 background: 'none', border: '1.5px solid rgba(216,207,184,0.2)',
                 borderRadius: '3px', px: 1.25, cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
                 letterSpacing: '0.1em', color: 'var(--ink)',
                 '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
               }}>

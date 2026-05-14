@@ -56,7 +56,7 @@ function formatTimeDivider(iso: string): string {
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted, #7A756D)',
+  fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted, #7A756D)',
 }
 const hatchBg = 'repeating-linear-gradient(135deg, #1a1424 0 5px, #120e18 5px 10px)'
 
@@ -65,14 +65,14 @@ function AlbumPlaceholder({ size }: { size: number }) {
 }
 
 function MiniAvatar({ initial }: { initial: string }) {
-  return <Box sx={{ width: 24, height: 24, flexShrink: 0, borderRadius: '50%', border: '1.5px solid rgba(216,207,184,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: '0.5rem', color: '#ece5d3', backgroundColor: '#1a1424' }}>{initial}</Box>
+  return <Box sx={{ width: 24, height: 24, flexShrink: 0, borderRadius: '50%', border: '1.5px solid rgba(216,207,184,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: '0.625rem', color: '#ece5d3', backgroundColor: '#1a1424' }}>{initial}</Box>
 }
 
 function TimeDivider({ iso }: { iso: string }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 1 }}>
       <Box sx={{ flex: 1, height: '1px', background: 'rgba(216,207,184,0.1)' }} />
-      <span style={{ ...mono, fontSize: '0.5rem' }}>{formatTimeDivider(iso)}</span>
+      <span style={{ ...mono, fontSize: '0.625rem' }}>{formatTimeDivider(iso)}</span>
       <Box sx={{ flex: 1, height: '1px', background: 'rgba(216,207,184,0.1)' }} />
     </Box>
   )
@@ -82,8 +82,8 @@ function HeroCard({ review, onHorns }: { review: ReviewItem; onHorns: (id: strin
   return (
     <Box sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', backgroundColor: '#120e18', overflow: 'hidden', boxShadow: '1.5px 1.5px 0 rgba(216,207,184,.08)', mb: 1 }}>
       <Box sx={{ position: 'relative', height: 140, background: hatchBg }}>
-        <Box sx={{ position: 'absolute', top: 8, left: 8, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d4a010', background: 'rgba(8,6,10,0.82)', px: 0.75, py: 0.25, borderRadius: '2px' }}>TOP OF YOUR COVEN</Box>
-        <Box sx={{ position: 'absolute', top: 8, right: 8, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.1em', color: '#ece5d3', background: 'rgba(196,58,42,0.85)', px: 0.75, py: 0.25, borderRadius: '2px' }}>{review.rating}/10</Box>
+        <Box sx={{ position: 'absolute', top: 8, left: 8, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d4a010', background: 'rgba(8,6,10,0.82)', px: 0.75, py: 0.25, borderRadius: '2px' }}>TOP OF YOUR COVEN</Box>
+        <Box sx={{ position: 'absolute', top: 8, right: 8, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: '#ece5d3', background: 'rgba(196,58,42,0.85)', px: 0.75, py: 0.25, borderRadius: '2px' }}>{review.rating}/10</Box>
       </Box>
       <Box sx={{ px: 1.5, py: 1.25 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
@@ -94,7 +94,7 @@ function HeroCard({ review, onHorns }: { review: ReviewItem; onHorns: (id: strin
         <Typography sx={{ fontFamily: 'var(--font-display)', fontSize: '0.875rem', letterSpacing: '0.03em', mb: 0.125 }}>{review.band_name}</Typography>
         <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.9375rem', color: 'var(--muted)', mb: 0.75 }}>{review.release_title}{review.release_year ? ` · ${review.release_year}` : ''}</Typography>
         {review.body && <Box sx={{ borderLeft: '2px solid var(--accent)', pl: 1, mb: 0.875, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}><Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.9375rem', lineHeight: 1.45, color: 'var(--ink)' }}>"{review.body}"</Typography></Box>}
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em' }}>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.1em' }}>
           <Box component="button" onClick={() => onHorns(review.id)} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, color: 'var(--accent)', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit' }}>✶ {review.horns_count}</Box>
           <span style={{ color: 'var(--muted)' }}>☍ 0</span>
           <span style={{ color: 'var(--muted)' }}>★ {review.rating}/10</span>
@@ -111,13 +111,13 @@ function StandardCard({ review, onHorns, onClick }: { review: ReviewItem; onHorn
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.375 }}>
           <MiniAvatar initial={review.user_handle.charAt(0)} />
-          <span style={{ ...mono, color: 'var(--ink)', fontSize: '0.5rem' }}>{review.user_handle}</span>
-          <span style={{ ...mono, fontSize: '0.5rem' }}>{timeAgo(review.created_at)}</span>
+          <span style={{ ...mono, color: 'var(--ink)', fontSize: '0.625rem' }}>{review.user_handle}</span>
+          <span style={{ ...mono, fontSize: '0.625rem' }}>{timeAgo(review.created_at)}</span>
         </Box>
         <Typography sx={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', letterSpacing: '0.03em', mb: 0.125 }}>{review.band_name}</Typography>
         <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', mb: review.body ? 0.5 : 0 }}>{review.release_title}</Typography>
         {review.body && <Box sx={{ borderLeft: '2px solid var(--accent)', pl: 1, mb: 0.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}><Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', lineHeight: 1.4, color: 'var(--ink)' }}>"{review.body}"</Typography></Box>}
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em' }} onClick={(e) => e.stopPropagation()}>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.1em' }} onClick={(e) => e.stopPropagation()}>
           <Box component="button" onClick={() => onHorns(review.id)} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, color: 'var(--accent)', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit' }}>✶ {review.horns_count}</Box>
           <span style={{ color: 'var(--muted)' }}>☍ 0</span>
           <span style={{ color: 'var(--muted)' }}>{review.rating}/10</span>
@@ -131,7 +131,7 @@ function SoulsTeaser({ onTap }: { onTap: () => void }) {
   return (
     <Box onClick={onTap} sx={{ border: '1.5px solid rgba(216,207,184,0.18)', borderRadius: '3px', backgroundColor: '#120e18', py: 1.25, px: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', boxShadow: '2px 2px 0 rgba(216,207,184,.08)', transition: 'border-color 0.1s', '&:hover': { borderColor: 'rgba(216,207,184,0.3)' } }}>
       <span style={{ fontFamily: 'var(--font-display, "Archivo Black", sans-serif)', fontSize: '0.6875rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink)' }}>DISCOVER SOULS NEAR YOU</span>
-      <span style={{ ...mono, fontSize: '0.5rem', color: 'var(--muted)' }}>SEE ALL →</span>
+      <span style={{ ...mono, fontSize: '0.625rem', color: 'var(--muted)' }}>SEE ALL →</span>
     </Box>
   )
 }
@@ -221,7 +221,7 @@ export default function FeedPage() {
       return (
         <Box sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', p: 3, textAlign: 'center', backgroundColor: '#120e18' }}>
           <span style={{ ...mono, color: 'var(--accent)', display: 'block', marginBottom: 8 }}>◉ ERROR · COULD NOT REACH THE ALTAR.</span>
-          <Box component="button" onClick={() => fetchReviews(activeFilter)} sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 2, py: 0.75, background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink)' }}>[ TRY AGAIN ]</Box>
+          <Box component="button" onClick={() => fetchReviews(activeFilter)} sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 2, py: 0.75, background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink)' }}>[ TRY AGAIN ]</Box>
         </Box>
       )
     }
@@ -244,7 +244,7 @@ export default function FeedPage() {
     if (bucketC.length > 0) nodes.push(<TimeDivider key="divider-c" iso={bucketC[0].created_at} />)
     bucketC.forEach((review) => nodes.push(<StandardCard key={review.id} review={review} onHorns={handleHorns} onClick={() => router.push(`/bands/${review.band_slug}/${review.release_slug}`)} />))
 
-    nodes.push(<Box key="terminator" sx={{ textAlign: 'center', mt: 3, mb: 1 }}><Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.9375rem', color: 'var(--muted)', mb: 0.5 }}>"you have read everything."</Typography><span style={{ ...mono, fontSize: '0.5rem' }}>↑ PULL TO REFRESH · OR REST.</span></Box>)
+    nodes.push(<Box key="terminator" sx={{ textAlign: 'center', mt: 3, mb: 1 }}><Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.9375rem', color: 'var(--muted)', mb: 0.5 }}>"you have read everything."</Typography><span style={{ ...mono, fontSize: '0.625rem' }}>↑ PULL TO REFRESH · OR REST.</span></Box>)
     return <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>{nodes}</Box>
   }
 
@@ -253,7 +253,7 @@ export default function FeedPage() {
       <Navigation />
       <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 10 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-          <span style={{ ...mono, color: 'var(--accent)', fontSize: '0.5625rem' }}>FEED · WEEK {week} · MMXXVI</span>
+          <span style={{ ...mono, color: 'var(--accent)', fontSize: '0.6875rem' }}>FEED · WEEK {week} · MMXXVI</span>
           <Box component="button" onClick={() => router.push('/bands')} sx={{ width: 32, height: 32, border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.875rem', transition: 'border-color 0.1s, color 0.1s', '&:hover': { borderColor: 'rgba(216,207,184,0.4)', color: 'var(--ink)' } }}>✎</Box>
         </Box>
 
@@ -261,7 +261,7 @@ export default function FeedPage() {
           {FILTER_CHIPS.map((chip) => {
             const isActive = activeFilter === chip.key
             return (
-              <Box key={chip.key} component="button" onClick={() => setActiveFilter(chip.key)} sx={{ flexShrink: 0, scrollSnapAlign: 'start', position: 'relative', border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 1.25, height: 26, display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', backgroundColor: isActive ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: isActive ? '#120e18' : 'var(--muted)', transition: 'background 0.1s, color 0.1s' }}>
+              <Box key={chip.key} component="button" onClick={() => setActiveFilter(chip.key)} sx={{ flexShrink: 0, scrollSnapAlign: 'start', position: 'relative', border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 1.25, height: 26, display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', backgroundColor: isActive ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: isActive ? '#120e18' : 'var(--muted)', transition: 'background 0.1s, color 0.1s' }}>
                 {chip.label}
                 {chip.key === 'coven' && pendingCoven > 0 && <Box sx={{ minWidth: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--accent)', color: '#ece5d3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.4rem', letterSpacing: 0 }}>{pendingCoven > 99 ? '99+' : pendingCoven}</Box>}
                 {chip.key === 'matches' && <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--accent)' }} />}
@@ -273,7 +273,7 @@ export default function FeedPage() {
         <Box sx={{ display: 'flex', gap: 0.5, mb: 1.75 }}>
           {(['reviews', 'people'] as FeedMode[]).map((m) => {
             const isActive = mode === m
-            return <Box key={m} component="button" onClick={() => setMode(m)} sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 1.25, height: 28, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: isActive ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: isActive ? '#120e18' : 'var(--muted)', transition: 'background 0.1s, color 0.1s' }}>{m === 'reviews' ? '◉ REVIEWS' : '◈ PEOPLE'}</Box>
+            return <Box key={m} component="button" onClick={() => setMode(m)} sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 1.25, height: 28, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: isActive ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: isActive ? '#120e18' : 'var(--muted)', transition: 'background 0.1s, color 0.1s' }}>{m === 'reviews' ? '◉ REVIEWS' : '◈ PEOPLE'}</Box>
           })}
         </Box>
 

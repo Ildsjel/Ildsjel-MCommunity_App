@@ -199,10 +199,10 @@ export default function GlobePage() {
 
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+          <span style={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)' }}>
             Metal Match · Atlas
           </span>
-          <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+          <span style={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)' }}>
             {allUsers.length} {allUsers.length === 1 ? 'devotee' : 'devotees'}
           </span>
         </Box>
@@ -293,7 +293,7 @@ export default function GlobePage() {
         </Box>
 
         {/* Drag hint */}
-        <Typography sx={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.12em', textTransform: 'uppercase', textAlign: 'center', color: 'rgba(216,207,184,0.22)', mb: 2 }}>
+        <Typography sx={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', textAlign: 'center', color: 'rgba(216,207,184,0.22)', mb: 2 }}>
           Drag to rotate · tap a dot to inspect
         </Typography>
 
@@ -301,7 +301,7 @@ export default function GlobePage() {
         {selected && (
           <Box sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', p: '10px 14px', mb: 2, backgroundColor: '#120e18', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Box>
-              <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', color: 'var(--accent)', textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>
+              <span style={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.12em', color: 'var(--accent)', textTransform: 'uppercase', display: 'block', marginBottom: 3 }}>
                 {selected.handle}
               </span>
               <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)' }}>
@@ -309,7 +309,7 @@ export default function GlobePage() {
               </Typography>
             </Box>
             <span
-              style={{ ...mono, fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--muted)', cursor: 'pointer', textTransform: 'uppercase' }}
+              style={{ ...mono, fontSize: '0.625rem', letterSpacing: '0.1em', color: 'var(--muted)', cursor: 'pointer', textTransform: 'uppercase' }}
               onClick={() => setSelected(null)}
             >
               ✕
@@ -320,7 +320,7 @@ export default function GlobePage() {
         {/* No location callout */}
         {!hasLocation && (
           <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', p: '14px 16px', mb: 2, backgroundColor: '#120e18' }}>
-            <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', display: 'block', marginBottom: 8 }}>
+            <span style={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', display: 'block', marginBottom: 8 }}>
               Location · Uncharted
             </span>
             <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.5 }}>
@@ -332,7 +332,7 @@ export default function GlobePage() {
         {/* Legend */}
         <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', backgroundColor: '#120e18' }}>
           <Box sx={{ p: '10px 14px' }}>
-            <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', display: 'block', marginBottom: 10 }}>
+            <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', display: 'block', marginBottom: 10 }}>
               Reading the Atlas
             </span>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

@@ -140,7 +140,7 @@ export default function SigilPage() {
 
   // ── Chip style helpers ────────────────────────────────────────────────────
   const chipStyle = (color = BONE3, bg = 'transparent', borderColor = INK4): React.CSSProperties => ({
-    fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.12em',
+    fontFamily: MONO, fontSize: '0.5625rem', letterSpacing: '0.12em',
     color, padding: '4px 8px',
     border: `1px solid ${borderColor}`,
     borderRadius: '2px', background: bg,
@@ -224,7 +224,7 @@ export default function SigilPage() {
         }}>
           <span style={mono(BONE3, '0.5rem')}>METAL-ID · {new Date().getFullYear()}</span>
           <button onClick={handleSync} disabled={syncing} style={{
-            fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.18em',
+            fontFamily: MONO, fontSize: '0.625rem', letterSpacing: '0.18em',
             textTransform: 'uppercase', color: syncing ? BONE4 : BLOOD2,
             background: 'transparent', border: 'none', cursor: syncing ? 'default' : 'pointer',
             display: 'flex', alignItems: 'center', gap: 5, padding: 0,
@@ -295,7 +295,7 @@ export default function SigilPage() {
                     border: `1px solid ${i === 0 ? BLOOD : INK4}`,
                     padding: '6px 11px',
                     fontFamily: MONO,
-                    fontSize: '0.5625rem',
+                    fontSize: '0.6875rem',
                     letterSpacing: '0.18em',
                     color: i === 0 ? BONE : BONE3,
                     textTransform: 'uppercase',
@@ -376,7 +376,7 @@ export default function SigilPage() {
                     width: '100%',
                     padding: '13px 0',
                     fontFamily: MONO,
-                    fontSize: '0.5625rem',
+                    fontSize: '0.6875rem',
                     letterSpacing: '0.18em',
                     textTransform: 'uppercase',
                     color: BONE,
@@ -478,7 +478,7 @@ export default function SigilPage() {
                   onClick={() => router.push('/spotify/connect')}
                   style={{
                     flex: 1, padding: '13px 0',
-                    fontFamily: MONO, fontSize: '0.5rem',
+                    fontFamily: MONO, fontSize: '0.625rem',
                     letterSpacing: '0.18em', textTransform: 'uppercase',
                     color: BONE, background: BLOOD3,
                     border: `1px solid ${BLOOD}`, borderRadius: '2px', cursor: 'pointer',
@@ -489,7 +489,7 @@ export default function SigilPage() {
                   onClick={() => router.push('/lastfm/connect')}
                   style={{
                     flex: 1, padding: '13px 0',
-                    fontFamily: MONO, fontSize: '0.5rem',
+                    fontFamily: MONO, fontSize: '0.625rem',
                     letterSpacing: '0.18em', textTransform: 'uppercase',
                     color: BONE2, background: 'transparent',
                     border: `1px solid ${INK4}`, borderRadius: '2px', cursor: 'pointer',
@@ -504,7 +504,7 @@ export default function SigilPage() {
                 disabled={syncing}
                 style={{
                   width: '100%', padding: '11px 0',
-                  fontFamily: MONO, fontSize: '0.5rem',
+                  fontFamily: MONO, fontSize: '0.625rem',
                   letterSpacing: '0.18em', textTransform: 'uppercase',
                   color: BONE3, background: 'transparent',
                   border: `1px solid ${INK4}`, borderRadius: '2px',
@@ -555,7 +555,7 @@ export default function SigilPage() {
             <button
               onClick={() => { setEntered(false); setLayer(1); setFocusedNode(null) }}
               style={{
-                fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.18em',
+                fontFamily: MONO, fontSize: '0.625rem', letterSpacing: '0.18em',
                 textTransform: 'uppercase', color: BONE3,
                 background: 'transparent', border: 'none', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -568,7 +568,7 @@ export default function SigilPage() {
             <span style={{ fontFamily: MEDIEVAL, fontWeight: 700, fontSize: 22, color: BONE }}>
               Grimr
             </span>
-            <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em', color: BLOOD2 }}>
+            <span style={{ fontFamily: MONO, fontSize: '0.5625rem', letterSpacing: '0.14em', color: BLOOD2 }}>
               L{layer} · {layer === 1 ? 'SEAL' : layer === 2 ? 'SCENE' : 'ARTISTS'}
             </span>
           </Box>
@@ -637,10 +637,10 @@ export default function SigilPage() {
 
             {/* Layer indicator */}
             <Box sx={{ textAlign: 'center', minWidth: '90px' }}>
-              <Box sx={{ fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.2em', color: BLOOD2, lineHeight: 1 }}>
+              <Box sx={{ fontFamily: MONO, fontSize: '0.625rem', letterSpacing: '0.2em', color: BLOOD2, lineHeight: 1 }}>
                 L{layer}
               </Box>
-              <Box sx={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: BONE4, mt: '3px' }}>
+              <Box sx={{ fontFamily: MONO, fontSize: '0.5625rem', letterSpacing: '0.16em', color: BONE4, mt: '3px' }}>
                 {layer === 1 ? 'SEAL' : layer === 2 ? 'SCENE' : 'ARTISTS'}
               </Box>
               <Box sx={{ mt: '4px', display: 'flex', justifyContent: 'center', gap: '4px' }}>
@@ -680,7 +680,7 @@ export default function SigilPage() {
           {/* ── L3 hint (no focus) ────────────────────────────────────────────── */}
           {layer === 3 && !focusedNode && (
             <Box sx={{ textAlign: 'center', pb: '6px', flexShrink: 0 }}>
-              <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em', color: BONE4 }}>
+              <span style={{ fontFamily: MONO, fontSize: '0.5625rem', letterSpacing: '0.14em', color: BONE4 }}>
                 TAP A DOT · ARTISTS{friends.length > 0 ? ` · ${friends.length} FRIEND${friends.length > 1 ? 'S' : ''} ON SEAL` : ''}
               </span>
             </Box>
@@ -719,18 +719,18 @@ export default function SigilPage() {
                 }}>
                   <button onClick={() => setFocusedNode(null)} style={{
                     position: 'absolute', top: 10, right: 12,
-                    fontFamily: MONO, fontSize: '0.4375rem', color: BONE4,
+                    fontFamily: MONO, fontSize: '0.5625rem', color: BONE4,
                     background: 'transparent', border: 'none', cursor: 'pointer',
                   }}>✕</button>
 
                   {/* Header */}
                   <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
-                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: BLOOD2 }}>
+                    <span style={{ fontFamily: MONO, fontSize: '0.5625rem', letterSpacing: '0.16em', color: BLOOD2 }}>
                       {cl?.label ?? ''}
                     </span>
                     <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
                     {!isNatural && (
-                      <span style={{ fontFamily: MONO, fontSize: '0.375rem', letterSpacing: '0.1em', color: BONE4 }}>
+                      <span style={{ fontFamily: MONO, fontSize: '0.625rem', letterSpacing: '0.1em', color: BONE4 }}>
                         UNCLASSIFIED
                       </span>
                     )}
@@ -742,8 +742,8 @@ export default function SigilPage() {
 
                   {/* Weight bar */}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '4px' }}>
-                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE4 }}>LISTENING WEIGHT</span>
-                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE3 }}>{w}</span>
+                    <span style={{ fontFamily: MONO, fontSize: '0.5625rem', color: BONE4 }}>LISTENING WEIGHT</span>
+                    <span style={{ fontFamily: MONO, fontSize: '0.5625rem', color: BONE3 }}>{w}</span>
                   </Box>
                   <Box sx={{ height: '3px', background: INK4, borderRadius: '2px', mb: '10px' }}>
                     <Box sx={{ height: '100%', width: `${w}%`, background: BLOOD2, borderRadius: '2px', transition: 'width 0.4s ease' }} />
@@ -819,19 +819,19 @@ export default function SigilPage() {
                 }}>
                   <button onClick={() => setFocusedNode(null)} style={{
                     position: 'absolute', top: 10, right: 12,
-                    fontFamily: MONO, fontSize: '0.4375rem', color: BONE4,
+                    fontFamily: MONO, fontSize: '0.5625rem', color: BONE4,
                     background: 'transparent', border: 'none', cursor: 'pointer',
                   }}>✕</button>
 
                   {/* Header */}
                   <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
-                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: BLOOD2 }}>
+                    <span style={{ fontFamily: MONO, fontSize: '0.5625rem', letterSpacing: '0.16em', color: BLOOD2 }}>
                       {cl.label}
                     </span>
                     <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
                   </Box>
 
-                  <Box sx={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE3, mb: '10px', letterSpacing: '0.12em' }}>
+                  <Box sx={{ fontFamily: MONO, fontSize: '0.5625rem', color: BONE3, mb: '10px', letterSpacing: '0.12em' }}>
                     {cl.artist_count} ARTISTS · {cl.subgenres.length} SUBGENRES
                   </Box>
 
@@ -899,13 +899,13 @@ export default function SigilPage() {
                 }}>
                   <button onClick={() => setFocusedNode(null)} style={{
                     position: 'absolute', top: 10, right: 12,
-                    fontFamily: MONO, fontSize: '0.4375rem', color: BONE4,
+                    fontFamily: MONO, fontSize: '0.5625rem', color: BONE4,
                     background: 'transparent', border: 'none', cursor: 'pointer',
                   }}>✕</button>
 
                   {/* Header */}
                   <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
-                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: FRIEND_COL }}>
+                    <span style={{ fontFamily: MONO, fontSize: '0.5625rem', letterSpacing: '0.16em', color: FRIEND_COL }}>
                       LISTENER
                     </span>
                     <Box sx={{ flex: 1, height: '1px', background: 'rgba(139,202,212,0.2)' }} />
@@ -916,7 +916,7 @@ export default function SigilPage() {
                   </Box>
 
                   <Box sx={{ mb: '6px' }}>
-                    <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE4, letterSpacing: '0.12em' }}>
+                    <span style={{ fontFamily: MONO, fontSize: '0.5625rem', color: BONE4, letterSpacing: '0.12em' }}>
                       SHARED ARTISTS
                     </span>
                   </Box>
@@ -965,7 +965,7 @@ export default function SigilPage() {
                   ))
                 )}
                 {layer === 3 && (
-                  <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.12em', color: BONE4 }}>
+                  <span style={{ fontFamily: MONO, fontSize: '0.5625rem', letterSpacing: '0.12em', color: BONE4 }}>
                     {(data?.clusters ?? []).reduce((s, c) => s + c.artists.length, 0)} ARTISTS MAPPED · DOT SIZE = LISTENING WEIGHT
                   </span>
                 )}

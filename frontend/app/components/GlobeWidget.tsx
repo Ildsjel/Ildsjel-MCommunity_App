@@ -382,10 +382,10 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, pt: 1.25, pb: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Box sx={{ border: '1px solid rgba(216,207,184,0.25)', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', ...mono, fontSize: '0.5rem', color: 'var(--muted)' }}>
+          <Box sx={{ border: '1px solid rgba(216,207,184,0.25)', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', ...mono, fontSize: '0.625rem', color: 'var(--muted)' }}>
             ←
           </Box>
-          <span style={{ ...mono, fontSize: '0.5rem', letterSpacing: '0.16em', color: 'var(--muted)', textTransform: 'uppercase' }}>
+          <span style={{ ...mono, fontSize: '0.625rem', letterSpacing: '0.16em', color: 'var(--muted)', textTransform: 'uppercase' }}>
             ATLAS
           </span>
         </Box>
@@ -407,8 +407,8 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
       >
         {/* HUD left */}
         <Box sx={{ position: 'absolute', top: 8, left: 10, zIndex: 3, pointerEvents: 'none', lineHeight: 1.3 }}>
-          <Box sx={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.12em', color: 'rgba(216,207,184,0.4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <span style={{ color: 'var(--accent)', fontSize: '0.5rem' }}>◉</span>
+          <Box sx={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', color: 'rgba(216,207,184,0.4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <span style={{ color: 'var(--accent)', fontSize: '0.625rem' }}>◉</span>
             {hemisphere}
           </Box>
           <Box sx={{ fontFamily: 'var(--font-medieval, "UnifrakturCook", serif)', fontSize: '1.0rem', color: 'var(--ink)', mt: 0.25 }}>
@@ -418,7 +418,7 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
 
         {/* HUD right */}
         <Box sx={{ position: 'absolute', top: 8, right: 10, zIndex: 3, pointerEvents: 'none', textAlign: 'right', lineHeight: 1.3 }}>
-          <Box sx={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.12em', color: 'rgba(216,207,184,0.4)', textTransform: 'uppercase' }}>LONG · TILT</Box>
+          <Box sx={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', color: 'rgba(216,207,184,0.4)', textTransform: 'uppercase' }}>LONG · TILT</Box>
           <Box sx={{ fontFamily: 'var(--font-medieval, "UnifrakturCook", serif)', fontSize: '1.0rem', color: 'var(--ink)', mt: 0.25 }}>
             {formatDeg(cLon, false)}
           </Box>
@@ -585,7 +585,7 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
               }}
             >
               <Box
-                sx={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--accent)', textTransform: 'uppercase', cursor: 'pointer', pointerEvents: 'auto', mb: 0.25 }}
+                sx={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.1em', color: 'var(--accent)', textTransform: 'uppercase', cursor: 'pointer', pointerEvents: 'auto', mb: 0.25 }}
                 onClick={() => router.push(`/profile/${hovered.id}`)}
               >
                 {hovered.handle} →
@@ -602,15 +602,15 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
         {/* Footer bar */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', px: 1.5, py: 1, backgroundColor: 'rgba(8,6,10,0.72)', backdropFilter: 'blur(6px)', borderTop: '1px solid rgba(216,207,184,0.08)' }}>
           <Box>
-            <Box sx={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.12em', color: 'rgba(216,207,184,0.3)', textTransform: 'uppercase' }}>MMXXVI · LVL 7</Box>
-            <Box sx={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'rgba(216,207,184,0.45)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+            <Box sx={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', color: 'rgba(216,207,184,0.3)', textTransform: 'uppercase' }}>MMXXVI · LVL 7</Box>
+            <Box sx={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'rgba(216,207,184,0.45)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
               <span style={{ color: 'var(--accent)' }}>◉</span>
               {devotees} DEVOTEES BOUND
             </Box>
           </Box>
           <Box sx={{ textAlign: 'right' }}>
-            <Box sx={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'rgba(216,207,184,0.45)', textTransform: 'uppercase' }}>ZOOM {scale.toFixed(2)}×</Box>
-            <Box sx={{ ...mono, fontSize: '0.375rem', letterSpacing: '0.1em', color: 'rgba(216,207,184,0.25)', textTransform: 'uppercase', mt: 0.25 }}>DRAG · PINCH · ± ZOOM</Box>
+            <Box sx={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'rgba(216,207,184,0.45)', textTransform: 'uppercase' }}>ZOOM {scale.toFixed(2)}×</Box>
+            <Box sx={{ ...mono, fontSize: '0.625rem', letterSpacing: '0.1em', color: 'rgba(216,207,184,0.25)', textTransform: 'uppercase', mt: 0.25 }}>DRAG · PINCH · ± ZOOM</Box>
           </Box>
         </Box>
       </Box>
@@ -626,7 +626,7 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
             <Box sx={{ fontFamily: 'var(--font-medieval,"UnifrakturCook",serif)', fontSize: '1.35rem', color: 'var(--accent)', lineHeight: 1 }}>
               {value}
             </Box>
-            <Box sx={{ ...mono, fontSize: '0.375rem', letterSpacing: '0.14em', color: 'rgba(216,207,184,0.35)', textTransform: 'uppercase', mt: 0.5 }}>
+            <Box sx={{ ...mono, fontSize: '0.625rem', letterSpacing: '0.14em', color: 'rgba(216,207,184,0.35)', textTransform: 'uppercase', mt: 0.5 }}>
               {label}
             </Box>
           </Box>
@@ -637,14 +637,14 @@ export default function GlobeWidget({ markers, myLat, myLon, totalFriends }: Pro
       {selected && (
         <Box sx={{ borderTop: '1px solid rgba(216,207,184,0.12)', px: 1.5, py: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#120e18' }}>
           <Box>
-            <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', color: 'var(--accent)', textTransform: 'uppercase', display: 'block', marginBottom: 3, cursor: 'pointer' }} onClick={() => router.push(`/profile/${selected.id}`)}>
+            <span style={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.12em', color: 'var(--accent)', textTransform: 'uppercase', display: 'block', marginBottom: 3, cursor: 'pointer' }} onClick={() => router.push(`/profile/${selected.id}`)}>
               {selected.handle} →
             </span>
             <Box sx={{ fontFamily: 'Georgia,serif', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)' }}>
               {[selected.city, selected.country].filter(Boolean).join(', ')}
             </Box>
           </Box>
-          <span style={{ ...mono, fontSize: '0.5rem', color: 'var(--muted)', cursor: 'pointer', textTransform: 'uppercase' }} onClick={() => setSelected(null)}>✕</span>
+          <span style={{ ...mono, fontSize: '0.625rem', color: 'var(--muted)', cursor: 'pointer', textTransform: 'uppercase' }} onClick={() => setSelected(null)}>✕</span>
         </Box>
       )}
     </Box>

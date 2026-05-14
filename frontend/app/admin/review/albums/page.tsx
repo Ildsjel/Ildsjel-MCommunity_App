@@ -9,7 +9,7 @@ import { getErrorMessage } from '@/lib/types/apiError'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -72,11 +72,11 @@ function EditForm({
       backgroundColor: '#1a1424', p: '12px 14px', mt: 0.5,
       display: 'flex', flexDirection: 'column', gap: 0.875,
     }}>
-      <span style={{ ...lbl, fontSize: '0.5rem', color: 'var(--ink)' }}>EDIT SUGGESTION</span>
+      <span style={{ ...lbl, fontSize: '0.625rem', color: 'var(--ink)' }}>EDIT SUGGESTION</span>
 
       {/* Title */}
       <Box>
-        <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 3 }}>ALBUM TITLE</span>
+        <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block', marginBottom: 3 }}>ALBUM TITLE</span>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -93,7 +93,7 @@ function EditForm({
       {/* Type + Year */}
       <Box sx={{ display: 'flex', gap: 0.875 }}>
         <Box sx={{ flex: 1 }}>
-          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 3 }}>TYPE</span>
+          <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block', marginBottom: 3 }}>TYPE</span>
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
@@ -101,7 +101,7 @@ function EditForm({
               width: '100%', background: '#0a0810',
               border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px',
               color: type ? 'var(--ink)' : 'var(--muted)',
-              fontFamily: 'var(--font-mono)', fontSize: '0.5rem', padding: '6px 8px', outline: 'none',
+              fontFamily: 'var(--font-mono)', fontSize: '0.625rem', padding: '6px 8px', outline: 'none',
             }}
           >
             <option value="">— optional —</option>
@@ -109,7 +109,7 @@ function EditForm({
           </select>
         </Box>
         <Box sx={{ width: 80 }}>
-          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 3 }}>YEAR</span>
+          <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block', marginBottom: 3 }}>YEAR</span>
           <input
             type="number"
             value={year}
@@ -121,7 +121,7 @@ function EditForm({
               width: '100%', boxSizing: 'border-box',
               background: '#0a0810', border: '1px solid rgba(216,207,184,0.2)',
               borderRadius: '3px', color: 'var(--ink)',
-              fontFamily: 'var(--font-mono)', fontSize: '0.5rem', padding: '6px 8px', outline: 'none',
+              fontFamily: 'var(--font-mono)', fontSize: '0.625rem', padding: '6px 8px', outline: 'none',
             }}
           />
         </Box>
@@ -129,7 +129,7 @@ function EditForm({
 
       {/* Reviewer note */}
       <Box>
-        <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 3 }}>REVIEWER NOTE (INTERNAL)</span>
+        <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block', marginBottom: 3 }}>REVIEWER NOTE (INTERNAL)</span>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -145,16 +145,16 @@ function EditForm({
         />
       </Box>
 
-      {err && <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--accent)' }}>⚠ {err}</span>}
+      {err && <span style={{ ...lbl, fontSize: '0.5625rem', color: 'var(--accent)' }}>⚠ {err}</span>}
 
       {/* Actions */}
       <Box sx={{ display: 'flex', gap: 0.625, justifyContent: 'flex-end' }}>
         <Box component="button" type="button" onClick={onCancel}
-          sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 1, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+          sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 1, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
           CANCEL
         </Box>
         <Box component="button" type="button" onClick={handleSave} disabled={saving}
-          sx={{ border: '1px solid rgba(216,207,184,0.4)', borderRadius: '2px', px: 1, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>
+          sx={{ border: '1px solid rgba(216,207,184,0.4)', borderRadius: '2px', px: 1, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>
           {saving ? '…' : 'SAVE EDITS'}
         </Box>
       </Box>
@@ -191,9 +191,9 @@ function RejectForm({
       backgroundColor: 'rgba(196,58,42,0.05)', p: '12px 14px', mt: 0.5,
       display: 'flex', flexDirection: 'column', gap: 0.875,
     }}>
-      <span style={{ ...lbl, fontSize: '0.5rem', color: 'var(--accent)' }}>REJECT SUGGESTION</span>
+      <span style={{ ...lbl, fontSize: '0.625rem', color: 'var(--accent)' }}>REJECT SUGGESTION</span>
       <Box>
-        <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 3 }}>REASON (OPTIONAL)</span>
+        <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block', marginBottom: 3 }}>REASON (OPTIONAL)</span>
         <input
           value={reason}
           onChange={(e) => setReason(e.target.value)}
@@ -207,14 +207,14 @@ function RejectForm({
           }}
         />
       </Box>
-      {err && <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--accent)' }}>⚠ {err}</span>}
+      {err && <span style={{ ...lbl, fontSize: '0.5625rem', color: 'var(--accent)' }}>⚠ {err}</span>}
       <Box sx={{ display: 'flex', gap: 0.625, justifyContent: 'flex-end' }}>
         <Box component="button" type="button" onClick={onCancel}
-          sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 1, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+          sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 1, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
           CANCEL
         </Box>
         <Box component="button" type="button" onClick={handleConfirm} disabled={saving}
-          sx={{ border: '1px solid rgba(196,58,42,0.5)', borderRadius: '2px', px: 1, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' }, '&:disabled': { opacity: 0.4 } }}>
+          sx={{ border: '1px solid rgba(196,58,42,0.5)', borderRadius: '2px', px: 1, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' }, '&:disabled': { opacity: 0.4 } }}>
           {saving ? '…' : 'CONFIRM REJECT'}
         </Box>
       </Box>
@@ -256,7 +256,7 @@ function SuggestionRow({
             <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', lineHeight: 1.2, textDecoration: s.status === 'rejected' ? 'line-through' : 'none', color: 'var(--ink)' }}>
               {s.title}
             </Typography>
-            <span style={{ ...lbl, fontSize: '0.375rem', border: `1px solid ${statusColor}40`, borderRadius: '2px', padding: '0 4px', color: statusColor, letterSpacing: '0.1em' }}>
+            <span style={{ ...lbl, fontSize: '0.625rem', border: `1px solid ${statusColor}40`, borderRadius: '2px', padding: '0 4px', color: statusColor, letterSpacing: '0.1em' }}>
               {s.status.toUpperCase()}
             </span>
           </Box>
@@ -265,18 +265,18 @@ function SuggestionRow({
               <Box
                 component="span"
                 onClick={() => router.push(`/admin/bands/${s.band_id ?? ''}/albums`)}
-                sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em', color: 'var(--accent)', cursor: 'pointer', '&:hover': { opacity: 0.75 } }}
+                sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.08em', color: 'var(--accent)', cursor: 'pointer', '&:hover': { opacity: 0.75 } }}
               >
                 {s.band_name}
               </Box>
             )}
             {(s.type || s.year) && (
-              <span style={{ ...lbl, fontSize: '0.4375rem' }}>
+              <span style={{ ...lbl, fontSize: '0.5625rem' }}>
                 {[s.type, s.year].filter(Boolean).join(' · ')}
               </span>
             )}
             {s.suggested_by_handle && (
-              <span style={{ ...lbl, fontSize: '0.4375rem' }}>
+              <span style={{ ...lbl, fontSize: '0.5625rem' }}>
                 by {s.suggested_by_handle} · {timeAgo(s.created_at)}
               </span>
             )}
@@ -297,15 +297,15 @@ function SuggestionRow({
         {isPending && (
           <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, alignItems: 'flex-start' }}>
             <Box component="button" onClick={handleApprove} disabled={busy}
-              sx={{ border: '1px solid rgba(106,154,122,0.5)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', color: '#6a9a7a', '&:hover': { borderColor: '#6a9a7a' }, '&:disabled': { opacity: 0.4 } }}>
+              sx={{ border: '1px solid rgba(106,154,122,0.5)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: '#6a9a7a', '&:hover': { borderColor: '#6a9a7a' }, '&:disabled': { opacity: 0.4 } }}>
               {busy ? '…' : '✓ APPROVE'}
             </Box>
             <Box component="button" onClick={() => setMode(mode === 'edit' ? 'idle' : 'edit')}
-              sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+              sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
               EDIT
             </Box>
             <Box component="button" onClick={() => setMode(mode === 'reject' ? 'idle' : 'reject')}
-              sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}>
+              sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}>
               REJECT
             </Box>
           </Box>
@@ -439,7 +439,7 @@ export default function AlbumReviewPage() {
         {/* Pending */}
         <Box onClick={() => { setStatusFilter('pending'); load('pending', search, typeFilter, sortBy) }}
           sx={{ flex: 1, border: `1.5px solid ${statusFilter === 'pending' ? '#d4a01060' : 'rgba(216,207,184,0.1)'}`, borderRadius: '3px', backgroundColor: '#120e18', px: 1, py: 0.875, cursor: 'pointer', '&:hover': { borderColor: '#d4a01040' }, transition: 'border-color 0.15s' }}>
-          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block' }}>Pending</span>
+          <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block' }}>Pending</span>
           <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '1.125rem', color: '#d4a010', lineHeight: 1.2, mt: 0.25 }}>
             {counts.pending}
           </Typography>
@@ -448,36 +448,36 @@ export default function AlbumReviewPage() {
         {/* Approved 7d */}
         <Box onClick={() => { setStatusFilter('approved'); load('approved', search, typeFilter, sortBy) }}
           sx={{ flex: 1, border: `1.5px solid ${statusFilter === 'approved' ? '#6a9a7a60' : 'rgba(216,207,184,0.1)'}`, borderRadius: '3px', backgroundColor: '#120e18', px: 1, py: 0.875, cursor: 'pointer', '&:hover': { borderColor: '#6a9a7a40' }, transition: 'border-color 0.15s' }}>
-          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block' }}>Approved · 7d</span>
+          <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block' }}>Approved · 7d</span>
           <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '1.125rem', color: '#6a9a7a', lineHeight: 1.2, mt: 0.25 }}>
             {stats?.approved_7d ?? counts.approved}
           </Typography>
           {stats && stats.avg_review_hours_7d > 0 && (
-            <span style={{ ...lbl, fontSize: '0.375rem', color: 'var(--muted)' }}>avg {stats.avg_review_hours_7d} h</span>
+            <span style={{ ...lbl, fontSize: '0.625rem', color: 'var(--muted)' }}>avg {stats.avg_review_hours_7d} h</span>
           )}
         </Box>
 
         {/* Rejected 7d */}
         <Box onClick={() => { setStatusFilter('rejected'); load('rejected', search, typeFilter, sortBy) }}
           sx={{ flex: 1, border: `1.5px solid ${statusFilter === 'rejected' ? 'rgba(196,58,42,0.4)' : 'rgba(216,207,184,0.1)'}`, borderRadius: '3px', backgroundColor: '#120e18', px: 1, py: 0.875, cursor: 'pointer', '&:hover': { borderColor: 'rgba(196,58,42,0.25)' }, transition: 'border-color 0.15s' }}>
-          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block' }}>Rejected · 7d</span>
+          <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block' }}>Rejected · 7d</span>
           <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '1.125rem', color: 'var(--accent)', lineHeight: 1.2, mt: 0.25 }}>
             {stats?.rejected_7d ?? counts.rejected}
           </Typography>
           {stats && stats.rejection_rate_7d > 0 && (
-            <span style={{ ...lbl, fontSize: '0.375rem', color: 'var(--muted)' }}>{Math.round(stats.rejection_rate_7d * 100)}% rate</span>
+            <span style={{ ...lbl, fontSize: '0.625rem', color: 'var(--muted)' }}>{Math.round(stats.rejection_rate_7d * 100)}% rate</span>
           )}
         </Box>
 
         {/* Top suggester */}
         <Box sx={{ flex: 1, border: '1.5px solid rgba(216,207,184,0.1)', borderRadius: '3px', backgroundColor: '#120e18', px: 1, py: 0.875 }}>
-          <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block' }}>Top · month</span>
+          <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block' }}>Top · month</span>
           {stats?.top_suggester ? (
             <>
               <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--ink)', lineHeight: 1.2, mt: 0.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {stats.top_suggester.handle}
               </Typography>
-              <span style={{ ...lbl, fontSize: '0.375rem', color: 'var(--muted)' }}>{stats.top_suggester.count} submitted</span>
+              <span style={{ ...lbl, fontSize: '0.625rem', color: 'var(--muted)' }}>{stats.top_suggester.count} submitted</span>
             </>
           ) : (
             <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.2, mt: 0.25 }}>—</Typography>
@@ -488,7 +488,7 @@ export default function AlbumReviewPage() {
       {/* Action flash */}
       {actionMsg && (
         <Box sx={{ border: '1px solid rgba(106,154,122,0.35)', borderRadius: '3px', backgroundColor: 'rgba(106,154,122,0.06)', px: 1.25, py: 0.75, mb: 1.5 }}>
-          <span style={{ ...lbl, fontSize: '0.5rem', color: '#6a9a7a' }}>{actionMsg}</span>
+          <span style={{ ...lbl, fontSize: '0.625rem', color: '#6a9a7a' }}>{actionMsg}</span>
         </Box>
       )}
 
@@ -496,7 +496,7 @@ export default function AlbumReviewPage() {
       <Box sx={{ display: 'flex', gap: 0.5, mb: 0.875, flexWrap: 'wrap', alignItems: 'center' }}>
         {TABS.map((t) => (
           <Box key={t.key} component="button" onClick={() => { setStatusFilter(t.key); load(t.key, search, typeFilter, sortBy) }}
-            sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', backgroundColor: statusFilter === t.key ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: statusFilter === t.key ? '#120e18' : 'var(--muted)', transition: 'background 0.1s' }}>
+            sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', backgroundColor: statusFilter === t.key ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: statusFilter === t.key ? '#120e18' : 'var(--muted)', transition: 'background 0.1s' }}>
             {t.label}
             <span style={{ opacity: 0.6 }}>{t.count}</span>
           </Box>
@@ -510,7 +510,7 @@ export default function AlbumReviewPage() {
               width: '100%', boxSizing: 'border-box',
               background: '#120e18', border: '1px solid rgba(216,207,184,0.15)',
               borderRadius: '3px', color: 'var(--ink)',
-              fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.06em',
+              fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.06em',
               padding: '5px 9px', outline: 'none',
             }}
           />
@@ -523,7 +523,7 @@ export default function AlbumReviewPage() {
         <Box
           component="button"
           onClick={() => { setTypeFilter(''); load(statusFilter, search, '', sortBy) }}
-          sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 20, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: typeFilter === '' ? 'rgba(216,207,184,0.12)' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: typeFilter === '' ? 'var(--ink)' : 'var(--muted)', transition: 'background 0.1s' }}
+          sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 20, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: typeFilter === '' ? 'rgba(216,207,184,0.12)' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: typeFilter === '' ? 'var(--ink)' : 'var(--muted)', transition: 'background 0.1s' }}
         >
           All Types
         </Box>
@@ -532,7 +532,7 @@ export default function AlbumReviewPage() {
             key={rt}
             component="button"
             onClick={() => { setTypeFilter(rt); load(statusFilter, search, rt, sortBy) }}
-            sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 20, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: typeFilter === rt ? 'rgba(216,207,184,0.12)' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: typeFilter === rt ? 'var(--ink)' : 'var(--muted)', transition: 'background 0.1s' }}
+            sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 20, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: typeFilter === rt ? 'rgba(216,207,184,0.12)' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: typeFilter === rt ? 'var(--ink)' : 'var(--muted)', transition: 'background 0.1s' }}
           >
             {rt}
           </Box>
@@ -552,7 +552,7 @@ export default function AlbumReviewPage() {
           style={{
             background: '#120e18', border: '1px solid rgba(216,207,184,0.2)',
             borderRadius: '3px', color: 'var(--muted)',
-            fontFamily: 'var(--font-mono)', fontSize: '0.375rem',
+            fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
             letterSpacing: '0.1em', textTransform: 'uppercase',
             padding: '3px 6px', outline: 'none', cursor: 'pointer',
             height: 20,

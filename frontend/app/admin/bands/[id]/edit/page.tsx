@@ -12,7 +12,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -23,7 +23,7 @@ const inputSx = {
   '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.2)', borderRadius: '3px' },
   '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.4)' },
   '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.6)' },
-  '& .MuiInputLabel-root': { fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' },
+  '& .MuiInputLabel-root': { fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' },
   '& .MuiInputLabel-root.Mui-focused': { color: 'var(--muted)' },
 }
 
@@ -184,7 +184,7 @@ function ImageUploadZone({
           ) : (
             <>
               <span style={{ fontSize: '1.1rem', color: 'rgba(216,207,184,0.5)' }}>↑</span>
-              <span style={{ ...lbl, fontSize: '0.4375rem', color: displayUrl ? 'rgba(216,207,184,0.8)' : 'rgba(216,207,184,0.4)' }}>
+              <span style={{ ...lbl, fontSize: '0.5625rem', color: displayUrl ? 'rgba(216,207,184,0.8)' : 'rgba(216,207,184,0.4)' }}>
                 {displayUrl ? 'CLICK TO REPLACE' : 'CLICK TO UPLOAD'}
               </span>
             </>
@@ -325,7 +325,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
 
   return (
     <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 10 }}>
-      <Box component="button" onClick={() => router.push('/admin/bands')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 2, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+      <Box component="button" onClick={() => router.push('/admin/bands')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 2, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
         ← BANDS
       </Box>
       <span style={{ ...lbl, color: 'var(--accent)', display: 'block', marginBottom: 20 }}>EDIT · {band.name}</span>
@@ -358,7 +358,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
             </Box>
           </Box>
           {imageMsg && (
-            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: '#6a9a7a' }}>
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: '#6a9a7a' }}>
               ✓ {imageMsg}
             </Typography>
           )}
@@ -379,24 +379,24 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
         <Box sx={{ borderTop: '1px solid rgba(216,207,184,0.1)', pt: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.25 }}>
             <span style={lbl}>◉ RELEASES ({band.releases?.length ?? 0})</span>
-            <Box component="button" type="button" onClick={() => setShowRelease(!showRelease)} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)' }}>
+            <Box component="button" type="button" onClick={() => setShowRelease(!showRelease)} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--muted)' }}>
               + ADD
             </Box>
           </Box>
 
           {showRelease && (
             <Box sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', backgroundColor: '#1a1424', p: 1.5, mb: 1.25, display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <span style={{ ...lbl, fontSize: '0.5rem' }}>NEW RELEASE</span>
+              <span style={{ ...lbl, fontSize: '0.625rem' }}>NEW RELEASE</span>
               <TextField label="Title" value={relForm.title} onChange={setRel('title')} onBlur={autoRelSlug} required fullWidth size="small" sx={inputSx} />
               <TextField label="Slug" value={relForm.slug} onChange={setRel('slug')} required fullWidth size="small" sx={inputSx} />
               <Box sx={{ display: 'flex', gap: 1 }}>
-                <Box component="select" value={relForm.type} onChange={(e: any) => setRel('type')(e)} sx={{ flex: 1, background: '#120e18', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', px: 1, height: 40 }}>
+                <Box component="select" value={relForm.type} onChange={(e: any) => setRel('type')(e)} sx={{ flex: 1, background: '#120e18', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', px: 1, height: 40 }}>
                   {RELEASE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </Box>
                 <TextField label="Year" type="number" value={relForm.year} onChange={setRel('year')} required size="small" sx={{ ...inputSx, width: 90 }} />
               </Box>
               <TextField label="Label" value={relForm.label} onChange={setRel('label')} fullWidth size="small" sx={inputSx} />
-              <Box component="button" type="button" onClick={handleAddRelease} disabled={saving} sx={{ border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px', py: 0.75, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.12em', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>
+              <Box component="button" type="button" onClick={handleAddRelease} disabled={saving} sx={{ border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px', py: 0.75, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>
                 {saving ? '…' : 'ADD RELEASE'}
               </Box>
             </Box>
@@ -417,7 +417,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1.25, py: 0.875 }}>
                     <Box>
                       <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem' }}>{r.title}</Typography>
-                      <span style={{ ...lbl, fontSize: '0.4375rem' }}>{r.type} · {r.year}</span>
+                      <span style={{ ...lbl, fontSize: '0.5625rem' }}>{r.type} · {r.year}</span>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 0.625, alignItems: 'center' }}>
                       {/* Track toggle */}
@@ -430,7 +430,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
                           borderRadius: '2px', px: 0.75, height: 20,
                           background: isExpanded ? 'rgba(216,207,184,0.05)' : 'none',
                           cursor: 'pointer',
-                          fontFamily: 'var(--font-mono)', fontSize: '0.375rem',
+                          fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
                           letterSpacing: '0.08em',
                           color: isExpanded ? 'var(--ink)' : 'var(--muted)',
                           '&:hover': { color: 'var(--ink)', borderColor: 'rgba(216,207,184,0.4)' },
@@ -444,7 +444,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
                         component="button"
                         type="button"
                         onClick={() => handleDeleteRelease(r.id, r.title)}
-                        sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}
+                        sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}
                       >
                         ✕
                       </Box>
@@ -480,7 +480,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
             width: '100%',
             border: pendingCount > 0 ? '1px solid rgba(212,160,16,0.4)' : '1px solid rgba(216,207,184,0.15)',
             borderRadius: '3px', py: 0.875, background: 'none', cursor: 'pointer',
-            fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em',
+            fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em',
             color: pendingCount > 0 ? '#d4a010' : 'var(--muted)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75,
             '&:hover': { borderColor: pendingCount > 0 ? 'rgba(212,160,16,0.7)' : 'rgba(216,207,184,0.3)', color: pendingCount > 0 ? '#d4a010' : 'var(--ink)' },
@@ -489,7 +489,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
         >
           ◈ VIEW DISCOGRAPHY & ALBUM REVIEW
           {pendingCount > 0 && (
-            <span style={{ border: '1px solid rgba(212,160,16,0.5)', borderRadius: '2px', padding: '0 4px', fontSize: '0.375rem' }}>
+            <span style={{ border: '1px solid rgba(212,160,16,0.5)', borderRadius: '2px', padding: '0 4px', fontSize: '0.625rem' }}>
               {pendingCount} PENDING
             </span>
           )}
@@ -514,7 +514,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
                   borderRadius: '3px',
                   padding: '5px 28px 5px 8px',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '0.5rem',
+                  fontSize: '0.625rem',
                   letterSpacing: '0.08em',
                   color: 'var(--ink)',
                   outline: 'none',
@@ -527,7 +527,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
                   style={{
                     position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
                     color: 'var(--muted)', padding: 0, lineHeight: 1,
                   }}
                 >
@@ -556,7 +556,7 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
                         px: 0.875, height: 22,
                         background: active ? 'rgba(216,207,184,0.08)' : 'none',
                         cursor: 'pointer',
-                        fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                        fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
                         letterSpacing: '0.1em', textTransform: 'uppercase',
                         color: active ? 'var(--ink)' : 'var(--muted)',
                         transition: 'border-color 0.12s, color 0.12s',
@@ -570,8 +570,8 @@ export default function EditBandPage({ params }: { params: { id: string } }) {
           </Box>
         )}
 
-        {error && <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--accent)', letterSpacing: '0.1em' }}>{error}</Typography>}
-        <Box component="button" type="submit" disabled={saving} sx={{ border: '1.5px solid rgba(216,207,184,0.4)', borderRadius: '3px', py: 0.875, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>
+        {error && <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--accent)', letterSpacing: '0.1em' }}>{error}</Typography>}
+        <Box component="button" type="submit" disabled={saving} sx={{ border: '1.5px solid rgba(216,207,184,0.4)', borderRadius: '3px', py: 0.875, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>
           {saving ? 'SAVING…' : 'SAVE CHANGES'}
         </Box>
       </Box>

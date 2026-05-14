@@ -147,17 +147,17 @@ export default function SpotifyConnectPage() {
       <Navigation />
       <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 12 }}>
 
-        <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent, #c43a2a)', display: 'block', marginBottom: 20 }}>
+        <span style={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent, #c43a2a)', display: 'block', marginBottom: 20 }}>
           ◈ Spotify Connection
         </span>
 
         {/* Error */}
         {error && (
           <Box sx={{ ...sectionBox, borderColor: 'rgba(196,58,42,0.4)', mb: 2 }}>
-            <span style={{ ...mono, fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--accent, #c43a2a)' }}>
+            <span style={{ ...mono, fontSize: '0.625rem', letterSpacing: '0.1em', color: 'var(--accent, #c43a2a)' }}>
               ✕ {error}
             </span>
-            <Box component="button" onClick={() => setError('')} sx={{ ml: 1, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.5rem', fontFamily: 'var(--font-mono)' }}>
+            <Box component="button" onClick={() => setError('')} sx={{ ml: 1, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.625rem', fontFamily: 'var(--font-mono)' }}>
               dismiss
             </Box>
           </Box>
@@ -165,7 +165,7 @@ export default function SpotifyConnectPage() {
 
         {/* Status */}
         <Box sx={sectionBox}>
-          <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted, #7A756D)', display: 'block', marginBottom: 14 }}>
+          <span style={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted, #7A756D)', display: 'block', marginBottom: 14 }}>
             Status
           </span>
 
@@ -177,7 +177,7 @@ export default function SpotifyConnectPage() {
                   animation: 'pulse 2s infinite',
                   '@keyframes pulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } },
                 }} />
-                <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.1em', color: '#6a9a7a', textTransform: 'uppercase' }}>
+                <span style={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.1em', color: '#6a9a7a', textTransform: 'uppercase' }}>
                   Connected · syncing every 5 min
                 </span>
               </Box>
@@ -187,7 +187,7 @@ export default function SpotifyConnectPage() {
                 <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '2rem', color: 'var(--ink)', lineHeight: 1 }}>
                   {(status.total_artists || 0).toLocaleString()}
                 </Typography>
-                <span style={{ ...mono, fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--muted)', textTransform: 'uppercase' }}>
+                <span style={{ ...mono, fontSize: '0.625rem', letterSpacing: '0.1em', color: 'var(--muted)', textTransform: 'uppercase' }}>
                   top artists synced
                 </span>
               </Box>
@@ -198,7 +198,7 @@ export default function SpotifyConnectPage() {
                   alignSelf: 'flex-start', background: 'none',
                   border: '1px solid rgba(196,58,42,0.35)', borderRadius: '3px',
                   px: 1.25, py: 0.5, cursor: 'pointer',
-                  fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em',
+                  fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em',
                   textTransform: 'uppercase', color: 'var(--accent)',
                   '&:hover': { borderColor: 'rgba(196,58,42,0.7)' },
                 }}>
@@ -206,14 +206,14 @@ export default function SpotifyConnectPage() {
                 </Box>
               ) : (
                 <Box sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '3px', p: '10px 12px', backgroundColor: 'rgba(196,58,42,0.05)' }}>
-                  <span style={{ ...mono, fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--ink)', display: 'block', marginBottom: 8 }}>
+                  <span style={{ ...mono, fontSize: '0.625rem', letterSpacing: '0.1em', color: 'var(--ink)', display: 'block', marginBottom: 8 }}>
                     This will remove your Spotify connection and all synced data within 24h. Continue?
                   </span>
                   <Box sx={{ display: 'flex', gap: 0.75 }}>
-                    <Box component="button" onClick={handleDisconnect} sx={{ background: 'none', border: '1px solid rgba(196,58,42,0.5)', borderRadius: '3px', px: 1.25, py: 0.5, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}>
+                    <Box component="button" onClick={handleDisconnect} sx={{ background: 'none', border: '1px solid rgba(196,58,42,0.5)', borderRadius: '3px', px: 1.25, py: 0.5, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}>
                       Yes, disconnect
                     </Box>
-                    <Box component="button" onClick={() => setConfirmDisconnect(false)} sx={{ background: 'none', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 1.25, py: 0.5, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)' }}>
+                    <Box component="button" onClick={() => setConfirmDisconnect(false)} sx={{ background: 'none', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 1.25, py: 0.5, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--muted)' }}>
                       Cancel
                     </Box>
                   </Box>
@@ -224,7 +224,7 @@ export default function SpotifyConnectPage() {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'rgba(216,207,184,0.2)', flexShrink: 0 }} />
-                <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--muted)', textTransform: 'uppercase' }}>
+                <span style={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.1em', color: 'var(--muted)', textTransform: 'uppercase' }}>
                   Not connected
                 </span>
               </Box>
@@ -235,7 +235,7 @@ export default function SpotifyConnectPage() {
                 alignSelf: 'flex-start', background: 'none',
                 border: '1.5px solid rgba(216,207,184,0.4)', borderRadius: '3px',
                 px: 1.5, py: 0.75, cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em',
+                fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em',
                 textTransform: 'uppercase', color: 'var(--ink)',
                 '&:hover': { borderColor: 'rgba(216,207,184,0.7)' },
                 transition: 'border-color 0.15s',
@@ -248,7 +248,7 @@ export default function SpotifyConnectPage() {
 
         {/* What gets tracked */}
         <Box sx={sectionBox}>
-          <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 10 }}>
+          <span style={{ ...mono, fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 10 }}>
             What gets tracked
           </span>
           {[
@@ -257,7 +257,7 @@ export default function SpotifyConnectPage() {
             'Refreshed automatically on reconnect',
           ].map((item) => (
             <Box key={item} sx={{ display: 'flex', gap: 1, mb: 0.75, alignItems: 'flex-start' }}>
-              <span style={{ ...mono, fontSize: '0.4375rem', color: 'var(--muted)', marginTop: 2 }}>◆</span>
+              <span style={{ ...mono, fontSize: '0.5625rem', color: 'var(--muted)', marginTop: 2 }}>◆</span>
               <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'rgba(236,229,211,0.7)', lineHeight: 1.4 }}>
                 {item}
               </Typography>
@@ -266,7 +266,7 @@ export default function SpotifyConnectPage() {
         </Box>
 
         {/* Privacy note */}
-        <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.08em', color: 'rgba(122,117,109,0.7)', lineHeight: 1.6, display: 'block' }}>
+        <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.08em', color: 'rgba(122,117,109,0.7)', lineHeight: 1.6, display: 'block' }}>
           Tokens are stored only in your account. Disconnecting removes all synced data within 24 hours (GDPR Art. 17).
         </span>
 

@@ -9,7 +9,7 @@ import { getErrorMessage } from '@/lib/types/apiError'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -20,7 +20,7 @@ const inputSx = {
   '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.2)', borderRadius: '3px' },
   '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.4)' },
   '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.6)' },
-  '& .MuiInputLabel-root': { fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' },
+  '& .MuiInputLabel-root': { fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' },
   '& .MuiInputLabel-root.Mui-focused': { color: 'var(--muted)' },
 }
 
@@ -85,24 +85,24 @@ export default function AdminTagsPage() {
 
   return (
     <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 10 }}>
-      <Box component="button" onClick={() => router.push('/admin')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 2, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+      <Box component="button" onClick={() => router.push('/admin')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 2, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
         ← ADMIN
       </Box>
       <span style={{ ...lbl, color: 'var(--accent)', display: 'block', marginBottom: 20 }}>◉ TAGS</span>
 
       {/* Create form */}
       <Box sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', backgroundColor: '#120e18', p: 1.5, mb: 2 }}>
-        <span style={{ ...lbl, fontSize: '0.5rem', display: 'block', marginBottom: 12 }}>ADD TAG</span>
+        <span style={{ ...lbl, fontSize: '0.625rem', display: 'block', marginBottom: 12 }}>ADD TAG</span>
         <Box component="form" onSubmit={handleCreate} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <TextField label="Name" value={form.name} onChange={set('name')} onBlur={autoSlug} required fullWidth size="small" sx={inputSx} />
             <TextField label="Slug" value={form.slug} onChange={set('slug')} required fullWidth size="small" sx={inputSx} />
           </Box>
-          <Box component="select" value={form.category} onChange={(e: any) => set('category')(e)} sx={{ background: '#120e18', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', px: 1, height: 40 }}>
+          <Box component="select" value={form.category} onChange={(e: any) => set('category')(e)} sx={{ background: '#120e18', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', px: 1, height: 40 }}>
             {TAG_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </Box>
-          {error && <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--accent)' }}>{error}</Typography>}
-          <Box component="button" type="submit" disabled={saving} sx={{ border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px', py: 0.75, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.12em', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>
+          {error && <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--accent)' }}>{error}</Typography>}
+          <Box component="button" type="submit" disabled={saving} sx={{ border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px', py: 0.75, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>
             {saving ? '…' : 'ADD TAG'}
           </Box>
         </Box>
@@ -110,18 +110,18 @@ export default function AdminTagsPage() {
 
       {/* Merge form */}
       <Box sx={{ border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px', backgroundColor: '#120e18', p: 1.5, mb: 2 }}>
-        <span style={{ ...lbl, fontSize: '0.5rem', display: 'block', marginBottom: 12 }}>MERGE TAGS</span>
+        <span style={{ ...lbl, fontSize: '0.625rem', display: 'block', marginBottom: 12 }}>MERGE TAGS</span>
         <Box component="form" onSubmit={handleMerge} sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-          <Box component="select" value={mergeSource} onChange={(e: any) => setMergeSource(e.target.value)} sx={{ flex: 1, background: '#120e18', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', px: 1, height: 40 }}>
+          <Box component="select" value={mergeSource} onChange={(e: any) => setMergeSource(e.target.value)} sx={{ flex: 1, background: '#120e18', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', px: 1, height: 40 }}>
             <option value="">Source (delete)</option>
             {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </Box>
           <span style={{ ...lbl, flexShrink: 0 }}>→</span>
-          <Box component="select" value={mergeTarget} onChange={(e: any) => setMergeTarget(e.target.value)} sx={{ flex: 1, background: '#120e18', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', px: 1, height: 40 }}>
+          <Box component="select" value={mergeTarget} onChange={(e: any) => setMergeTarget(e.target.value)} sx={{ flex: 1, background: '#120e18', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', px: 1, height: 40 }}>
             <option value="">Target (keep)</option>
             {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </Box>
-          <Box component="button" type="submit" disabled={saving || !mergeSource || !mergeTarget} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 1, height: 40, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--muted)', flexShrink: 0, '&:disabled': { opacity: 0.3 } }}>
+          <Box component="button" type="submit" disabled={saving || !mergeSource || !mergeTarget} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 1, height: 40, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--muted)', flexShrink: 0, '&:disabled': { opacity: 0.3 } }}>
             MERGE
           </Box>
         </Box>
@@ -130,7 +130,7 @@ export default function AdminTagsPage() {
       {/* Category filter */}
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
         {['all', ...TAG_CATEGORIES].map((c) => (
-          <Box key={c} component="button" onClick={() => setCatFilter(c)} sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: catFilter === c ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: catFilter === c ? '#120e18' : 'var(--muted)' }}>
+          <Box key={c} component="button" onClick={() => setCatFilter(c)} sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', cursor: 'pointer', backgroundColor: catFilter === c ? '#ece5d3' : 'transparent', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: catFilter === c ? '#120e18' : 'var(--muted)' }}>
             {c}
           </Box>
         ))}
@@ -144,12 +144,12 @@ export default function AdminTagsPage() {
         if (!catTags?.length) return null
         return (
           <Box key={cat} sx={{ mb: 1.5 }}>
-            <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 6 }}>{cat}</span>
+            <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block', marginBottom: 6 }}>{cat}</span>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {catTags.map((tag) => (
                 <Box key={tag.id} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, display: 'inline-flex', alignItems: 'center', gap: 0.75, backgroundColor: '#120e18' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em', color: 'var(--ink)' }}>{tag.name}</span>
-                  <Box component="button" onClick={() => handleDelete(tag.id, tag.name)} sx={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: '0.4375rem', p: 0, lineHeight: 1, opacity: 0.6, '&:hover': { opacity: 1 } }}>✕</Box>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.08em', color: 'var(--ink)' }}>{tag.name}</span>
+                  <Box component="button" onClick={() => handleDelete(tag.id, tag.name)} sx={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: '0.5625rem', p: 0, lineHeight: 1, opacity: 0.6, '&:hover': { opacity: 1 } }}>✕</Box>
                 </Box>
               ))}
             </Box>

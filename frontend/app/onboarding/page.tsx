@@ -27,7 +27,7 @@ const MEDIEVAL = '"UnifrakturCook", "UnifrakturMaguntia", "EB Garamond", serif'
 // ── Shared style helpers ──────────────────────────────────────────────────────
 const monoLabel = (color = muted): React.CSSProperties => ({
   fontFamily: MONO,
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase' as const,
   color,
@@ -122,7 +122,7 @@ function GhostLink({ children, onClick }: { children: React.ReactNode; onClick?:
         border: 'none',
         cursor: 'pointer',
         fontFamily: MONO,
-        fontSize: '0.5625rem',
+        fontSize: '0.6875rem',
         letterSpacing: '0.12em',
         textTransform: 'uppercase',
         color: muted,
@@ -339,7 +339,7 @@ function StepTwo({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span style={{ fontFamily: DISPLAY, fontSize: '0.75rem', color: ink, letterSpacing: '0.06em' }}>SPOTIFY</span>
               <span style={{
-                fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.1em',
+                fontFamily: MONO, fontSize: '0.625rem', letterSpacing: '0.1em',
                 border: `1px solid ${accent}`, color: accent, padding: '1px 5px', borderRadius: 2,
               }}>REQUIRED</span>
             </Box>
@@ -351,7 +351,7 @@ function StepTwo({
           <button
             onClick={spotifyLinked ? undefined : handleSpotifyLink}
             style={{
-              fontFamily: MONO, fontSize: '0.5625rem', letterSpacing: '0.1em',
+              fontFamily: MONO, fontSize: '0.6875rem', letterSpacing: '0.1em',
               textTransform: 'uppercase',
               padding: '6px 12px',
               borderRadius: 3,
@@ -366,7 +366,7 @@ function StepTwo({
           </button>
         </Box>
         {spotifyError && (
-          <p style={{ ...monoLabel(accent), fontSize: '0.5rem', margin: '8px 0 0' }}>{spotifyError}</p>
+          <p style={{ ...monoLabel(accent), fontSize: '0.625rem', margin: '8px 0 0' }}>{spotifyError}</p>
         )}
       </div>
 
@@ -378,9 +378,9 @@ function StepTwo({
         marginBottom: 16,
       }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '64px 1fr', gap: '6px 12px', alignItems: 'baseline' }}>
-          <span style={{ ...monoLabel(accent), fontSize: '0.5rem' }}>WE READ</span>
+          <span style={{ ...monoLabel(accent), fontSize: '0.625rem' }}>WE READ</span>
           <em style={{ ...bodyText(ink2), fontSize: '0.75rem' }}>Top artists, tracks, genres · last 90/365 days · play counts</em>
-          <span style={{ ...monoLabel(accent), fontSize: '0.5rem' }}>WE DON'T</span>
+          <span style={{ ...monoLabel(accent), fontSize: '0.625rem' }}>WE DON'T</span>
           <em style={{ ...bodyText(ink2), fontSize: '0.75rem' }}>Playlists, friends, non-metal listening, anything we don't need</em>
         </Box>
       </div>
@@ -395,13 +395,13 @@ function StepTwo({
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: '#fff', fontWeight: 700, letterSpacing: '-0.02em' }}>last/</span>
+            <span style={{ fontFamily: MONO, fontSize: '0.5625rem', color: '#fff', fontWeight: 700, letterSpacing: '-0.02em' }}>last/</span>
           </Box>
           <Box sx={{ flex: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <span style={{ fontFamily: DISPLAY, fontSize: '0.75rem', color: ink, letterSpacing: '0.06em' }}>LAST.FM</span>
               <span style={{
-                fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.1em',
+                fontFamily: MONO, fontSize: '0.625rem', letterSpacing: '0.1em',
                 border: `1px solid ${muted}`, color: muted, padding: '1px 5px', borderRadius: 2,
               }}>OPTIONAL</span>
             </Box>
@@ -412,7 +412,7 @@ function StepTwo({
           <button
             onClick={lastfmLinked ? undefined : handleLastFmLink}
             style={{
-              fontFamily: MONO, fontSize: '0.5625rem', letterSpacing: '0.1em',
+              fontFamily: MONO, fontSize: '0.6875rem', letterSpacing: '0.1em',
               textTransform: 'uppercase',
               padding: '6px 12px',
               borderRadius: 3,
@@ -427,7 +427,7 @@ function StepTwo({
           </button>
         </Box>
         {lastfmError && (
-          <p style={{ ...monoLabel(accent), fontSize: '0.5rem', margin: '8px 0 0' }}>{lastfmError}</p>
+          <p style={{ ...monoLabel(accent), fontSize: '0.625rem', margin: '8px 0 0' }}>{lastfmError}</p>
         )}
       </div>
 
@@ -686,7 +686,7 @@ function StepThree({
               backgroundColor: locationPrivacy === key ? ink : paper,
               color: locationPrivacy === key ? paper : ink,
               fontFamily: MONO,
-              fontSize: '0.5rem',
+              fontSize: '0.625rem',
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               cursor: 'pointer',
@@ -715,7 +715,7 @@ function StepThree({
         padding: '10px 14px',
         marginBottom: 16,
       }}>
-        <span style={{ ...monoLabel(accent), fontSize: '0.5rem', display: 'block', marginBottom: 6 }}>
+        <span style={{ ...monoLabel(accent), fontSize: '0.625rem', display: 'block', marginBottom: 6 }}>
           DISPLAYED TO OTHERS AS
         </span>
         <em style={{ ...bodyText(ink2), fontSize: '0.75rem' }}>
@@ -923,7 +923,7 @@ function StepFour({
               borderRadius: 3,
               color: ink,
               fontFamily: MONO,
-              fontSize: '0.5rem',
+              fontSize: '0.625rem',
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               cursor: 'pointer',
@@ -937,7 +937,7 @@ function StepFour({
 
       {/* Handle input */}
       <Box sx={{ mb: 1 }}>
-        <span style={{ ...monoLabel(), fontSize: '0.5rem', display: 'block', marginBottom: 8 }}>
+        <span style={{ ...monoLabel(), fontSize: '0.625rem', display: 'block', marginBottom: 8 }}>
           YOUR HANDLE · REQUIRED
         </span>
         <input
@@ -960,7 +960,7 @@ function StepFour({
           spellCheck={false}
         />
         {hs.text && (
-          <span style={{ ...monoLabel(hs.color), fontSize: '0.4375rem', display: 'block', marginTop: 6 }}>
+          <span style={{ ...monoLabel(hs.color), fontSize: '0.5625rem', display: 'block', marginTop: 6 }}>
             {hs.text}
           </span>
         )}
@@ -1051,7 +1051,7 @@ function StepFive({
           <span style={{ fontFamily: MEDIEVAL, fontSize: '1.125rem', color: ink, display: 'block' }}>
             {displayHandle}
           </span>
-          <span style={{ ...monoLabel(), fontSize: '0.4375rem' }}>
+          <span style={{ ...monoLabel(), fontSize: '0.5625rem' }}>
             {cityName ? `${cityName} · ` : ''}INITIATE
           </span>
         </Box>
@@ -1089,7 +1089,7 @@ function StepFive({
                 key={g}
                 style={{
                   fontFamily: MONO,
-                  fontSize: '0.5rem',
+                  fontSize: '0.625rem',
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
                   padding: '3px 8px',

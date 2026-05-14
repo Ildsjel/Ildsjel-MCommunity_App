@@ -49,7 +49,7 @@ export default function TopAlbums() {
   )
 
   if (error) return (
-    <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--muted)', letterSpacing: '0.1em' }}>
+    <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--muted)', letterSpacing: '0.1em' }}>
       {error}
     </Typography>
   )
@@ -75,7 +75,7 @@ export default function TopAlbums() {
         >
           <span style={{
             ...mono,
-            fontSize: '0.5rem',
+            fontSize: '0.625rem',
             letterSpacing: '0.08em',
             color: album.rank === 1 ? 'var(--ink, #ece5d3)' : 'var(--muted, #7A756D)',
             minWidth: 14,
@@ -107,7 +107,7 @@ export default function TopAlbums() {
             }}>
               {album.name}
             </Typography>
-            <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.06em', color: 'var(--muted)' }}>
+            <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.06em', color: 'var(--muted)' }}>
               {album.artist_name}
             </span>
           </Box>
@@ -115,7 +115,7 @@ export default function TopAlbums() {
           {album.play_count > 0 && (
             <span style={{
               ...mono,
-              fontSize: '0.4375rem',
+              fontSize: '0.5625rem',
               letterSpacing: '0.08em',
               color: 'var(--muted, #7A756D)',
               flexShrink: 0,

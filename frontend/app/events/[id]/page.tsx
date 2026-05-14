@@ -138,7 +138,7 @@ export default function EventDetailPage() {
           <Box
             component="button"
             onClick={() => router.back()}
-            sx={{ border: 'none', background: 'none', cursor: 'pointer', ...mono, fontSize: '0.4375rem', color: 'var(--muted)', mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}
+            sx={{ border: 'none', background: 'none', cursor: 'pointer', ...mono, fontSize: '0.5625rem', color: 'var(--muted)', mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}
           >
             ← BACK
           </Box>
@@ -169,7 +169,7 @@ export default function EventDetailPage() {
           onClick={() => router.push('/events')}
           sx={{
             border: 'none', background: 'none', cursor: 'pointer',
-            ...mono, fontSize: '0.4375rem', color: 'var(--muted)', mb: 2.5,
+            ...mono, fontSize: '0.5625rem', color: 'var(--muted)', mb: 2.5,
             display: 'flex', alignItems: 'center', gap: 0.5,
             '&:hover': { color: 'var(--ink)' },
           }}
@@ -192,7 +192,7 @@ export default function EventDetailPage() {
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               py: 1, backgroundColor: '#0a0810',
             }}>
-              <Typography sx={{ ...mono, fontSize: '0.4375rem', color: 'var(--muted)', lineHeight: 1.5, textAlign: 'center' }}>
+              <Typography sx={{ ...mono, fontSize: '0.5625rem', color: 'var(--muted)', lineHeight: 1.5, textAlign: 'center' }}>
                 {day}<br />{md.split(' ')[0]}<br />{md.split(' ')[1]}
               </Typography>
             </Box>
@@ -213,7 +213,7 @@ export default function EventDetailPage() {
               }}>
                 {event.venue}
               </Typography>
-              <Typography sx={{ ...mono, fontSize: '0.4375rem', color: 'var(--muted)' }}>
+              <Typography sx={{ ...mono, fontSize: '0.5625rem', color: 'var(--muted)' }}>
                 {event.city}{event.country ? `, ${event.country}` : ''}
                 {event.distance_km != null && (
                   <Box component="span" sx={{ color: 'var(--accent)', ml: 1.25 }}>
@@ -221,7 +221,7 @@ export default function EventDetailPage() {
                   </Box>
                 )}
               </Typography>
-              <Typography sx={{ ...mono, fontSize: '0.375rem', color: 'rgba(216,207,184,0.4)', mt: 0.375 }}>
+              <Typography sx={{ ...mono, fontSize: '0.625rem', color: 'rgba(216,207,184,0.4)', mt: 0.375 }}>
                 {formatDateLong(event.date)}
               </Typography>
             </Box>
@@ -234,7 +234,7 @@ export default function EventDetailPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 backgroundColor: `${matchColor}18`, mb: 0.25,
               }}>
-                <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: matchColor, fontWeight: 700 }}>
+                <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: matchColor, fontWeight: 700 }}>
                   {matchPct}%
                 </Typography>
               </Box>
@@ -268,7 +268,7 @@ export default function EventDetailPage() {
                 sx={{ display: 'flex', flexDirection: 'column', gap: 0.625, cursor: 'pointer' }}
                 onClick={() => openModal('going')}
               >
-                <Typography sx={{ ...mono, fontSize: '0.375rem', color: 'var(--muted)' }}>
+                <Typography sx={{ ...mono, fontSize: '0.625rem', color: 'var(--muted)' }}>
                   Going · {event.going_count}
                 </Typography>
                 <AvatarGroup
@@ -286,7 +286,7 @@ export default function EventDetailPage() {
                 sx={{ display: 'flex', flexDirection: 'column', gap: 0.625, cursor: 'pointer' }}
                 onClick={() => openModal('interested')}
               >
-                <Typography sx={{ ...mono, fontSize: '0.375rem', color: 'var(--muted)' }}>
+                <Typography sx={{ ...mono, fontSize: '0.625rem', color: 'var(--muted)' }}>
                   Interested · {event.interested_count}
                 </Typography>
                 <AvatarGroup
@@ -303,7 +303,7 @@ export default function EventDetailPage() {
         {/* Lineup */}
         {allBands.length > 0 && (
           <Box sx={{ mb: 2.5 }}>
-            <Typography sx={{ ...mono, fontSize: '0.4375rem', color: 'var(--muted)', mb: 1 }}>
+            <Typography sx={{ ...mono, fontSize: '0.5625rem', color: 'var(--muted)', mb: 1 }}>
               Lineup
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.625 }}>
@@ -325,7 +325,7 @@ export default function EventDetailPage() {
                   }}>
                     {band.name}
                   </Typography>
-                  <Typography sx={{ ...mono, fontSize: '0.375rem', color: 'var(--muted)' }}>
+                  <Typography sx={{ ...mono, fontSize: '0.625rem', color: 'var(--muted)' }}>
                     {band.role === 'headliner' ? 'HEADLINER' : 'SUPPORT'}
                   </Typography>
                 </Box>
@@ -345,7 +345,7 @@ export default function EventDetailPage() {
               sx={{
                 border: '1px solid rgba(196,58,42,0.35)', borderRadius: '3px',
                 px: 1.5, height: 34, display: 'inline-flex', alignItems: 'center',
-                textDecoration: 'none', ...mono, fontSize: '0.4375rem',
+                textDecoration: 'none', ...mono, fontSize: '0.5625rem',
                 color: 'var(--accent)',
                 '&:hover': { backgroundColor: 'rgba(196,58,42,0.08)', borderColor: 'var(--accent)' },
               }}

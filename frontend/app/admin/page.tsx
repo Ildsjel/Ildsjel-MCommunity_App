@@ -6,7 +6,7 @@ import { useUser } from '@/app/context/UserContext'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
               '&:active': { transform: 'translate(1px,1px)', boxShadow: 'none' },
             }}
           >
-            <span style={{ ...lbl, color: 'var(--ink)', fontSize: '0.5625rem' }}>{section.label}</span>
+            <span style={{ ...lbl, color: 'var(--ink)', fontSize: '0.6875rem' }}>{section.label}</span>
             <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', mt: 0.5 }}>
               {section.desc}
             </Typography>

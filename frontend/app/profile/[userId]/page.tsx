@@ -44,7 +44,7 @@ interface Artist {
 
 const labelStyle: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -61,7 +61,7 @@ const box: React.CSSProperties = {
 
 const btn = (accent?: boolean, danger?: boolean): React.CSSProperties => ({
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   border: `1.5px solid ${danger ? 'rgba(196,58,42,0.5)' : accent ? 'rgba(154,26,26,0.6)' : 'rgba(216,207,184,0.25)'}`,
@@ -277,7 +277,7 @@ export default function UserProfilePage() {
             }}>
               —
             </Typography>
-            <span style={{ ...lbl, fontSize: '0.4375rem' }}>COMPAT.</span>
+            <span style={{ ...lbl, fontSize: '0.5625rem' }}>COMPAT.</span>
           </Box>
         </Box>
 
@@ -321,7 +321,7 @@ export default function UserProfilePage() {
                onClick={() => setExplorerOpen(true)}>
             <div style={{ padding: '8px 10px 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={lbl}>◈ METAL-ID SIGIL</span>
-              <span style={{ ...lbl, fontSize: '0.4375rem', color: '#C75050' }}>TAP TO EXPLORE →</span>
+              <span style={{ ...lbl, fontSize: '0.5625rem', color: '#C75050' }}>TAP TO EXPLORE →</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', background: 'radial-gradient(ellipse at 50% 40%, #1B1626 0%, #0B0814 100%)', padding: '8px 0' }}>
               <Sigil
@@ -335,7 +335,7 @@ export default function UserProfilePage() {
             <div style={{ padding: '4px 10px 8px', display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
               {sigilData.genres.slice(0, 4).map((g, i) => (
                 <span key={g} style={{
-                  ...lbl, fontSize: '0.4375rem',
+                  ...lbl, fontSize: '0.5625rem',
                   color: i === 0 ? '#C75050' : '#5A5470',
                   border: `1px solid ${i === 0 ? 'rgba(199,80,80,0.35)' : 'rgba(90,84,112,0.3)'}`,
                   borderRadius: '2px', padding: '2px 6px',
@@ -359,7 +359,7 @@ export default function UserProfilePage() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '0.5625rem',
+                  fontSize: '0.6875rem',
                   letterSpacing: '0.12em',
                   textTransform: 'uppercase',
                   color: 'var(--accent)',
@@ -424,7 +424,7 @@ export default function UserProfilePage() {
                     background: 'repeating-linear-gradient(45deg, #1a1424 0 3px, #120e18 3px 6px)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <span style={{ ...lbl, fontSize: '0.375rem', textAlign: 'center', lineHeight: 1.2, padding: '2px' }}>
+                    <span style={{ ...lbl, fontSize: '0.625rem', textAlign: 'center', lineHeight: 1.2, padding: '2px' }}>
                       {artist.name.slice(0, 8)}
                     </span>
                   </Box>
@@ -487,14 +487,14 @@ export default function UserProfilePage() {
               background: 'linear-gradient(180deg, rgba(11,8,20,0.95) 0%, rgba(11,8,20,0.6) 100%)',
             }}>
               <button onClick={() => { setExplorerOpen(false); setExplorerLayer(1); setFocusedNode(null) }}
-                style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5rem', letterSpacing: '0.18em',
+                style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.625rem', letterSpacing: '0.18em',
                   textTransform: 'uppercase', color: '#8B8298', background: 'transparent', border: 'none', cursor: 'pointer' }}>
                 ← RETREAT
               </button>
               <span style={{ fontFamily: '"Archivo Black", sans-serif', fontSize: 22, color: '#EDE4D3' }}>
                 {user!.handle.toUpperCase()}
               </span>
-              <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', letterSpacing: '0.14em', color: '#C75050' }}>
+              <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', letterSpacing: '0.14em', color: '#C75050' }}>
                 L{explorerLayer} · {explorerLayer === 1 ? 'SEAL' : explorerLayer === 2 ? 'SCENE' : 'ARTISTS'}
               </span>
             </Box>
@@ -546,10 +546,10 @@ export default function UserProfilePage() {
                 −
               </button>
               <Box sx={{ textAlign: 'center', minWidth: '90px' }}>
-                <Box sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5rem', letterSpacing: '0.2em', color: '#C75050', lineHeight: 1 }}>
+                <Box sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.625rem', letterSpacing: '0.2em', color: '#C75050', lineHeight: 1 }}>
                   L{explorerLayer}
                 </Box>
-                <Box sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', letterSpacing: '0.16em', color: '#5A5470', mt: '3px' }}>
+                <Box sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', letterSpacing: '0.16em', color: '#5A5470', mt: '3px' }}>
                   {explorerLayer === 1 ? 'SEAL' : explorerLayer === 2 ? 'SCENE' : 'ARTISTS'}
                 </Box>
                 <Box sx={{ mt: '4px', display: 'flex', justifyContent: 'center', gap: '4px' }}>
@@ -575,7 +575,7 @@ export default function UserProfilePage() {
             {/* L3 tap hint */}
             {explorerLayer === 3 && !focusedNode && (
               <Box sx={{ textAlign: 'center', pb: '6px', flexShrink: 0 }}>
-                <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', letterSpacing: '0.14em', color: '#5A5470' }}>
+                <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', letterSpacing: '0.14em', color: '#5A5470' }}>
                   TAP A DOT TO EXPLORE
                 </span>
               </Box>
@@ -595,10 +595,10 @@ export default function UserProfilePage() {
                   '@keyframes sheetUp': { from: { opacity: 0, transform: 'translateY(10px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
                 }}>
                   <button onClick={() => setFocusedNode(null)} style={{ position: 'absolute', top: 10, right: 12,
-                    fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', color: '#5A5470',
+                    fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', color: '#5A5470',
                     background: 'transparent', border: 'none', cursor: 'pointer' }}>✕</button>
                   <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', letterSpacing: '0.16em', color: '#C75050' }}>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', letterSpacing: '0.16em', color: '#C75050' }}>
                       {cl?.label ?? ''}
                     </span>
                     <Box sx={{ flex: 1, height: '1px', background: 'rgba(90,84,112,0.4)' }} />
@@ -607,8 +607,8 @@ export default function UserProfilePage() {
                     {focusedNode.name}
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '4px' }}>
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', color: '#5A5470' }}>LISTENING WEIGHT</span>
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', color: '#8B8298' }}>{w}</span>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', color: '#5A5470' }}>LISTENING WEIGHT</span>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', color: '#8B8298' }}>{w}</span>
                   </Box>
                   <Box sx={{ height: '3px', background: '#36304A', borderRadius: '2px', mb: '10px' }}>
                     <Box sx={{ height: '100%', width: `${w}%`, background: '#C75050', borderRadius: '2px', transition: 'width 0.4s ease' }} />
@@ -616,14 +616,14 @@ export default function UserProfilePage() {
                   <Box sx={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     {cl && (
                       <button onClick={() => setFocusedNode({ type: 'genre', ci: focusedNode.ci })}
-                        style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', letterSpacing: '0.12em',
+                        style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', letterSpacing: '0.12em',
                           color: '#C75050', padding: '4px 8px', border: '1px solid rgba(199,80,80,0.35)',
                           borderRadius: '2px', background: 'rgba(168,58,58,0.10)', cursor: 'pointer', textTransform: 'uppercase' as const }}>
                         ↗ {cl.label}
                       </button>
                     )}
                     {rank >= 0 && (
-                      <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', letterSpacing: '0.12em',
+                      <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', letterSpacing: '0.12em',
                         color: '#8B8298', padding: '4px 8px', border: '1px solid #36304A', borderRadius: '2px', textTransform: 'uppercase' as const }}>
                         #{rank + 1} IN CLUSTER
                       </span>
@@ -652,15 +652,15 @@ export default function UserProfilePage() {
                   '@keyframes sheetUp': { from: { opacity: 0, transform: 'translateY(10px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
                 }}>
                   <button onClick={() => setFocusedNode(null)} style={{ position: 'absolute', top: 10, right: 12,
-                    fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', color: '#5A5470',
+                    fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', color: '#5A5470',
                     background: 'transparent', border: 'none', cursor: 'pointer' }}>✕</button>
                   <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', letterSpacing: '0.16em', color: '#C75050' }}>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', letterSpacing: '0.16em', color: '#C75050' }}>
                       {cl.label}
                     </span>
                     <Box sx={{ flex: 1, height: '1px', background: 'rgba(90,84,112,0.4)' }} />
                   </Box>
-                  <Box sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', color: '#8B8298', mb: '10px', letterSpacing: '0.12em' }}>
+                  <Box sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', color: '#8B8298', mb: '10px', letterSpacing: '0.12em' }}>
                     {cl.artist_count} ARTISTS · {cl.subgenres.length} SUBGENRES
                   </Box>
                   {cl.subgenres.slice(0, 4).length > 0 && (
@@ -699,7 +699,7 @@ export default function UserProfilePage() {
                     ))
                   )}
                   {explorerLayer === 3 && (
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.4375rem', letterSpacing: '0.12em', color: '#5A5470' }}>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '0.5625rem', letterSpacing: '0.12em', color: '#5A5470' }}>
                       {sigilData.clusters.reduce((s, c) => s + c.artists.length, 0)} ARTISTS · DOT SIZE = LISTENING WEIGHT
                     </span>
                   )}
