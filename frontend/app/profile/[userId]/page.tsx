@@ -16,8 +16,9 @@ import Sigil from '@/app/components/Sigil'
 import SigilExplorer, { SigilCluster, FocusedNode } from '@/app/components/SigilExplorer'
 import { friendsApi, FriendStatus } from '@/lib/friendsApi'
 import { messagesApi } from '@/lib/messagesApi'
-import { API_BASE_URL as API_BASE } from '@/lib/api'
 import axios from 'axios'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface User {
   id: string
