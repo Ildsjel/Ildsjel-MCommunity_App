@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Box, Typography } from '@mui/material'
 import { useNotifications } from '@/app/context/NotificationContext'
-import { useUser } from '@/app/context/UserContext'
-import { distanceBetweenCities } from '@/lib/geo'
+import { api } from '@/lib/api'
 
 const THRESHOLD = 80
 
@@ -16,15 +15,26 @@ const CARD_PALETTES = [
   { bg: 'linear-gradient(155deg, #1e1208 0%, #08060a 50%, #0a1820 100%)', glow: 'rgba(30,100,60,.1)' },
 ]
 
+interface ApiHit {
+  user_id: string
+  handle: string
+  city_bucket: string | null
+  profile_image_url: string | null
+  top_shared_artists: { artist_id: string; artist_name: string }[]
+  shared_genres: string[]
+  compatibility_score: number | null
+  last_active: string | null
+}
+
 interface Profile {
   id: string
   handle: string
   initial: string
-  city: string
-  country: string
+  location: string
   compatibility: number
   artists: string[]
-  about: string
+  genres: string[]
+  lastActive: string | null
 }
 
 interface Comment {
@@ -34,29 +44,20 @@ interface Comment {
   time: string
 }
 
-const PROFILES: Profile[] = [
-  { id: 'u1', handle: 'SKALD_EIRIK',   initial: 'S', city: 'Oslo',       country: 'NO', compatibility: 87, artists: ['Enslaved', 'Ihsahn', 'Mgła'],                        about: 'Black metal pilgrim. Concerts are church.' },
-  { id: 'u2', handle: 'FENRIR_KEEPER', initial: 'F', city: 'Hamburg',    country: 'DE', compatibility: 74, artists: ['Bolt Thrower', 'Cannibal Corpse', 'Morbid Angel'],    about: 'Death metal only. No exceptions.' },
-  { id: 'u3', handle: 'VOIDWALKER',    initial: 'V', city: 'Düsseldorf', country: 'DE', compatibility: 91, artists: ['Sunn O)))', 'Earth', 'Sleep'],                        about: 'Drone is prayer. Volume is god.' },
-  { id: 'u4', handle: 'BRISINGR_PATH', initial: 'B', city: 'Cologne',    country: 'DE', compatibility: 68, artists: ['Bathory', 'Dissection', 'Watain'],                    about: 'Vikings, darkness, riffs.' },
-  { id: 'u5', handle: 'MORDGRIMM',     initial: 'M', city: 'Frankfurt',  country: 'DE', compatibility: 82, artists: ['Primordial', 'Agalloch', 'Wolves in the Throne Room'], about: 'Folk-tinged black metal devotee.' },
-]
-
-// Profiles that already liked the current user → mutual fit on right-swipe
-const ALREADY_LIKED = new Set(['u1', 'u3'])
-
-const SEED_COMMENTS: Record<string, Comment[]> = {
-  u1: [
-    { id: 'c1', user: 'HRAFN',       text: 'Enslaved at Øya was life-changing',    time: '2h' },
-    { id: 'c2', user: 'ASHES_42',    text: 'Bergen scene is unreal right now',     time: '5h' },
-  ],
-  u2: [],
-  u3: [{ id: 'c3', user: 'MGLA_PURIST', text: 'Portland drone scene is something else', time: '1d' }],
-  u4: [],
-  u5: [{ id: 'c4', user: 'HRAFN', text: 'Agalloch farewell show made me weep', time: '3d' }],
+function mapHit(hit: ApiHit): Profile {
+  return {
+    id: hit.user_id,
+    handle: hit.handle,
+    initial: hit.handle.charAt(0).toUpperCase(),
+    location: hit.city_bucket || '',
+    compatibility: Math.round(hit.compatibility_score || 0),
+    artists: hit.top_shared_artists.slice(0, 3).map((a) => a.artist_name),
+    genres: hit.shared_genres.slice(0, 3),
+    lastActive: hit.last_active,
+  }
 }
 
-const lbl: React.CSSProperties = {
+const labelStyle: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
   fontSize: '0.5625rem',
   letterSpacing: '0.12em',
@@ -66,48 +67,41 @@ const lbl: React.CSSProperties = {
 
 export default function SwipeFeed() {
   const { addNotification } = useNotifications()
-  const { user } = useUser()
-
-  // Pre-compute distances from user's city to each profile city
-  const distances = useMemo(() => {
-    const userCity = user?.city ?? null
-    return Object.fromEntries(
-      PROFILES.map((p) => {
-        const km = userCity ? distanceBetweenCities(userCity, p.city) : null
-        return [p.id, km]
-      })
-    ) as Record<string, number | null>
-  }, [user?.city])
-  const [idx, setIdx]               = useState(0)
-  const [dragX, setDragX]           = useState(0)
-  const [dragY, setDragY]           = useState(0)
-  const [dragging, setDragging]     = useState(false)
-  const [exitDir, setExitDir]       = useState<'left' | 'right' | null>(null)
-  const [matchProfile, setMatchProfile] = useState<Profile | null>(null)
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [idx, setIdx]           = useState(0)
+  const [dragX, setDragX]       = useState(0)
+  const [dragY, setDragY]       = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const [exitDir, setExitDir]   = useState<'left' | 'right' | null>(null)
   const [showComments, setShowComments] = useState(false)
-  const [comments, setComments]     = useState<Record<string, Comment[]>>(SEED_COMMENTS)
+  const [comments, setComments] = useState<Record<string, Comment[]>>({})
   const [newComment, setNewComment] = useState('')
   const startX = useRef(0)
   const startY = useRef(0)
   const moved  = useRef(false)
 
-  const profile     = PROFILES[idx]
-  const nextProfile = PROFILES[idx + 1]
-  const done        = idx >= PROFILES.length
+  useEffect(() => {
+    api.get<{ hits: ApiHit[] }>('/search/random?limit=20')
+      .then((res) => setProfiles(res.data.hits.map(mapHit)))
+      .catch(() => {/* show empty state */})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const profile     = profiles[idx]
+  const nextProfile = profiles[idx + 1]
+  const done        = !loading && idx >= profiles.length
 
   const palette     = CARD_PALETTES[idx % CARD_PALETTES.length]
   const nextPalette = CARD_PALETTES[(idx + 1) % CARD_PALETTES.length]
 
   const dismiss = (dir: 'left' | 'right') => {
-    if (dir === 'right' && profile && ALREADY_LIKED.has(profile.id)) {
-      // Mutual fit — show match overlay and fire notification
-      setMatchProfile(profile)
+    if (dir === 'right' && profile) {
       addNotification({ type: 'fit_match', fromHandle: profile.handle, fromInitial: profile.initial, timestamp: 'now' })
-      setTimeout(() => setMatchProfile(null), 2200)
     }
     setExitDir(dir)
     setTimeout(() => {
-      setIdx(i => i + 1)
+      setIdx((i) => i + 1)
       setExitDir(null)
       setDragX(0)
       setDragY(0)
@@ -136,7 +130,7 @@ export default function SwipeFeed() {
     if (!dragging) return
     setDragging(false)
     if (!moved.current) { setDragX(0); setDragY(0); return }
-    if (dragX > THRESHOLD)  dismiss('right')
+    if (dragX > THRESHOLD)       dismiss('right')
     else if (dragX < -THRESHOLD) dismiss('left')
     else { setDragX(0); setDragY(0) }
   }
@@ -144,32 +138,43 @@ export default function SwipeFeed() {
   const addComment = () => {
     if (!newComment.trim() || !profile) return
     const c: Comment = { id: `c${Date.now()}`, user: 'ME', text: newComment.trim(), time: 'now' }
-    setComments(prev => ({ ...prev, [profile.id]: [...(prev[profile.id] || []), c] }))
+    setComments((prev) => ({ ...prev, [profile.id]: [...(prev[profile.id] || []), c] }))
     setNewComment('')
+  }
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 420 }}>
+        <span style={{ ...labelStyle, color: 'var(--accent)' }}>LOADING…</span>
+      </Box>
+    )
   }
 
   if (done) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 420, gap: 2, px: 2 }}>
-        <span style={{ ...lbl, color: 'var(--accent)' }}>☍ ALL CAUGHT UP</span>
+        <span style={{ ...labelStyle, color: 'var(--accent)' }}>☍ ALL CAUGHT UP</span>
         <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.875rem', color: 'var(--muted)', textAlign: 'center' }}>
-          You've seen everyone nearby.<br />Check back tomorrow for new faces.
+          {profiles.length === 0
+            ? 'No one to discover yet. Check back later.'
+            : "You've seen everyone. Check back tomorrow for new faces."}
         </Typography>
-        <Box component="button" onClick={() => setIdx(0)} sx={{
-          mt: 1, border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
-          px: 2, py: 0.75, background: 'transparent', cursor: 'pointer',
-          fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em',
-          color: 'var(--ink)',
-        }}>
-          RESTART
-        </Box>
+        {profiles.length > 0 && (
+          <Box component="button" onClick={() => setIdx(0)} sx={{
+            mt: 1, border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
+            px: 2, py: 0.75, background: 'transparent', cursor: 'pointer',
+            fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em',
+            color: 'var(--ink)',
+          }}>
+            RESTART
+          </Box>
+        )}
       </Box>
     )
   }
 
   const profileComments = comments[profile.id] || []
 
-  // Card transform
   const tx  = exitDir === 'right' ? 600 : exitDir === 'left' ? -600 : dragX
   const ty  = exitDir ? dragY * 0.3 : dragY * 0.12
   const rot = dragging ? dragX * 0.05 : 0
@@ -271,7 +276,7 @@ export default function SwipeFeed() {
               cursor: 'pointer',
             }}
           >
-            <span style={{ ...lbl, color: 'var(--ink)', fontSize: '0.5rem' }}>
+            <span style={{ ...labelStyle, color: 'var(--ink)', fontSize: '0.5rem' }}>
               ☍ {profileComments.length > 0 ? profileComments.length : 'COMMENT'}
             </span>
           </Box>
@@ -287,35 +292,56 @@ export default function SwipeFeed() {
               <Typography sx={{ fontFamily: 'var(--font-display, "Archivo Black", sans-serif)', fontSize: '1.25rem', lineHeight: 1 }}>
                 {profile.handle}
               </Typography>
-              <Typography sx={{ fontFamily: 'var(--font-display)', fontSize: '2rem', lineHeight: 1, color: 'var(--accent, #c43a2a)' }}>
-                {profile.compatibility}%
-              </Typography>
+              {profile.compatibility > 0 && (
+                <Typography sx={{ fontFamily: 'var(--font-display)', fontSize: '2rem', lineHeight: 1, color: 'var(--accent, #c43a2a)' }}>
+                  {profile.compatibility}%
+                </Typography>
+              )}
             </Box>
 
-            <span style={{ ...lbl, display: 'block', marginBottom: 10 }}>
-              ⌖ {profile.city}
-              {distances[profile.id] !== null && distances[profile.id] !== undefined
-                ? ` · ${distances[profile.id]} km`
-                : ''}
-            </span>
+            {profile.location && (
+              <span style={{ ...labelStyle, display: 'block', marginBottom: 10 }}>
+                ⌖ {profile.location}
+              </span>
+            )}
 
-            {/* Artists */}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.25 }}>
-              {profile.artists.map((a) => (
-                <Box key={a} sx={{
-                  border: '1.5px solid rgba(216,207,184,0.25)', borderRadius: '3px',
-                  px: 0.75, height: 22, display: 'inline-flex', alignItems: 'center',
-                  fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.1em',
-                  textTransform: 'uppercase', color: 'var(--ink)',
-                }}>
-                  {a}
-                </Box>
-              ))}
-            </Box>
+            {/* Shared artists */}
+            {profile.artists.length > 0 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: profile.genres.length > 0 ? 0.75 : 1.25 }}>
+                {profile.artists.map((a) => (
+                  <Box key={a} sx={{
+                    border: '1.5px solid rgba(216,207,184,0.25)', borderRadius: '3px',
+                    px: 0.75, height: 22, display: 'inline-flex', alignItems: 'center',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.1em',
+                    textTransform: 'uppercase', color: 'var(--ink)',
+                  }}>
+                    {a}
+                  </Box>
+                ))}
+              </Box>
+            )}
 
-            <Typography sx={{ fontFamily: 'var(--font-serif, "EB Garamond", serif)', fontStyle: 'italic', fontSize: '0.9375rem', color: 'rgba(236,229,211,.72)', lineHeight: 1.4 }}>
-              "{profile.about}"
-            </Typography>
+            {/* Shared genres */}
+            {profile.genres.length > 0 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.25 }}>
+                {profile.genres.map((g) => (
+                  <Box key={g} sx={{
+                    border: '1.5px solid rgba(216,207,184,0.15)', borderRadius: '3px',
+                    px: 0.75, height: 20, display: 'inline-flex', alignItems: 'center',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em',
+                    textTransform: 'uppercase', color: 'var(--muted)',
+                  }}>
+                    {g}
+                  </Box>
+                ))}
+              </Box>
+            )}
+
+            {profile.lastActive && (
+              <span style={{ ...labelStyle, fontSize: '0.4375rem', display: 'block' }}>
+                {profile.lastActive}
+              </span>
+            )}
           </Box>
         </Box>
       </Box>
@@ -359,41 +385,8 @@ export default function SwipeFeed() {
         </Box>
       </Box>
 
-      {/* ── Mutual fit overlay ──────────────────────────────── */}
-      {matchProfile && (
-        <Box sx={{
-          position: 'fixed', inset: 0, zIndex: 1400,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          background: 'radial-gradient(circle at center, rgba(196,58,42,.35) 0%, rgba(8,6,10,.97) 70%)',
-          animation: 'fadeInUp 0.3s ease both',
-          pointerEvents: 'none',
-        }}>
-          <Typography sx={{
-            fontFamily: 'var(--font-display, "Archivo Black", sans-serif)',
-            fontSize: '0.5625rem', letterSpacing: '0.2em',
-            color: 'var(--accent)', mb: 1,
-          }}>
-            ✶ MUTUAL FIT ✶
-          </Typography>
-          <Typography sx={{
-            fontFamily: 'var(--font-serif, "EB Garamond", serif)',
-            fontStyle: 'italic', fontSize: '1.5rem',
-            color: 'var(--ink)', textAlign: 'center', lineHeight: 1.3,
-          }}>
-            You and<br />{matchProfile.handle}
-          </Typography>
-          <Typography sx={{
-            fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-            fontSize: '0.9375rem', color: 'var(--muted)', mt: 0.75,
-          }}>
-            found each other.
-          </Typography>
-        </Box>
-      )}
-
       {/* ── Comment sheet ────────────────────────────────────── */}
-      {showComments && (
+      {showComments && profile && (
         <>
           <Box onClick={() => setShowComments(false)} sx={{
             position: 'fixed', inset: 0, zIndex: 1300,
@@ -409,15 +402,13 @@ export default function SwipeFeed() {
             paddingBottom: 'env(safe-area-inset-bottom)',
             maxHeight: '60dvh', display: 'flex', flexDirection: 'column',
           }}>
-            {/* Header */}
             <Box sx={{ px: 2, pt: 1.5, pb: 1.25, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(216,207,184,0.1)', flexShrink: 0 }}>
-              <span style={lbl}>☍ {profile.handle}</span>
+              <span style={labelStyle}>☍ {profile.handle}</span>
               <Box component="button" onClick={() => setShowComments(false)} sx={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: '0.875rem', lineHeight: 1, p: 0.5 }}>
                 ✕
               </Box>
             </Box>
 
-            {/* Comments list */}
             <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {profileComments.length === 0 ? (
                 <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', textAlign: 'center', py: 2.5 }}>
@@ -427,20 +418,17 @@ export default function SwipeFeed() {
                 profileComments.map((c) => (
                   <Box key={c.id} sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
                     <Box sx={{
-                      width: 26, height: 26, flexShrink: 0,
+                      width: 20, height: 20, flexShrink: 0,
                       border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '2px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'var(--font-display)', fontSize: '0.5625rem',
-                      color: '#ece5d3', backgroundColor: '#120e18',
+                      fontFamily: 'var(--font-display)', fontSize: '0.5rem', color: '#ece5d3',
+                      backgroundColor: '#120e18',
                     }}>
                       {c.user.charAt(0)}
                     </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Box sx={{ display: 'flex', gap: 1, mb: 0.25, alignItems: 'center' }}>
-                        <span style={{ ...lbl, color: 'var(--ink)', fontSize: '0.5rem' }}>{c.user}</span>
-                        <span style={lbl}>{c.time}</span>
-                      </Box>
-                      <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.875rem', lineHeight: 1.45 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <span style={{ ...labelStyle, fontSize: '0.4375rem' }}>{c.user} · {c.time}</span>
+                      <Typography sx={{ fontFamily: 'var(--font-serif)', fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.45, mt: 0.25 }}>
                         {c.text}
                       </Typography>
                     </Box>
@@ -449,8 +437,7 @@ export default function SwipeFeed() {
               )}
             </Box>
 
-            {/* Input row */}
-            <Box sx={{ px: 2, pb: 1.5, pt: 1, borderTop: '1px solid rgba(216,207,184,0.1)', display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
+            <Box sx={{ px: 2, py: 1.25, borderTop: '1px solid rgba(216,207,184,0.1)', flexShrink: 0, display: 'flex', gap: 1 }}>
               <Box
                 component="input"
                 value={newComment}
@@ -458,20 +445,21 @@ export default function SwipeFeed() {
                 onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') addComment() }}
                 placeholder="Leave a comment…"
                 sx={{
-                  flex: 1,
+                  flex: 1, background: '#120e18',
                   border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
-                  background: '#120e18', color: 'var(--ink)',
-                  fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.875rem',
-                  px: 1.25, py: 0.875, outline: 'none',
+                  px: 1.25, py: 0.75,
+                  fontFamily: 'var(--font-serif)', fontSize: '0.875rem', color: 'var(--ink)',
+                  outline: 'none',
                   '&::placeholder': { color: 'var(--muted)' },
+                  '&:focus': { borderColor: 'rgba(216,207,184,0.4)' },
                 }}
               />
               <Box component="button" onClick={addComment} sx={{
-                border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
-                px: 1.25, py: 0.875, background: 'transparent', cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em',
-                color: newComment.trim() ? 'var(--accent)' : 'var(--muted)',
-                transition: 'color 0.1s', flexShrink: 0,
+                background: 'none', border: '1.5px solid rgba(216,207,184,0.2)',
+                borderRadius: '3px', px: 1.25, cursor: 'pointer',
+                fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                letterSpacing: '0.1em', color: 'var(--ink)',
+                '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
               }}>
                 POST
               </Box>
