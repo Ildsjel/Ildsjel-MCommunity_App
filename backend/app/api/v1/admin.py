@@ -107,6 +107,22 @@ async def set_user_role(
     return {"message": f"Role updated to {body.role}"}
 
 
+@router.delete("/users/{user_id}", status_code=204)
+async def delete_user(
+    user_id: str,
+    current_user: dict = Depends(require_superadmin),
+    session=Depends(get_neo4j_session),
+):
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    result = session.run(
+        "MATCH (u:User {id: $id}) DETACH DELETE u RETURN count(u) AS n",
+        id=user_id,
+    ).single()
+    if not result or result["n"] == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+
+
 @router.patch("/users/{user_id}/onboarding")
 async def set_user_onboarding(
     user_id: str,

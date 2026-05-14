@@ -32,6 +32,7 @@ function UsersContent() {
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
   const [onboardingUpdating, setOnboardingUpdating] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
     adminAPI.listUsers()
@@ -47,6 +48,16 @@ function UsersContent() {
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)))
     } catch (e: unknown) { alert(getErrorMessage(e)) }
     finally { setUpdating(null) }
+  }
+
+  const handleDelete = async (userId: string, handle: string) => {
+    if (!confirm(`Permanently delete user "${handle}" and all their data? This cannot be undone.`)) return
+    setDeleting(userId)
+    try {
+      await adminAPI.deleteUser(userId)
+      setUsers((prev) => prev.filter((u) => u.id !== userId))
+    } catch (e: unknown) { alert(getErrorMessage(e)) }
+    finally { setDeleting(null) }
   }
 
   const handleOnboardingReset = async (userId: string) => {
@@ -76,6 +87,25 @@ function UsersContent() {
               <span style={{ ...lbl, fontSize: '0.4375rem' }}>{u.email}</span>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              {/* Delete button — hidden for self */}
+              {u.id !== me?.id && (
+                <Box
+                  component="button"
+                  onClick={() => handleDelete(u.id, u.handle)}
+                  disabled={deleting === u.id}
+                  title="Delete user"
+                  sx={{
+                    background: 'none', border: '1px solid rgba(196,58,42,0.35)',
+                    borderRadius: '2px', cursor: 'pointer', height: 18, px: 0.75,
+                    fontFamily: 'var(--font-mono)', fontSize: '0.35rem',
+                    color: 'rgba(196,58,42,0.7)', letterSpacing: '0.08em',
+                    '&:hover': { borderColor: 'var(--accent)', color: 'var(--accent)', background: 'rgba(196,58,42,0.08)' },
+                    '&:disabled': { opacity: 0.35 },
+                  }}
+                >
+                  {deleting === u.id ? '…' : '✕ DELETE'}
+                </Box>
+              )}
               {/* Onboarding reset button — only shown when onboarding is complete */}
               {u.onboarding_complete && u.id !== me?.id && (
                 <Box
