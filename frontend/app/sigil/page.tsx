@@ -76,6 +76,7 @@ export default function SigilPage() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
+  const [entered, setEntered] = useState(false)   // fullscreen immersive state
 
   useEffect(() => {
     if (userLoading) return
@@ -334,19 +335,21 @@ export default function SigilPage() {
 
               {/* CTA button */}
               <Box sx={{ px: '16px', mb: '18px' }}>
-                <button style={{
-                  width: '100%',
-                  padding: '13px 0',
-                  fontFamily: MONO,
-                  fontSize: '0.5625rem',
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: BONE,
-                  background: BLOOD3,
-                  border: `1px solid ${BLOOD}`,
-                  borderRadius: '2px',
-                  cursor: 'pointer',
-                }}>
+                <button
+                  onClick={() => setEntered(true)}
+                  style={{
+                    width: '100%',
+                    padding: '13px 0',
+                    fontFamily: MONO,
+                    fontSize: '0.5625rem',
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: BONE,
+                    background: BLOOD3,
+                    border: `1px solid ${BLOOD}`,
+                    borderRadius: '2px',
+                    cursor: 'pointer',
+                  }}>
                   enter the sigil →
                 </button>
               </Box>
@@ -484,6 +487,183 @@ export default function SigilPage() {
 
       {/* Standard bottom nav */}
       <BottomNav />
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          FULLSCREEN IMMERSIVE OVERLAY — "Enter the Sigil"
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {entered && (
+        <Box sx={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'radial-gradient(ellipse at 50% 40%, #1B1626 0%, #0B0814 70%)',
+          display: 'flex', flexDirection: 'column',
+          overflowY: 'auto',
+          // fade-in
+          animation: 'sigilEnter 0.4s ease forwards',
+          '@keyframes sigilEnter': {
+            from: { opacity: 0 },
+            to:   { opacity: 1 },
+          },
+        }}>
+
+          {/* Dot grid */}
+          <Box sx={{
+            position: 'fixed', inset: 0, pointerEvents: 'none',
+            backgroundImage: `
+              linear-gradient(to right, rgba(237,228,211,0.025) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(237,228,211,0.025) 1px, transparent 1px)
+            `,
+            backgroundSize: '48px 48px',
+          }} />
+
+          {/* Top bar */}
+          <Box sx={{
+            position: 'sticky', top: 0, zIndex: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            px: '16px', height: 52,
+            background: 'linear-gradient(180deg, rgba(11,8,20,0.95) 0%, transparent 100%)',
+          }}>
+            <button
+              onClick={() => setEntered(false)}
+              style={{
+                fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.18em',
+                textTransform: 'uppercase', color: BONE3,
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                <path d="M15 6l-6 6 6 6" stroke={BONE3} strokeWidth={1.5} strokeLinecap="square" />
+              </svg>
+              retreat
+            </button>
+            <span style={{ fontFamily: MEDIEVAL, fontWeight: 700, fontSize: 22, color: BONE }}>
+              Grimr
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em', color: BONE4 }}>
+              L1 · SEAL
+            </span>
+          </Box>
+
+          {/* ── Sigil — large, centered, slow pulse ──────────────────────────── */}
+          <Box sx={{
+            flex: '0 0 auto',
+            display: 'flex', justifyContent: 'center',
+            px: 0, pt: 1, pb: 2,
+            position: 'relative', zIndex: 1,
+          }}>
+            <Box sx={{
+              animation: 'sigilPulse 8s ease-in-out infinite',
+              '@keyframes sigilPulse': {
+                '0%,100%': { filter: 'drop-shadow(0 0 14px rgba(168,58,58,0.25))' },
+                '50%':     { filter: 'drop-shadow(0 0 28px rgba(168,58,58,0.45))' },
+              },
+            }}>
+              <Sigil
+                size={Math.min(typeof window !== 'undefined' ? window.innerWidth : 420, 460)}
+                genres={data?.genres ?? []}
+                artists={data?.artists ?? []}
+                handle={handle}
+                est={est}
+              />
+            </Box>
+          </Box>
+
+          {/* ── Artist roster ─────────────────────────────────────────────────── */}
+          <Box sx={{ px: '20px', pb: '32px', position: 'relative', zIndex: 1 }}>
+
+            <Box sx={{
+              display: 'flex', alignItems: 'center', gap: '10px', mb: '14px',
+            }}>
+              <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
+              <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.2em', color: BONE4 }}>
+                THE SEVEN
+              </span>
+              <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {(data?.artists ?? []).map((artist, i) => (
+                <Box key={artist} sx={{
+                  display: 'flex', alignItems: 'center',
+                  padding: '9px 14px',
+                  background: i === 0 ? `rgba(168,58,58,0.08)` : 'rgba(27,22,38,0.4)',
+                  border: `1px solid ${i === 0 ? BLOOD3 : INK4}`,
+                  borderRadius: '2px',
+                }}>
+                  <span style={{
+                    fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.12em',
+                    color: i === 0 ? BLOOD2 : BONE4,
+                    minWidth: '1.6rem',
+                  }}>
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span style={{
+                    fontFamily: DISPLAY, fontSize: '0.9375rem',
+                    color: i === 0 ? BONE : BONE2,
+                    flex: 1, letterSpacing: '0.02em',
+                  }}>
+                    {artist}
+                  </span>
+                  {i === 0 && (
+                    <span style={{
+                      fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em',
+                      color: BLOOD2, textTransform: 'uppercase',
+                    }}>
+                      DOMINANT
+                    </span>
+                  )}
+                </Box>
+              ))}
+            </Box>
+
+            {(data?.total_artists ?? 0) > (data?.artists?.length ?? 0) && (
+              <Box sx={{ textAlign: 'center', mt: '10px' }}>
+                <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em', color: BONE4 }}>
+                  + {(data!.total_artists - data!.artists.length)} MORE IN THE ARCHIVE
+                </span>
+              </Box>
+            )}
+
+            {/* ── Genre legend ─────────────────────────────────────────────── */}
+            <Box sx={{
+              display: 'flex', alignItems: 'center', gap: '10px', mt: '24px', mb: '14px',
+            }}>
+              <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
+              <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.2em', color: BONE4 }}>
+                THE OUTER RING
+              </span>
+              <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
+            </Box>
+
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {(data?.genres ?? []).map((g, i) => (
+                <Box key={g} sx={{
+                  padding: '7px 12px',
+                  fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.16em',
+                  color: i === 0 ? BONE : BONE3,
+                  textTransform: 'uppercase',
+                  border: `1px solid ${i === 0 ? BLOOD : INK4}`,
+                  background: i === 0 ? BLOOD_FAINT : 'transparent',
+                  borderRadius: '2px',
+                }}>
+                  {g}
+                </Box>
+              ))}
+            </Box>
+
+            {/* Layer note */}
+            <Box sx={{ mt: '24px', textAlign: 'center' }}>
+              <em style={{
+                fontFamily: SERIF, fontStyle: 'italic',
+                fontSize: '0.8125rem', color: BONE4, lineHeight: 1.6,
+              }}>
+                This is Layer I — the seal of identity.<br />
+                Deeper layers reveal artist kinship and genre topology.
+              </em>
+            </Box>
+
+          </Box>
+        </Box>
+      )}
     </>
   )
 }
