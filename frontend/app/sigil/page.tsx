@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, GlobalStyles } from '@mui/material'
 import Sigil from '@/app/components/Sigil'
+import SigilExplorer, { SigilCluster } from '@/app/components/SigilExplorer'
 import BottomNav from '@/app/components/BottomNav'
 import { useUser } from '@/app/context/UserContext'
 import axios from 'axios'
@@ -59,6 +60,7 @@ interface SigilData {
   genres: string[]
   artists: string[]
   total_artists: number
+  clusters: SigilCluster[]
 }
 
 function authHeaders() {
@@ -76,7 +78,9 @@ export default function SigilPage() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
-  const [entered, setEntered] = useState(false)   // fullscreen immersive state
+  const [entered, setEntered]   = useState(false)          // fullscreen overlay
+  const [layer, setLayer]       = useState<1|2|3>(1)       // LOD layer
+  const [pinnedArtist, setPinnedArtist] = useState<{name:string; cluster:string} | null>(null)
 
   useEffect(() => {
     if (userLoading) return
@@ -92,7 +96,7 @@ export default function SigilPage() {
       .then((r) => setData(r.data))
       .catch((err) => {
         if (err.response?.status === 401) router.push('/auth/login')
-        else setData({ genres: [], artists: [], total_artists: 0 })
+        else setData({ genres: [], artists: [], total_artists: 0, clusters: [] })
       })
       .finally(() => setLoading(false))
   }
@@ -489,20 +493,15 @@ export default function SigilPage() {
       <BottomNav />
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          FULLSCREEN IMMERSIVE OVERLAY — "Enter the Sigil"
+          FULLSCREEN LOD EXPLORER — "Enter the Sigil"
           ═══════════════════════════════════════════════════════════════════════ */}
       {entered && (
         <Box sx={{
           position: 'fixed', inset: 0, zIndex: 100,
-          background: 'radial-gradient(ellipse at 50% 40%, #1B1626 0%, #0B0814 70%)',
+          background: 'radial-gradient(ellipse at 50% 35%, #1B1626 0%, #0B0814 70%)',
           display: 'flex', flexDirection: 'column',
-          overflowY: 'auto',
-          // fade-in
-          animation: 'sigilEnter 0.4s ease forwards',
-          '@keyframes sigilEnter': {
-            from: { opacity: 0 },
-            to:   { opacity: 1 },
-          },
+          animation: 'sigilEnter 0.35s ease forwards',
+          '@keyframes sigilEnter': { from: { opacity: 0 }, to: { opacity: 1 } },
         }}>
 
           {/* Dot grid */}
@@ -515,15 +514,15 @@ export default function SigilPage() {
             backgroundSize: '48px 48px',
           }} />
 
-          {/* Top bar */}
+          {/* ── Top bar ──────────────────────────────────────────────────────── */}
           <Box sx={{
-            position: 'sticky', top: 0, zIndex: 10,
+            position: 'relative', zIndex: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            px: '16px', height: 52,
-            background: 'linear-gradient(180deg, rgba(11,8,20,0.95) 0%, transparent 100%)',
+            px: '16px', height: 52, flexShrink: 0,
+            background: 'linear-gradient(180deg, rgba(11,8,20,0.95) 0%, rgba(11,8,20,0.6) 100%)',
           }}>
             <button
-              onClick={() => setEntered(false)}
+              onClick={() => { setEntered(false); setLayer(1); setPinnedArtist(null) }}
               style={{
                 fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.18em',
                 textTransform: 'uppercase', color: BONE3,
@@ -538,130 +537,192 @@ export default function SigilPage() {
             <span style={{ fontFamily: MEDIEVAL, fontWeight: 700, fontSize: 22, color: BONE }}>
               Grimr
             </span>
-            <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em', color: BONE4 }}>
-              L1 · SEAL
+            <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em', color: BLOOD2 }}>
+              L{layer} · {layer === 1 ? 'SEAL' : layer === 2 ? 'SCENE' : 'ARTISTS'}
             </span>
           </Box>
 
-          {/* ── Sigil — large, centered, slow pulse ──────────────────────────── */}
+          {/* ── Layer switcher ────────────────────────────────────────────────── */}
           <Box sx={{
-            flex: '0 0 auto',
-            display: 'flex', justifyContent: 'center',
-            px: 0, pt: 1, pb: 2,
-            position: 'relative', zIndex: 1,
+            position: 'relative', zIndex: 10, flexShrink: 0,
+            display: 'flex', gap: '1px', px: '16px', pb: '10px',
           }}>
-            <Box sx={{
-              animation: 'sigilPulse 8s ease-in-out infinite',
-              '@keyframes sigilPulse': {
-                '0%,100%': { filter: 'drop-shadow(0 0 14px rgba(168,58,58,0.25))' },
-                '50%':     { filter: 'drop-shadow(0 0 28px rgba(168,58,58,0.45))' },
-              },
-            }}>
-              <Sigil
-                size={Math.min(typeof window !== 'undefined' ? window.innerWidth : 420, 460)}
-                genres={data?.genres ?? []}
-                artists={data?.artists ?? []}
-                handle={handle}
-                est={est}
-              />
-            </Box>
-          </Box>
-
-          {/* ── Artist roster ─────────────────────────────────────────────────── */}
-          <Box sx={{ px: '20px', pb: '32px', position: 'relative', zIndex: 1 }}>
-
-            <Box sx={{
-              display: 'flex', alignItems: 'center', gap: '10px', mb: '14px',
-            }}>
-              <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
-              <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.2em', color: BONE4 }}>
-                THE SEVEN
-              </span>
-              <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              {(data?.artists ?? []).map((artist, i) => (
-                <Box key={artist} sx={{
-                  display: 'flex', alignItems: 'center',
-                  padding: '9px 14px',
-                  background: i === 0 ? `rgba(168,58,58,0.08)` : 'rgba(27,22,38,0.4)',
-                  border: `1px solid ${i === 0 ? BLOOD3 : INK4}`,
-                  borderRadius: '2px',
-                }}>
-                  <span style={{
-                    fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.12em',
-                    color: i === 0 ? BLOOD2 : BONE4,
-                    minWidth: '1.6rem',
-                  }}>
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <span style={{
-                    fontFamily: DISPLAY, fontSize: '0.9375rem',
-                    color: i === 0 ? BONE : BONE2,
-                    flex: 1, letterSpacing: '0.02em',
-                  }}>
-                    {artist}
-                  </span>
-                  {i === 0 && (
-                    <span style={{
-                      fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em',
-                      color: BLOOD2, textTransform: 'uppercase',
-                    }}>
-                      DOMINANT
-                    </span>
-                  )}
-                </Box>
-              ))}
-            </Box>
-
-            {(data?.total_artists ?? 0) > (data?.artists?.length ?? 0) && (
-              <Box sx={{ textAlign: 'center', mt: '10px' }}>
-                <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em', color: BONE4 }}>
-                  + {(data!.total_artists - data!.artists.length)} MORE IN THE ARCHIVE
-                </span>
-              </Box>
-            )}
-
-            {/* ── Genre legend ─────────────────────────────────────────────── */}
-            <Box sx={{
-              display: 'flex', alignItems: 'center', gap: '10px', mt: '24px', mb: '14px',
-            }}>
-              <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
-              <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.2em', color: BONE4 }}>
-                THE OUTER RING
-              </span>
-              <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
-            </Box>
-
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {(data?.genres ?? []).map((g, i) => (
-                <Box key={g} sx={{
-                  padding: '7px 12px',
-                  fontFamily: MONO, fontSize: '0.5rem', letterSpacing: '0.16em',
-                  color: i === 0 ? BONE : BONE3,
+            {([1,2,3] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => { setLayer(l); setPinnedArtist(null) }}
+                style={{
+                  flex: 1,
+                  padding: '7px 0',
+                  fontFamily: MONO,
+                  fontSize: '0.4375rem',
+                  letterSpacing: '0.16em',
                   textTransform: 'uppercase',
-                  border: `1px solid ${i === 0 ? BLOOD : INK4}`,
-                  background: i === 0 ? BLOOD_FAINT : 'transparent',
+                  color: layer === l ? BONE : BONE4,
+                  background: layer === l ? 'rgba(199,80,80,0.12)' : 'transparent',
+                  border: `1px solid ${layer === l ? BLOOD : INK4}`,
                   borderRadius: '2px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                 }}>
-                  {g}
-                </Box>
-              ))}
-            </Box>
-
-            {/* Layer note */}
-            <Box sx={{ mt: '24px', textAlign: 'center' }}>
-              <em style={{
-                fontFamily: SERIF, fontStyle: 'italic',
-                fontSize: '0.8125rem', color: BONE4, lineHeight: 1.6,
-              }}>
-                This is Layer I — the seal of identity.<br />
-                Deeper layers reveal artist kinship and genre topology.
-              </em>
-            </Box>
-
+                L{l} · {l === 1 ? 'SEAL' : l === 2 ? 'SCENE' : 'ARTISTS'}
+              </button>
+            ))}
           </Box>
+
+          {/* ── Layer description ─────────────────────────────────────────────── */}
+          <Box sx={{ px: '16px', pb: '6px', flexShrink: 0 }}>
+            <em style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '0.75rem', color: BONE4 }}>
+              {layer === 1
+                ? '— the seal of identity · seven genres, seven artists —'
+                : layer === 2
+                ? '— subgenres bloom from each genre point —'
+                : '— the figures, weighted by listening —'}
+            </em>
+          </Box>
+
+          {/* ── SigilExplorer — fills remaining space ────────────────────────── */}
+          <Box sx={{
+            flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center',
+            position: 'relative', zIndex: 1, overflow: 'hidden',
+            animation: 'sigilPulse 8s ease-in-out infinite',
+            '@keyframes sigilPulse': {
+              '0%,100%': { filter: 'drop-shadow(0 0 12px rgba(168,58,58,0.2))' },
+              '50%':     { filter: 'drop-shadow(0 0 24px rgba(168,58,58,0.38))' },
+            },
+          }}>
+            <SigilExplorer
+              size={Math.min(typeof window !== 'undefined' ? window.innerWidth : 420, 500)}
+              genres={data?.genres ?? []}
+              artists={data?.artists ?? []}
+              clusters={data?.clusters ?? []}
+              handle={handle}
+              est={est}
+              layer={layer}
+              onArtistTap={layer === 3
+                ? (name, cluster) => setPinnedArtist({ name, cluster })
+                : undefined
+              }
+            />
+          </Box>
+
+          {/* ── L3 hint ──────────────────────────────────────────────────────── */}
+          {layer === 3 && !pinnedArtist && (
+            <Box sx={{ textAlign: 'center', pb: '12px', flexShrink: 0 }}>
+              <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em', color: BONE4 }}>
+                TAP A DOT TO READ AN ARTIST
+              </span>
+            </Box>
+          )}
+
+          {/* ── Artist detail bottom sheet (L3 tap) ──────────────────────────── */}
+          {pinnedArtist && (
+            <Box
+              sx={{
+                position: 'relative', zIndex: 20, flexShrink: 0,
+                mx: '12px', mb: '12px',
+                background: INK2, border: `1px solid ${INK4}`,
+                borderRadius: '3px', padding: '14px 16px',
+                animation: 'sheetUp 0.25s ease forwards',
+                '@keyframes sheetUp': {
+                  from: { opacity: 0, transform: 'translateY(12px)' },
+                  to:   { opacity: 1, transform: 'translateY(0)' },
+                },
+              }}
+            >
+              {/* close */}
+              <button
+                onClick={() => setPinnedArtist(null)}
+                style={{
+                  position: 'absolute', top: 10, right: 12,
+                  fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.14em',
+                  color: BONE4, background: 'transparent', border: 'none', cursor: 'pointer',
+                }}>
+                ✕
+              </button>
+
+              <Box sx={{ display: 'flex', gap: '10px', alignItems: 'baseline', mb: '6px' }}>
+                <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.16em', color: BLOOD2 }}>
+                  {pinnedArtist.cluster}
+                </span>
+                <Box sx={{ flex: 1, height: '1px', background: `rgba(90,84,112,0.4)` }} />
+              </Box>
+
+              <Box sx={{ fontFamily: DISPLAY, fontSize: '1.1rem', color: BONE, mb: '10px', letterSpacing: '0.02em' }}>
+                {pinnedArtist.name}
+              </Box>
+
+              {/* weight bar */}
+              {(() => {
+                const clusterData = (data?.clusters ?? []).find(c => c.label === pinnedArtist.cluster)
+                const artistData  = clusterData?.artists.find(a => a.name === pinnedArtist.name)
+                const w = artistData?.weight ?? 0
+                const rank = clusterData?.artists.findIndex(a => a.name === pinnedArtist.name) ?? -1
+                return (
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '4px' }}>
+                      <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.12em', color: BONE4 }}>
+                        LISTENING WEIGHT
+                      </span>
+                      <span style={{ fontFamily: MONO, fontSize: '0.4375rem', color: BONE3 }}>
+                        {w}
+                      </span>
+                    </Box>
+                    <Box sx={{ height: '3px', background: INK4, borderRadius: '2px', mb: '10px' }}>
+                      <Box sx={{ height: '100%', width: `${w}%`, background: BLOOD2, borderRadius: '2px', transition: 'width 0.4s ease' }} />
+                    </Box>
+                    {rank >= 0 && (
+                      <Box sx={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{
+                          fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.12em',
+                          color: BONE3, padding: '4px 8px',
+                          border: `1px solid ${INK4}`, borderRadius: '2px',
+                        }}>
+                          #{rank + 1} IN CLUSTER
+                        </span>
+                        {w >= 70 && (
+                          <span style={{
+                            fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.12em',
+                            color: BLOOD2, padding: '4px 8px',
+                            border: `1px solid rgba(199,80,80,0.35)`, borderRadius: '2px',
+                            background: BLOOD_FAINT,
+                          }}>
+                            CORE CHANNEL
+                          </span>
+                        )}
+                      </Box>
+                    )}
+                  </Box>
+                )
+              })()}
+            </Box>
+          )}
+
+          {/* ── Bottom layer labels (L2/L3 context) ─────────────────────────── */}
+          {layer !== 1 && !pinnedArtist && (
+            <Box sx={{ px: '16px', pb: '14px', flexShrink: 0 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {layer === 2 && (data?.clusters ?? []).flatMap(cl =>
+                  cl.subgenres.slice(0, 2).map(sg => (
+                    <span
+                      key={`${cl.label}-${sg.label}`}
+                      style={{
+                        fontFamily: SERIF, fontStyle: 'italic',
+                        fontSize: '0.75rem', color: BONE4,
+                      }}>
+                      {sg.label}
+                      {sg.pct > 0 ? ` ${sg.pct}%` : ''}{' '}
+                    </span>
+                  ))
+                )}
+                {layer === 3 && (
+                  <span style={{ fontFamily: MONO, fontSize: '0.4375rem', letterSpacing: '0.12em', color: BONE4 }}>
+                    {(data?.clusters ?? []).reduce((s, c) => s + c.artists.length, 0)} ARTISTS MAPPED · DOT SIZE = LISTENING WEIGHT
+                  </span>
+                )}
+              </Box>
+            </Box>
+          )}
         </Box>
       )}
     </>

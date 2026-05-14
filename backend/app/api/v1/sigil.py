@@ -155,19 +155,65 @@ def _normalize_genre(g: str) -> str:
     return key.upper()[:9]
 
 
+def _format_subgenre(raw: str) -> str:
+    """Format a raw Spotify genre string for L2 satellite display (≤20 chars)."""
+    g = raw.strip()
+    for suffix in (" metal", " rock", " music"):
+        if g.endswith(suffix):
+            g = g[: -len(suffix)]
+    return g.strip().title()[:20]
+
+
+def _assign_cluster(raw_genres: list[str], top_genres: list[str]) -> str | None:
+    """Assign an artist to one of the top-7 genre clusters.
+
+    Pass 1: exact normalize match (e.g. 'black metal' → 'BLACK' which is in top 7).
+    Pass 2: keyword substring match (e.g. 'atmospheric black metal' doesn't normalize
+            to 'BLACK', but 'black' is a keyword of the 'BLACK' cluster and is present
+            in the raw string).
+    """
+    if not top_genres or not raw_genres:
+        return None
+
+    # Pass 1 — exact normalize
+    for raw_g in raw_genres:
+        norm = _normalize_genre(raw_g)
+        if norm in top_genres:
+            return norm
+
+    # Pass 2 — keyword fallback
+    # For each cluster label extract meaningful words (len ≥ 4, skip filler short words)
+    _SKIP = {"post", "prog", "atm"}
+    for top_g in top_genres:
+        label_words = [
+            w.lower() for w in top_g.split()
+            if len(w) >= 4 and w.lower() not in _SKIP
+        ]
+        if not label_words:
+            label_words = [top_g.lower()][:1]
+        for raw_g in raw_genres:
+            raw_lower = raw_g.lower()
+            if all(kw in raw_lower for kw in label_words):
+                return top_g
+
+    return None
+
+
 @router.get("")
 async def get_sigil_data(
     session=Depends(get_neo4j_session),
     current_user: dict = Depends(get_current_user),
 ):
     """
-    Return merged genre + artist data for the user's Metal-ID sigil.
+    Return merged genre + artist data for the user's Metal-ID sigil (L1–L3).
 
-    Artists: top 8, ordered by play_count > rank across all sources.
+    Artists: top 7, ordered by play_count > rank across all sources.
     Genres: top 7, aggregated from Spotify genre tags on the top 20 artists.
+    Clusters: per-genre subgenre breakdown + artist list (for L2/L3 rendering).
     """
     uid = current_user["id"]
 
+    # ── Top 7 artists for L1 inner ring labels ─────────────────────────────────
     artist_result = session.run(
         """
         MATCH (u:User {id: $uid})-[r:TOP_ARTIST]->(a:Artist)
@@ -176,13 +222,13 @@ async def get_sigil_data(
              sum(COALESCE(toInteger(r.play_count), 0)) AS total_plays
         RETURN a.name AS name
         ORDER BY CASE WHEN total_plays > 0 THEN total_plays ELSE -best_rank END DESC
-        LIMIT 8
+        LIMIT 7
         """,
         uid=uid,
     )
     artists = [r["name"] for r in artist_result]
 
-    # Genres: first try Spotify genre tags from stored Artist nodes
+    # ── Top 7 genres from Spotify genre tags on top-20 artists ─────────────────
     genre_result = session.run(
         """
         MATCH (u:User {id: $uid})-[r:TOP_ARTIST]->(a:Artist)
@@ -200,7 +246,6 @@ async def get_sigil_data(
     )
     raw_genres = [r["genre"] for r in genre_result]
 
-    # Fallback: use Last.fm user top tags if no Spotify genre data
     if not raw_genres:
         tag_result = session.run(
             "MATCH (u:User {id: $uid}) RETURN coalesce(u.lastfm_top_tags, []) AS tags",
@@ -210,17 +255,84 @@ async def get_sigil_data(
 
     genres = list(dict.fromkeys(_normalize_genre(g) for g in raw_genres if g))[:7]
 
-    # Total connected artist count (not capped at 8)
+    # ── Total artist count ──────────────────────────────────────────────────────
     count_rec = session.run(
         "MATCH (u:User {id: $uid})-[:TOP_ARTIST]->() RETURN count(*) AS n",
         uid=uid,
     ).single()
     total_artists = count_rec["n"] if count_rec else len(artists)
 
+    # ── All artists with weights + raw genre tags (for L2/L3 clusters) ─────────
+    all_rec = session.run(
+        """
+        MATCH (u:User {id: $uid})-[r:TOP_ARTIST]->(a:Artist)
+        WITH a,
+             min(r.rank) AS best_rank,
+             sum(COALESCE(toInteger(r.play_count), 0)) AS total_plays
+        RETURN a.name AS name,
+               coalesce(a.genres, []) AS raw_genres,
+               CASE WHEN total_plays > 0 THEN total_plays ELSE 0 END AS plays,
+               best_rank AS rank
+        ORDER BY CASE WHEN total_plays > 0 THEN total_plays ELSE -best_rank END DESC
+        LIMIT 80
+        """,
+        uid=uid,
+    )
+    all_artists = [
+        {
+            "name": r["name"],
+            "weight": int(r["plays"]) if r["plays"] > 0 else max(0, 50 - int(r["rank"])),
+            "genres": list(r["raw_genres"]),
+        }
+        for r in all_rec
+    ]
+
+    # Normalise weights to 0-100 scale
+    max_w = max((a["weight"] for a in all_artists), default=1) or 1
+    for a in all_artists:
+        a["weight"] = round(a["weight"] / max_w * 100)
+
+    # ── Build genre clusters for L2/L3 ─────────────────────────────────────────
+    cluster_map: dict[str, dict] = {
+        g: {"artists": [], "subgenre_counts": {}}
+        for g in genres
+    }
+
+    for a in all_artists:
+        cl = _assign_cluster(a["genres"], genres)
+        if cl and cl in cluster_map:
+            cluster_map[cl]["artists"].append({"name": a["name"], "weight": a["weight"]})
+            # Tally raw sub-genre strings that normalise to this cluster
+            for raw_g in a["genres"]:
+                if _assign_cluster([raw_g], [cl]) == cl:
+                    key = raw_g.strip().lower()
+                    cluster_map[cl]["subgenre_counts"][key] = (
+                        cluster_map[cl]["subgenre_counts"].get(key, 0) + 1
+                    )
+
+    clusters = []
+    for g in genres:
+        cm = cluster_map[g]
+        n = len(cm["artists"]) or 1
+        sorted_sg = sorted(cm["subgenre_counts"].items(), key=lambda x: -x[1])
+        clusters.append(
+            {
+                "label": g,
+                "artist_count": len(cm["artists"]),
+                "subgenres": [
+                    {"label": _format_subgenre(raw), "pct": round(c / n * 100)}
+                    for raw, c in sorted_sg[:5]
+                    if _format_subgenre(raw) != g  # skip if identical to cluster label
+                ],
+                "artists": cm["artists"][:14],  # max 14 per cluster for L3 grid
+            }
+        )
+
     return {
         "genres": genres,
         "artists": artists,
         "total_artists": total_artists,
+        "clusters": clusters,
     }
 
 
