@@ -9,7 +9,7 @@ export const BOTTOM_TABS: BottomTab[] = [
   { label: 'Feed',     glyph: '◉', path: '/feed',          matchPaths: ['/feed'] },
   { label: 'Discover', glyph: '⌕', path: '/search',        matchPaths: ['/search'] },
   { label: 'Bands',    glyph: '◆', path: '/bands',         matchPaths: ['/bands'] },
-  { label: 'Alerts',   glyph: '◈', path: '/notifications', matchPaths: ['/notifications'] },
+  { label: 'Gather',   glyph: '☍', path: '/events',        matchPaths: ['/events'] },
   { label: 'Me',       glyph: '✶', path: '/profile',       matchPaths: ['/profile', '/gallery'] },
 ]
 
