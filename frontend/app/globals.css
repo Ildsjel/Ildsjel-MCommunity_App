@@ -34,12 +34,7 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  /* Scale up rem baseline on mobile — all rem values increase ~12.5% */
   font-size: 18px;
-}
-
-@media (min-width: 600px) {
-  html { font-size: 16px; }
 }
 
 body {
