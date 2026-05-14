@@ -36,7 +36,7 @@ export default function LoginPage() {
       const res = await authAPI.login(formData)
       localStorage.setItem('access_token', res.access_token)
       setUser(res.user)
-      router.push('/profile')
+      router.push(res.user.onboarding_complete ? '/feed' : '/onboarding')
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
       let msg = 'Login failed'
