@@ -11,113 +11,164 @@ router = APIRouter(prefix="/sigil", tags=["Sigil"])
 # Maps Spotify genre strings (lowercased) → short sigil label (≤10 chars).
 # Ordered longest-first so the most-specific match wins.
 _GENRE_MAP: dict[str, str] = {
-    # Black metal variants
-    "atmospheric black metal": "ATM BLACK",
-    "blackened death metal":   "BLK DEATH",
-    "blackened thrash metal":  "BLK THRSH",
-    "blackened doom metal":    "BLK DOOM",
-    "symphonic black metal":   "SYM BLACK",
-    "raw black metal":         "RAW BLACK",
-    "ambient black metal":     "AMB BLACK",
-    "post-black metal":        "POST BLACK",
-    "swedish black metal":     "BLACK",
-    "norwegian black metal":   "BLACK",
-    "icelandic black metal":   "BLACK",
-    "greek black metal":       "BLACK",
-    "black metal":             "BLACK",
-    "depressive black metal":  "DSBM",
-    "dsbm":                    "DSBM",
-    # Death metal variants
-    "atmospheric death metal": "ATM DEATH",
-    "melodic death metal":     "MELODEATH",
-    "technical death metal":   "TECH DEATH",
-    "progressive death metal": "PROG DEATH",
-    "brutal death metal":      "BRUTAL DM",
-    "blackened death metal":   "BLK DEATH",
-    "old school death metal":  "OSDM",
-    "slam death metal":        "SLAM",
-    "swedish death metal":     "DEATH",
-    "finnish death metal":     "DEATH",
-    "death metal":             "DEATH",
-    "death-doom metal":        "DEATH DOOM",
-    # Doom metal variants
-    "funeral doom metal":      "FNR DOOM",
-    "death doom metal":        "DEATH DOOM",
-    "atmospheric doom metal":  "ATM DOOM",
-    "sludge metal":            "SLUDGE",
-    "stoner metal":            "STONER",
-    "traditional doom metal":  "DOOM",
-    "epic doom metal":         "DOOM",
-    "gothic doom metal":       "DOOM",
-    "doom metal":              "DOOM",
-    # Thrash / speed
-    "melodic thrash metal":    "MEL THRSH",
-    "technical thrash metal":  "TECH THRSH",
-    "bay area thrash":         "THRASH",
-    "teutonic thrash metal":   "THRASH",
-    "blackened thrash metal":  "BLK THRSH",
-    "thrash metal":            "THRASH",
-    "speed metal":             "SPEED",
-    "crossover thrash":        "CROSSOVER",
-    # Power / heavy
-    "progressive power metal": "PROG PWR",
-    "symphonic power metal":   "SYM POWER",
-    "power metal":             "POWER",
-    "traditional heavy metal": "HEAVY",
-    "nwobhm":                  "NWOBHM",
-    "heavy metal":             "HEAVY",
-    # Prog / avant
-    "progressive metal":       "PROG",
-    "avant-garde metal":       "AVANT",
-    "art metal":               "AVANT",
-    "djent":                   "DJENT",
-    "math metal":              "MATH",
-    # Industrial / electronic
-    "industrial metal":        "INDUSTRL",
-    "industrial black metal":  "IND BLACK",
-    "electronic metal":        "ELECTRO",
-    # Grind / noise
-    "grindcore":               "GRIND",
-    "goregrind":               "GRIND",
-    "noisegrind":              "GRIND",
-    "noisecore":               "NOISE",
-    "noise rock":              "NOISE",
-    "powerviolence":           "PV",
-    # Core
-    "metalcore":               "METALCORE",
-    "deathcore":               "DEATHCORE",
-    "mathcore":                "MATHCORE",
-    "post-hardcore":           "POST-HC",
-    "hardcore punk":           "HARDCORE",
-    "hardcore":                "HARDCORE",
-    # Post / ambient
-    "post-metal":              "POST",
-    "post metal":              "POST",
-    "atmospheric post-metal":  "ATM POST",
-    "ambient metal":           "AMBIENT",
-    "ambient black":           "AMB BLACK",
-    "dark ambient":            "DARK AMB",
-    "dark folk":               "DARK FOLK",
-    "folk metal":              "FOLK",
-    "pagan metal":             "PAGAN",
-    "viking metal":            "VIKING",
-    "medieval metal":          "MEDIEVAL",
-    # Gothic / goth
-    "gothic metal":            "GOTHIC",
-    "gothic rock":             "GOTHIC",
-    "dark wave":               "DARKWAVE",
-    "darkwave":                "DARKWAVE",
-    # Misc
-    "nu-metal":                "NU-METAL",
-    "nu metal":                "NU-METAL",
-    "glam metal":              "GLAM",
-    "hair metal":              "GLAM",
-    "shock rock":              "SHOCK",
-    "country":                 "COUNTRY",
-    "jazz":                    "JAZZ",
-    "blues":                   "BLUES",
-    "punk":                    "PUNK",
-    "rock":                    "ROCK",
+    # ── Black metal (most-specific first) ─────────────────────────────────────
+    "suicidal depressive black metal": "DSBM",
+    "depressive suicidal black metal": "DSBM",
+    "atmospheric black metal":         "ATM BLACK",
+    "industrial black metal":          "IND BLACK",
+    "ambient black metal":             "AMB BLACK",
+    "blackened doom metal":            "BLK DOOM",
+    "blackened death metal":           "BLK DEATH",
+    "blackened thrash metal":          "BLK THRSH",
+    "symphonic black metal":           "SYM BLACK",
+    "post-black metal":                "POST BLACK",
+    "raw black metal":                 "RAW BLACK",
+    "depressive black metal":          "DSBM",
+    "orthodox black metal":            "BLACK",
+    "norwegian black metal":           "BLACK",
+    "swedish black metal":             "BLACK",
+    "icelandic black metal":           "BLACK",
+    "greek black metal":               "BLACK",
+    "finnish black metal":             "BLACK",
+    "french black metal":              "BLACK",
+    "cascadian black metal":           "ATM BLACK",
+    "black metal":                     "BLACK",
+    "dsbm":                            "DSBM",
+    # ── Death metal ────────────────────────────────────────────────────────────
+    "atmospheric death metal":         "ATM DEATH",
+    "melodic death metal":             "MELODEATH",
+    "technical death metal":           "TECH DEATH",
+    "progressive death metal":         "PROG DEATH",
+    "brutal death metal":              "BRUTAL DM",
+    "old school death metal":          "OSDM",
+    "slam death metal":                "SLAM",
+    "death-doom metal":                "DEATH DOOM",
+    "death doom metal":                "DEATH DOOM",
+    "swedish death metal":             "DEATH",
+    "finnish death metal":             "DEATH",
+    "death metal":                     "DEATH",
+    # ── Doom / Sludge / Stoner ─────────────────────────────────────────────────
+    "funeral doom metal":              "FNR DOOM",
+    "atmospheric doom metal":          "ATM DOOM",
+    "gothic doom metal":               "DOOM",
+    "traditional doom metal":          "DOOM",
+    "epic doom metal":                 "DOOM",
+    "doom metal":                      "DOOM",
+    "doom":                            "DOOM",
+    "sludge metal":                    "SLUDGE",
+    "sludge":                          "SLUDGE",
+    "stoner metal":                    "STONER",
+    "stoner rock":                     "STONER",
+    # ── Thrash / Speed ─────────────────────────────────────────────────────────
+    "teutonic thrash metal":           "THRASH",
+    "melodic thrash metal":            "MEL THRSH",
+    "technical thrash metal":          "TECH THRSH",
+    "bay area thrash":                 "THRASH",
+    "crossover thrash":                "CROSSOVER",
+    "thrash metal":                    "THRASH",
+    "speed metal":                     "SPEED",
+    # ── Power / Heavy ──────────────────────────────────────────────────────────
+    "progressive power metal":         "PROG PWR",
+    "symphonic power metal":           "SYM POWER",
+    "power metal":                     "POWER",
+    "traditional heavy metal":         "HEAVY",
+    "heavy metal":                     "HEAVY",
+    "nwobhm":                          "NWOBHM",
+    # ── Prog / Avant / Math ────────────────────────────────────────────────────
+    "avant-garde metal":               "AVANT",
+    "progressive metal":               "PROG",
+    "art metal":                       "AVANT",
+    "math metal":                      "MATH",
+    "djent":                           "DJENT",
+    # ── Industrial / Power electronics ────────────────────────────────────────
+    "death industrial":                "DEATH IND",
+    "power electronics":               "PWR ELEC",
+    "harsh noise wall":                "HNW",
+    "martial industrial":              "MARTIAL",
+    "aggrotech":                       "AGGROTECH",
+    "industrial black metal":          "IND BLACK",
+    "industrial metal":                "INDUSTRL",
+    "industrial rock":                 "INDUSTRL",
+    "industrial":                      "INDUSTRL",
+    "ebm":                             "EBM",
+    "futurepop":                       "FUTUREPOP",
+    "electro-industrial":              "ELECTRO",
+    "electronic metal":                "ELECTRO",
+    "electronica":                     "ELECTRO",
+    "electronic":                      "ELECTRO",
+    # ── Noise / Grind ──────────────────────────────────────────────────────────
+    "grindcore":                       "GRIND",
+    "goregrind":                       "GRIND",
+    "noisegrind":                      "GRIND",
+    "noisecore":                       "NOISE",
+    "harsh noise":                     "NOISE",
+    "noise rock":                      "NOISE",
+    "noise":                           "NOISE",
+    "powerviolence":                   "PV",
+    # ── Core / Punk ────────────────────────────────────────────────────────────
+    "metalcore":                       "METALCORE",
+    "deathcore":                       "DEATHCORE",
+    "mathcore":                        "MATHCORE",
+    "post-hardcore":                   "POST-HC",
+    "hardcore punk":                   "HARDCORE",
+    "hardcore":                        "HARDCORE",
+    "crust punk":                      "CRUST",
+    "d-beat":                          "CRUST",
+    "punk":                            "PUNK",
+    # ── Post-metal / Post-rock ─────────────────────────────────────────────────
+    "atmospheric post-metal":          "ATM POST",
+    "post-metal":                      "POST",
+    "post metal":                      "POST",
+    "post-rock":                       "POST ROCK",
+    "post rock":                       "POST ROCK",
+    # ── Drone / Ambient ────────────────────────────────────────────────────────
+    "drone metal":                     "DRONE",
+    "drone doom":                      "DRONE",
+    "drone":                           "DRONE",
+    "dark ambient":                    "DARK AMB",
+    "ambient black":                   "AMB BLACK",
+    "ambient metal":                   "AMBIENT",
+    "ambient":                         "AMBIENT",
+    "isolationism":                    "AMBIENT",
+    # ── Neofolk / Dark folk ────────────────────────────────────────────────────
+    "apocalyptic folk":                "APO FOLK",
+    "medieval metal":                  "MEDIEVAL",
+    "pagan metal":                     "PAGAN",
+    "viking metal":                    "VIKING",
+    "folk metal":                      "FOLK",
+    "dark folk":                       "DARK FOLK",
+    "neofolk":                         "NEOFOLK",
+    "neo-folk":                        "NEOFOLK",
+    # ── Gothic / Darkwave ─────────────────────────────────────────────────────
+    "neoclassical darkwave":           "NEO-CLASS",
+    "gothic metal":                    "GOTHIC",
+    "gothic rock":                     "GOTHIC",
+    "ethereal wave":                   "ETHEREAL",
+    "dark wave":                       "DARKWAVE",
+    "darkwave":                        "DARKWAVE",
+    "cold wave":                       "COLDWAVE",
+    "post-punk":                       "POST PUNK",
+    "minimal synth":                   "MIN SYNTH",
+    # ── Shoegaze / Art rock ────────────────────────────────────────────────────
+    "shoegaze":                        "SHOEGAZE",
+    "blackgaze":                       "BLACKGAZE",
+    "math rock":                       "MATH ROCK",
+    "art rock":                        "ART ROCK",
+    "krautrock":                       "KRAUTROCK",
+    "space rock":                      "SPACE",
+    "psychedelic rock":                "PSYCH",
+    "psychedelic":                     "PSYCH",
+    # ── Misc ──────────────────────────────────────────────────────────────────
+    "nu-metal":                        "NU-METAL",
+    "nu metal":                        "NU-METAL",
+    "glam metal":                      "GLAM",
+    "hair metal":                      "GLAM",
+    "shock rock":                      "SHOCK",
+    "grunge":                          "GRUNGE",
+    "blues rock":                      "BLUES",
+    "blues":                           "BLUES",
+    "jazz":                            "JAZZ",
+    "rock":                            "ROCK",
 }
 
 # Prefixes/suffixes to strip when no exact match is found
@@ -310,14 +361,18 @@ async def get_sigil_data(
                         cluster_map[cl]["subgenre_counts"].get(key, 0) + 1
                     )
 
-    # ── Build initial clusters list ────────────────────────────────────────────
+    # ── Build clusters list ────────────────────────────────────────────────────
+    # Only artists that matched a cluster via _assign_cluster appear in the sigil.
+    # Artists with no matching genre tags are excluded entirely rather than being
+    # force-distributed into random clusters (Busta Rhymes → Sludge, etc.).
     clusters = []
     for g in genres:
         cm = cluster_map[g]
         n = len(cm["artists"]) or 1
         sorted_sg = sorted(cm["subgenre_counts"].items(), key=lambda x: -x[1])
-        # Mark naturally-assigned artists
-        for a in cm["artists"]:
+        artists_sorted = sorted(cm["artists"], key=lambda x: -x["weight"])[:14]
+        # Mark all as natural (properly genre-matched)
+        for a in artists_sorted:
             a["natural"] = True
         clusters.append(
             {
@@ -328,38 +383,9 @@ async def get_sigil_data(
                     for raw, c in sorted_sg[:5]
                     if _format_subgenre(raw) != g
                 ],
-                "artists": sorted(cm["artists"], key=lambda x: -x["weight"]),
+                "artists": artists_sorted,
             }
         )
-
-    # ── Distribute unclustered artists into smallest clusters ───────────────────
-    # This ensures ALL tracked artists appear in L3, even those with no genre tags.
-    # They land in the outer DOT_GRID rings (j ≥ natural_count) and render dimmer.
-    if genres:  # only if we have genre data
-        clustered_names = {a["name"] for cl in clusters for a in cl["artists"]}
-        unclustered = sorted(
-            [
-                {"name": a["name"], "weight": a["weight"], "natural": False}
-                for a in all_artists
-                if a["name"] not in clustered_names
-            ],
-            key=lambda x: -x["weight"],
-        )
-        for artist in unclustered:
-            # Pick the cluster currently holding the fewest artists (≤ 14 cap)
-            target_cl = min(
-                [cl for cl in clusters if len(cl["artists"]) < 14],
-                key=lambda cl: len(cl["artists"]),
-                default=None,
-            )
-            if target_cl is not None:
-                target_cl["artists"].append(artist)
-
-    # Finalise each cluster: natural first (by weight desc), then synthetic, cap at 14
-    for cl in clusters:
-        natural   = sorted([a for a in cl["artists"] if a.get("natural", True)],  key=lambda x: -x["weight"])
-        synthetic = sorted([a for a in cl["artists"] if not a.get("natural", True)], key=lambda x: -x["weight"])
-        cl["artists"] = (natural + synthetic)[:14]
 
     return {
         "genres": genres,
