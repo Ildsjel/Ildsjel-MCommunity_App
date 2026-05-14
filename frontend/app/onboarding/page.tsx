@@ -472,9 +472,15 @@ function StepThree({
   setCityName: (v: string) => void
 }) {
   const [locating, setLocating] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
 
   const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Your browser does not support geolocation.')
+      return
+    }
     setLocating(true)
+    setLocationError(null)
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const lat = Math.round(pos.coords.latitude * 10) / 10
@@ -495,13 +501,24 @@ function StepThree({
             setCityName(city)
           } catch { /* ignore geocode errors */ }
 
+          // Map onboarding privacy option → backend city_visible value
+          const cityVisibleMap: Record<'city' | 'district' | 'km', string> = {
+            city: 'city',
+            district: 'region',
+            km: 'region',
+          }
           await axios.patch(
             `${API_BASE}/api/v1/users/me`,
-            { latitude: lat, longitude: lng },
+            {
+              latitude: lat,
+              longitude: lng,
+              city_visible: cityVisibleMap[locationPrivacy],
+            },
             { headers: authHeaders() }
           )
           setLocationGranted(true)
           setLocationDenied(false)
+          setLocationError(null)
 
           // Fetch nearby count
           try {
@@ -511,10 +528,22 @@ function StepThree({
             })
             setNearbyCount(res.data?.count ?? res.data?.users?.length ?? null)
           } catch { /* nearby count is best-effort */ }
-        } catch { /* patch error */ } finally { setLocating(false) }
+        } catch (err: unknown) {
+          const msg = axios.isAxiosError(err)
+            ? (err.response?.data?.detail ?? err.message ?? 'Server error')
+            : 'Could not save location. Check your connection.'
+          setLocationError(String(msg))
+        } finally { setLocating(false) }
       },
-      (_err) => {
-        setLocationDenied(true)
+      (geoErr) => {
+        if (geoErr.code === geoErr.PERMISSION_DENIED) {
+          setLocationDenied(true)
+          setLocationError(null)
+        } else if (geoErr.code === geoErr.TIMEOUT) {
+          setLocationError('Location request timed out. Please try again.')
+        } else {
+          setLocationError('Could not determine your location. Try again.')
+        }
         setLocating(false)
       },
       { timeout: 10000 }
@@ -704,7 +733,20 @@ function StepThree({
           mb: 1.5,
           backgroundColor: 'rgba(196,58,42,.05)',
         }}>
-          <span style={monoLabel(accent)}>◉ LOCATION DENIED · YOU CAN STILL CONTINUE.</span>
+          <span style={monoLabel(accent)}>◉ LOCATION DENIED · ENABLE IN BROWSER SETTINGS OR CONTINUE.</span>
+        </Box>
+      )}
+
+      {/* Error banner */}
+      {locationError && (
+        <Box sx={{
+          border: `1.5px solid rgba(196,58,42,.4)`,
+          borderRadius: 1,
+          p: '10px 14px',
+          mb: 1.5,
+          backgroundColor: 'rgba(196,58,42,.05)',
+        }}>
+          <span style={monoLabel(accent)}>◉ {locationError.toUpperCase()}</span>
         </Box>
       )}
 
@@ -716,7 +758,7 @@ function StepThree({
           <CtaButton onClick={onNext}>CONTINUE WITHOUT LOCATION →</CtaButton>
         ) : (
           <CtaButton onClick={handleUseLocation} disabled={locating}>
-            {locating ? 'LOCATING...' : 'USE THIS LOCATION →'}
+            {locating ? 'LOCATING...' : locationError ? 'TRY AGAIN →' : 'USE THIS LOCATION →'}
           </CtaButton>
         )}
         <GhostLink onClick={onNext}>SKIP · I'LL STAY UNPLACED</GhostLink>

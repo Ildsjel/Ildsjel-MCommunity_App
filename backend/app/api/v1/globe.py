@@ -1,8 +1,9 @@
 """
 Globe API — location data for the Metal Match Atlas
 """
-from typing import Dict, Tuple
-from fastapi import APIRouter, Depends
+import math
+from typing import Dict, Tuple, Optional
+from fastapi import APIRouter, Depends, Query
 from app.db.neo4j_driver import get_neo4j_session
 from app.auth.jwt_handler import get_current_user
 
@@ -127,3 +128,59 @@ async def get_globe_data(
             })
 
     return {"self": self_data, "metalheads": metalheads}
+
+
+@router.get("/nearby")
+async def get_nearby_users(
+    lat: float = Query(..., description="Latitude"),
+    lng: float = Query(..., description="Longitude"),
+    radius_km: float = Query(50.0, description="Search radius in kilometres"),
+    session=Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Return the count (and handles) of active, discoverable metalheads within
+    radius_km of the given coordinates.  Uses an approximate bounding-box
+    pre-filter followed by the exact Haversine formula.
+    """
+    # Approximate degree deltas for the bounding box
+    lat_delta = radius_km / 111.0
+    lng_delta = radius_km / (111.0 * max(math.cos(math.radians(lat)), 0.01))
+
+    records = session.run(
+        """
+        MATCH (u:User)
+        WHERE u.is_active = true
+          AND u.email_verified = true
+          AND (u.discoverable_by_name = true OR u.discoverable_by_music = true)
+          AND u.latitude  IS NOT NULL
+          AND u.longitude IS NOT NULL
+          AND u.city_visible <> 'hidden'
+          AND u.id <> $uid
+          AND u.latitude  >= $lat_min AND u.latitude  <= $lat_max
+          AND u.longitude >= $lng_min AND u.longitude <= $lng_max
+        RETURN u.handle AS handle, u.latitude AS lat, u.longitude AS lng
+        LIMIT 500
+        """,
+        uid=current_user["id"],
+        lat_min=lat - lat_delta,
+        lat_max=lat + lat_delta,
+        lng_min=lng - lng_delta,
+        lng_max=lng + lng_delta,
+    )
+
+    R = 6371.0  # Earth radius km
+    nearby = []
+    for r in records:
+        u_lat, u_lng = r["lat"], r["lng"]
+        dlat = math.radians(u_lat - lat)
+        dlng = math.radians(u_lng - lng)
+        a = (math.sin(dlat / 2) ** 2
+             + math.cos(math.radians(lat))
+             * math.cos(math.radians(u_lat))
+             * math.sin(dlng / 2) ** 2)
+        dist_km = 2 * R * math.asin(math.sqrt(a))
+        if dist_km <= radius_km:
+            nearby.append({"handle": r["handle"], "distance_km": round(dist_km, 1)})
+
+    return {"count": len(nearby), "users": nearby}
