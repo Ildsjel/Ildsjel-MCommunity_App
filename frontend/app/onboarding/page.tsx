@@ -807,10 +807,12 @@ function StepFour({
     if (file) handleFileSelect(file)
   }
 
-  // Debounced handle check
+  // Debounced handle check — also runs on mount so a pre-filled handle gets validated
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (!handle) { setHandleStatus('idle'); return }
+    // Use a shorter delay on the first render (handle already set by parent)
+    const delay = handleStatus === 'idle' ? 100 : 300
     debounceRef.current = setTimeout(async () => {
       setHandleStatus('checking')
       try {
@@ -819,9 +821,10 @@ function StepFour({
         })
         setHandleStatus(res.data.status)
       } catch { setHandleStatus('idle') }
-    }, 300)
+    }, delay)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [handle, setHandleStatus])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handle])
 
   const handleStatusText = () => {
     if (handleStatus === 'checking') return { text: '◉ CHECKING...', color: muted }
@@ -966,7 +969,17 @@ function StepFour({
 
       {/* CTAs */}
       <Box sx={{ mt: 'auto', pt: 2 }}>
-        <CtaButton onClick={onNext} disabled={handleStatus !== 'available'}>CONTINUE →</CtaButton>
+        <CtaButton
+          onClick={onNext}
+          disabled={
+            !handle ||
+            handleStatus === 'taken' ||
+            handleStatus === 'invalid' ||
+            handleStatus === 'checking'
+          }
+        >
+          CONTINUE →
+        </CtaButton>
         <GhostLink onClick={onNext}>SKIP PHOTO · LET MY SIGIL SPEAK</GhostLink>
       </Box>
     </Box>
