@@ -7,15 +7,152 @@ from app.auth.jwt_handler import get_current_user
 
 router = APIRouter(prefix="/sigil", tags=["Sigil"])
 
-_GENRE_STRIP = [" metal", " rock", " music", " core"]
+# ── Genre lookup table ─────────────────────────────────────────────────────────
+# Maps Spotify genre strings (lowercased) → short sigil label (≤10 chars).
+# Ordered longest-first so the most-specific match wins.
+_GENRE_MAP: dict[str, str] = {
+    # Black metal variants
+    "atmospheric black metal": "ATM BLACK",
+    "blackened death metal":   "BLK DEATH",
+    "blackened thrash metal":  "BLK THRSH",
+    "blackened doom metal":    "BLK DOOM",
+    "symphonic black metal":   "SYM BLACK",
+    "raw black metal":         "RAW BLACK",
+    "ambient black metal":     "AMB BLACK",
+    "post-black metal":        "POST BLACK",
+    "swedish black metal":     "BLACK",
+    "norwegian black metal":   "BLACK",
+    "icelandic black metal":   "BLACK",
+    "greek black metal":       "BLACK",
+    "black metal":             "BLACK",
+    "depressive black metal":  "DSBM",
+    "dsbm":                    "DSBM",
+    # Death metal variants
+    "atmospheric death metal": "ATM DEATH",
+    "melodic death metal":     "MELODEATH",
+    "technical death metal":   "TECH DEATH",
+    "progressive death metal": "PROG DEATH",
+    "brutal death metal":      "BRUTAL DM",
+    "blackened death metal":   "BLK DEATH",
+    "old school death metal":  "OSDM",
+    "slam death metal":        "SLAM",
+    "swedish death metal":     "DEATH",
+    "finnish death metal":     "DEATH",
+    "death metal":             "DEATH",
+    "death-doom metal":        "DEATH DOOM",
+    # Doom metal variants
+    "funeral doom metal":      "FNR DOOM",
+    "death doom metal":        "DEATH DOOM",
+    "atmospheric doom metal":  "ATM DOOM",
+    "sludge metal":            "SLUDGE",
+    "stoner metal":            "STONER",
+    "traditional doom metal":  "DOOM",
+    "epic doom metal":         "DOOM",
+    "gothic doom metal":       "DOOM",
+    "doom metal":              "DOOM",
+    # Thrash / speed
+    "melodic thrash metal":    "MEL THRSH",
+    "technical thrash metal":  "TECH THRSH",
+    "bay area thrash":         "THRASH",
+    "teutonic thrash metal":   "THRASH",
+    "blackened thrash metal":  "BLK THRSH",
+    "thrash metal":            "THRASH",
+    "speed metal":             "SPEED",
+    "crossover thrash":        "CROSSOVER",
+    # Power / heavy
+    "progressive power metal": "PROG PWR",
+    "symphonic power metal":   "SYM POWER",
+    "power metal":             "POWER",
+    "traditional heavy metal": "HEAVY",
+    "nwobhm":                  "NWOBHM",
+    "heavy metal":             "HEAVY",
+    # Prog / avant
+    "progressive metal":       "PROG",
+    "avant-garde metal":       "AVANT",
+    "art metal":               "AVANT",
+    "djent":                   "DJENT",
+    "math metal":              "MATH",
+    # Industrial / electronic
+    "industrial metal":        "INDUSTRL",
+    "industrial black metal":  "IND BLACK",
+    "electronic metal":        "ELECTRO",
+    # Grind / noise
+    "grindcore":               "GRIND",
+    "goregrind":               "GRIND",
+    "noisegrind":              "GRIND",
+    "noisecore":               "NOISE",
+    "noise rock":              "NOISE",
+    "powerviolence":           "PV",
+    # Core
+    "metalcore":               "METALCORE",
+    "deathcore":               "DEATHCORE",
+    "mathcore":                "MATHCORE",
+    "post-hardcore":           "POST-HC",
+    "hardcore punk":           "HARDCORE",
+    "hardcore":                "HARDCORE",
+    # Post / ambient
+    "post-metal":              "POST",
+    "post metal":              "POST",
+    "atmospheric post-metal":  "ATM POST",
+    "ambient metal":           "AMBIENT",
+    "ambient black":           "AMB BLACK",
+    "dark ambient":            "DARK AMB",
+    "dark folk":               "DARK FOLK",
+    "folk metal":              "FOLK",
+    "pagan metal":             "PAGAN",
+    "viking metal":            "VIKING",
+    "medieval metal":          "MEDIEVAL",
+    # Gothic / goth
+    "gothic metal":            "GOTHIC",
+    "gothic rock":             "GOTHIC",
+    "dark wave":               "DARKWAVE",
+    "darkwave":                "DARKWAVE",
+    # Misc
+    "nu-metal":                "NU-METAL",
+    "nu metal":                "NU-METAL",
+    "glam metal":              "GLAM",
+    "hair metal":              "GLAM",
+    "shock rock":              "SHOCK",
+    "country":                 "COUNTRY",
+    "jazz":                    "JAZZ",
+    "blues":                   "BLUES",
+    "punk":                    "PUNK",
+    "rock":                    "ROCK",
+}
+
+# Prefixes/suffixes to strip when no exact match is found
+_GEO_PREFIXES = {
+    "swedish", "norwegian", "finnish", "icelandic", "german", "french",
+    "american", "british", "english", "australian", "canadian", "japanese",
+    "greek", "polish", "brazilian", "dutch", "danish",
+}
+_STRIP_WORDS = {"metal", "rock", "music", "band", "bands"}
 
 
 def _normalize_genre(g: str) -> str:
-    g = g.lower().strip()
-    for suffix in _GENRE_STRIP:
-        if g.endswith(suffix):
-            g = g[: -len(suffix)]
-    return g.strip().upper()[:10]
+    """Map a raw Spotify/Last.fm genre string to a short sigil label (≤10 chars)."""
+    key = g.lower().strip()
+
+    # 1. Exact lookup
+    if key in _GENRE_MAP:
+        return _GENRE_MAP[key]
+
+    # 2. Partial / substring lookup (longest matching key wins)
+    best = ""
+    for map_key, label in _GENRE_MAP.items():
+        if map_key in key and len(map_key) > len(best):
+            best = map_key
+    if best:
+        return _GENRE_MAP[best]
+
+    # 3. Fallback: strip geo-prefixes and filler words, take first meaningful word
+    words = key.split()
+    words = [w for w in words if w not in _GEO_PREFIXES and w not in _STRIP_WORDS]
+    if words:
+        return words[0].upper()[:9]
+
+    # 4. Last resort: uppercase the raw string, truncate
+    return key.upper()[:9]
 
 
 @router.get("")

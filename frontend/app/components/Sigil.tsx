@@ -79,9 +79,10 @@ export default function Sigil({
   const midR    = (R_OUTER + R_INNER) / 2
 
   // ── viewBox crops the 1000×1000 master space to just the seal area ──────────
-  // Labels reach to roughly R_OUTER + 40 = 215 from centre → 285..715 in master
-  // We use 240..760 to give comfortable breathing room.
-  const VB = '240 240 520 520'
+  // Outer ring at R_OUTER=175, labels 22 units beyond → 197 from centre.
+  // At angle ~167° ("end" anchor), a 9-char label extends ~82 units left of x=308 → x=226.
+  // Use 215..785 (285 margin each side of 500) so no label clips.
+  const VB = '215 215 570 570'
 
   return (
     <svg
@@ -141,8 +142,8 @@ export default function Sigil({
                   <text x={lx} y={ly} textAnchor={anchor}
                     style={{
                       fontFamily: '"JetBrains Mono", monospace',
-                      fontSize: 11,
-                      letterSpacing: 1.8,
+                      fontSize: 10,
+                      letterSpacing: 1.2,
                       fill: BONE,
                     }}>
                     {genres[i]}
