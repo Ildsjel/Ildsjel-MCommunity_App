@@ -475,7 +475,7 @@ export default function UserProfilePage() {
         <>
           <GlobalStyles styles={`@keyframes sigilEnterOther { from { opacity:0 } to { opacity:1 } }`} />
           <Box sx={{
-            position: 'fixed', inset: 0, zIndex: 200,
+            position: 'fixed', inset: 0, zIndex: 1300,
             background: 'radial-gradient(ellipse at 50% 35%, #1B1626 0%, #0B0814 70%)',
             display: 'flex', flexDirection: 'column',
             animation: 'sigilEnterOther 0.3s ease forwards',

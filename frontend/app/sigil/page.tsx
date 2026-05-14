@@ -528,7 +528,7 @@ export default function SigilPage() {
           ═══════════════════════════════════════════════════════════════════════ */}
       {entered && (
         <Box sx={{
-          position: 'fixed', inset: 0, zIndex: 100,
+          position: 'fixed', inset: 0, zIndex: 1300,
           background: 'radial-gradient(ellipse at 50% 35%, #1B1626 0%, #0B0814 70%)',
           display: 'flex', flexDirection: 'column',
           animation: 'sigilEnter 0.35s ease forwards',
