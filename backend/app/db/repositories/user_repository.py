@@ -46,6 +46,9 @@ class UserRepository:
             onboarding_complete: false,
             email_verified: false,
             is_active: false,
+            discoverable_by_name: true,
+            discoverable_by_music: true,
+            city_visible: 'city',
             verification_token: $verification_token,
             verification_token_expires: $verification_token_expires
         })
