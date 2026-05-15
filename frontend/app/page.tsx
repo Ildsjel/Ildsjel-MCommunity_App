@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Box, Typography, Stack } from '@mui/material'
@@ -8,14 +8,10 @@ import Navigation from '@/app/components/Navigation'
 import Sigil from '@/app/components/Sigil'
 
 export default function Home() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    setMounted(true)
     const hasToken = !!localStorage.getItem('access_token')
-    setIsAuthenticated(hasToken)
     if (hasToken) router.replace('/feed')
   }, [router])
 
@@ -152,65 +148,63 @@ export default function Home() {
         </Box>
 
         {/* CTAs */}
-        {mounted && (
-          <Stack
-            className="fade-in-up fade-in-up-delay-4"
-            spacing={1}
-            sx={{ pb: 2 }}
+        <Stack
+          className="fade-in-up fade-in-up-delay-4"
+          spacing={1}
+          sx={{ pb: 2 }}
+        >
+          <Box
+            component={Link}
+            href="/auth/register"
+            sx={{
+              display:       'block',
+              width:         '100%',
+              py:            1.625,
+              textAlign:     'center',
+              border:        '1.5px solid',
+              borderColor:   'primary.main',
+              borderRadius:  '3px',
+              background:    '#c43a2a',
+              color:         '#ece5d3',
+              fontFamily:    '"Archivo Black", sans-serif',
+              fontSize:      '0.75rem',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              boxShadow:     '1.5px 1.5px 0 rgba(0,0,0,0.4)',
+              transition:    'box-shadow 0.15s, transform 0.1s',
+              '&:hover': {
+                boxShadow: '3px 3px 0 rgba(0,0,0,0.4)',
+                transform: 'translate(-1px,-1px)',
+              },
+            }}
           >
-            <Box
-              component={Link}
-              href="/auth/register"
-              sx={{
-                display:       'block',
-                width:         '100%',
-                py:            1.625,
-                textAlign:     'center',
-                border:        '1.5px solid',
-                borderColor:   'primary.main',
-                borderRadius:  '3px',
-                background:    '#c43a2a',
-                color:         '#ece5d3',
-                fontFamily:    '"Archivo Black", sans-serif',
-                fontSize:      '0.75rem',
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                textDecoration: 'none',
-                boxShadow:     '1.5px 1.5px 0 rgba(0,0,0,0.4)',
-                transition:    'box-shadow 0.15s, transform 0.1s',
-                '&:hover': {
-                  boxShadow: '3px 3px 0 rgba(0,0,0,0.4)',
-                  transform: 'translate(-1px,-1px)',
-                },
-              }}
-            >
-              Summon Account
-            </Box>
-            <Box
-              component={Link}
-              href="/auth/login"
-              sx={{
-                display:       'block',
-                width:         '100%',
-                py:            1.375,
-                textAlign:     'center',
-                border:        '1.5px solid rgba(216,207,184,0.4)',
-                borderRadius:  '3px',
-                background:    'transparent',
-                color:         '#ece5d3',
-                fontFamily:    '"Archivo Black", sans-serif',
-                fontSize:      '0.75rem',
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                textDecoration: 'none',
-                transition:    'background 0.12s',
-                '&:hover': { background: 'rgba(236,229,211,0.06)' },
-              }}
-            >
-              Sign In
-            </Box>
-          </Stack>
-        )}
+            Summon Account
+          </Box>
+          <Box
+            component={Link}
+            href="/auth/login"
+            sx={{
+              display:       'block',
+              width:         '100%',
+              py:            1.375,
+              textAlign:     'center',
+              border:        '1.5px solid rgba(216,207,184,0.4)',
+              borderRadius:  '3px',
+              background:    'transparent',
+              color:         '#ece5d3',
+              fontFamily:    '"Archivo Black", sans-serif',
+              fontSize:      '0.75rem',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              transition:    'background 0.12s',
+              '&:hover': { background: 'rgba(236,229,211,0.06)' },
+            }}
+          >
+            Sign In
+          </Box>
+        </Stack>
       </Box>
     </>
   )
