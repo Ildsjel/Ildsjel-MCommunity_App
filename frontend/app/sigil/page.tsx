@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Box, GlobalStyles } from '@mui/material'
+import Navigation from '@/app/components/Navigation'
 import Sigil from '@/app/components/Sigil'
 import SigilExplorer, { SigilCluster, SigilFriend, FocusedNode } from '@/app/components/SigilExplorer'
-import BottomNav from '@/app/components/BottomNav'
 import { useUser } from '@/app/context/UserContext'
 import { API_BASE_URL as API_BASE } from '@/lib/api'
 import axios from 'axios'
@@ -39,16 +39,6 @@ function monoRed(size = '0.75rem'): React.CSSProperties {
 }
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
-function IconBack() {
-  return <svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-    <path d="M15 6l-6 6 6 6" stroke={BONE} strokeWidth={1.4} strokeLinecap="square" />
-  </svg>
-}
-function IconShare() {
-  return <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-    <path d="M12 4v12M12 4L8 8M12 4l4 4M5 14v5h14v-5" stroke={BONE} strokeWidth={1.3} strokeLinecap="square" />
-  </svg>
-}
 function IconRefresh() {
   return <svg width={13} height={13} viewBox="0 0 24 24" fill="none">
     <path d="M4 10a8 8 0 0 1 14-4M20 14a8 8 0 0 1-14 4M18 4v4h-4M6 20v-4h4" stroke="currentColor" strokeWidth={1.6} strokeLinecap="square" />
@@ -155,6 +145,8 @@ export default function SigilPage() {
 
   return (
     <>
+      <Navigation />
+
       {/* ── Global styles for this page ───────────────────────────────── */}
       <GlobalStyles styles={`
         @keyframes sigilGridScroll {
@@ -165,11 +157,11 @@ export default function SigilPage() {
 
       {/* ── Full-bleed dark container ─────────────────────────────────── */}
       <Box sx={{
-        minHeight: '100dvh',
         background: `radial-gradient(ellipse at 50% 30%, #1B1626 0%, #14101D 60%, #0B0814 100%)`,
         color: BONE,
         position: 'relative',
         pb: '90px',
+        minHeight: 'calc(100dvh - 52px)',
       }}>
 
         {/* Grid overlay */}
@@ -182,44 +174,12 @@ export default function SigilPage() {
           backgroundSize: '48px 48px',
         }} />
 
-        {/* ── Top gradient fade (makes top bar readable over sigil) ──── */}
-        <Box sx={{
-          position: 'fixed', top: 0, left: 0, right: 0, height: 160,
-          background: `linear-gradient(180deg, rgba(11,8,20,0.92) 0%, transparent 100%)`,
-          pointerEvents: 'none', zIndex: 5,
-        }} />
-
-        {/* ── Top bar ──────────────────────────────────────────────────── */}
-        <Box sx={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10,
-          height: 52, display: 'flex', alignItems: 'center', px: 2,
-        }}>
-          <Box component="button" onClick={() => router.back()} sx={{
-            background: 'none', border: 'none', cursor: 'pointer', p: 0,
-            display: 'flex', alignItems: 'center',
-          }}>
-            <IconBack />
-          </Box>
-          <Box sx={{ flex: 1, textAlign: 'center' }}>
-            <span style={{
-              fontFamily: MEDIEVAL,
-              fontWeight: 700, fontSize: 26,
-              color: BONE, letterSpacing: '0.01em',
-            }}>Grimr</span>
-          </Box>
-          <Box component="button" sx={{
-            background: 'none', border: 'none', cursor: 'pointer', p: 0,
-            display: 'flex', alignItems: 'center',
-          }}>
-            <IconShare />
-          </Box>
-        </Box>
-
         {/* ── Sub-header: METAL-ID + sync ──────────────────────────────── */}
         <Box sx={{
-          position: 'fixed', top: 52, left: 0, right: 0, zIndex: 9,
+          position: 'sticky', top: { xs: 52, md: 56 }, zIndex: 9,
           px: '20px', py: '8px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          background: 'rgba(11,8,20,0.85)', backdropFilter: 'blur(6px)',
         }}>
           <span style={mono(BONE3, '0.5rem')}>METAL-ID · {new Date().getFullYear()}</span>
           <button onClick={handleSync} disabled={syncing} style={{
@@ -234,16 +194,13 @@ export default function SigilPage() {
 
         {/* ── Sync status message ───────────────────────────────────────── */}
         {syncMsg && (
-          <Box sx={{
-            position: 'fixed', top: 92, left: 0, right: 0, zIndex: 8,
-            textAlign: 'center', px: 2,
-          }}>
+          <Box sx={{ textAlign: 'center', px: 2, py: '4px' }}>
             <span style={mono(BLOOD2, '0.4375rem')}>{syncMsg}</span>
           </Box>
         )}
 
         {/* ── Page content (scrollable) ─────────────────────────────────── */}
-        <Box sx={{ pt: '110px', px: 0, position: 'relative', zIndex: 1 }}>
+        <Box sx={{ pt: '8px', px: 0, position: 'relative', zIndex: 1 }}>
 
           {loading ? (
             // ── Loading skeleton ─────────────────────────────────────────
@@ -519,8 +476,6 @@ export default function SigilPage() {
         </Box>
       </Box>
 
-      {/* Standard bottom nav */}
-      <BottomNav />
 
       {/* ═══════════════════════════════════════════════════════════════════════
           FULLSCREEN LOD EXPLORER — "Enter the Sigil"
