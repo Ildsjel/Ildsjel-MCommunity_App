@@ -78,9 +78,9 @@ function TimeDivider({ iso }: { iso: string }) {
   )
 }
 
-function HeroCard({ review, onHorns }: { review: ReviewItem; onHorns: (id: string) => void }) {
+function HeroCard({ review, onHorns, onClick }: { review: ReviewItem; onHorns: (id: string) => void; onClick: () => void }) {
   return (
-    <Box sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', backgroundColor: '#120e18', overflow: 'hidden', boxShadow: '1.5px 1.5px 0 rgba(216,207,184,.08)', mb: 1 }}>
+    <Box onClick={onClick} sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', backgroundColor: '#120e18', overflow: 'hidden', boxShadow: '1.5px 1.5px 0 rgba(216,207,184,.08)', mb: 1, cursor: 'pointer', transition: 'box-shadow 0.1s, transform 0.08s', '&:hover': { boxShadow: '3px 3px 0 rgba(216,207,184,.12)' }, '&:active': { transform: 'translate(1px,1px)', boxShadow: 'none' } }}>
       <Box sx={{ position: 'relative', height: 140, background: hatchBg }}>
         <Box sx={{ position: 'absolute', top: 8, left: 8, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d4a010', background: 'rgba(8,6,10,0.82)', px: 0.75, py: 0.25, borderRadius: '2px' }}>TOP OF YOUR COVEN</Box>
         <Box sx={{ position: 'absolute', top: 8, right: 8, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: '#ece5d3', background: 'rgba(196,58,42,0.85)', px: 0.75, py: 0.25, borderRadius: '2px' }}>{review.rating}/10</Box>
@@ -94,7 +94,7 @@ function HeroCard({ review, onHorns }: { review: ReviewItem; onHorns: (id: strin
         <Typography sx={{ fontFamily: 'var(--font-display)', fontSize: '0.875rem', letterSpacing: '0.03em', mb: 0.125 }}>{review.band_name}</Typography>
         <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.9375rem', color: 'var(--muted)', mb: 0.75 }}>{review.release_title}{review.release_year ? ` · ${review.release_year}` : ''}</Typography>
         {review.body && <Box sx={{ borderLeft: '2px solid var(--accent)', pl: 1, mb: 0.875, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}><Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.9375rem', lineHeight: 1.45, color: 'var(--ink)' }}>"{review.body}"</Typography></Box>}
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.1em' }}>
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.1em' }} onClick={(e) => e.stopPropagation()}>
           <Box component="button" onClick={() => onHorns(review.id)} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, color: 'var(--accent)', fontFamily: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit' }}>✶ {review.horns_count}</Box>
           <span style={{ color: 'var(--muted)' }}>☍ 0</span>
           <span style={{ color: 'var(--muted)' }}>★ {review.rating}/10</span>
@@ -231,7 +231,10 @@ export default function FeedPage() {
     const bucketC = reviews.slice(4)
 
     bucketA.forEach((review, idx) => {
-      if (idx === 0 && review.body && review.body.length >= 80 && review.rating >= 8) { nodes.push(<HeroCard key={`hero-${review.id}`} review={review} onHorns={handleHorns} />); return }
+      if (idx === 0 && review.body && review.body.length >= 80 && review.rating >= 8) {
+        nodes.push(<HeroCard key={`hero-${review.id}`} review={review} onHorns={handleHorns} onClick={() => router.push(`/bands/${review.band_slug}/${review.release_slug}`)} />)
+        return
+      }
       if (idx === 1 || idx === 0) nodes.push(<TimeDivider key={`divider-a-${idx}`} iso={review.created_at} />)
       nodes.push(<StandardCard key={review.id} review={review} onHorns={handleHorns} onClick={() => router.push(`/bands/${review.band_slug}/${review.release_slug}`)} />)
     })
