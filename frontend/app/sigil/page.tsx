@@ -6,9 +6,8 @@ import { Box, Typography, CircularProgress } from '@mui/material'
 import Navigation from '@/app/components/Navigation'
 import Sigil from '@/app/components/Sigil'
 import { useUser } from '@/app/context/UserContext'
+import { API_BASE_URL as API_BASE } from '@/lib/api'
 import axios from 'axios'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
