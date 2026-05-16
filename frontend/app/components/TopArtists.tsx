@@ -35,10 +35,12 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
       setLoading(true)
       try {
         const token = localStorage.getItem('access_token')
-        const response = await axios.get(
-          `${API_BASE}/api/v1/lastfm/top/artists?limit=5`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+        const url = isOwnProfile
+          ? `${API_BASE}/api/v1/lastfm/top/artists?limit=5`
+          : `${API_BASE}/api/v1/spotify/top/artists/${userId}?limit=5`
+        const response = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
         setArtists(response.data.artists ?? [])
       } catch {
         setError('Failed to load top artists')
@@ -56,7 +58,7 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
   )
 
   if (error) return (
-    <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--muted)', letterSpacing: '0.1em' }}>
+    <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--muted)', letterSpacing: '0.1em' }}>
       {error}
     </Typography>
   )
@@ -84,7 +86,7 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
         >
           <span style={{
             ...mono,
-            fontSize: '0.5rem',
+            fontSize: '0.625rem',
             letterSpacing: '0.08em',
             color: artist.rank === 1 ? 'var(--ink, #ece5d3)' : 'var(--muted, #7A756D)',
             minWidth: 14,
@@ -111,7 +113,7 @@ export default function TopArtists({ userId, isOwnProfile }: TopArtistsProps) {
           {artist.play_count > 0 && (
             <span style={{
               ...mono,
-              fontSize: '0.4375rem',
+              fontSize: '0.5625rem',
               letterSpacing: '0.08em',
               color: 'var(--muted, #7A756D)',
               flexShrink: 0,

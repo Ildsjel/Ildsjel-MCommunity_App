@@ -24,6 +24,7 @@ export interface AdminUser {
   handle: string
   email: string
   role: 'user' | 'admin' | 'superadmin'
+  onboarding_complete: boolean
 }
 
 export interface AdminGenreRef {

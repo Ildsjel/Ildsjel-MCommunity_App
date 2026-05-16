@@ -39,7 +39,7 @@ const getAvatarUrl = (url?: string | null): string | null => {
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -187,13 +187,17 @@ export default function ProfilePage() {
           <span style={lbl}>ME</span>
         </Box>
 
-        <Box sx={{ height: 160, display: 'flex', justifyContent: 'center', mb: 0 }}>
+        <Box
+          sx={{ height: 160, display: 'flex', justifyContent: 'center', mb: 0, cursor: 'pointer' }}
+          onClick={() => router.push('/sigil')}
+          title="Open your Sigil"
+        >
           <Sigil
             size={200}
-            centerTop={user.handle}
-            centerBottom="metal-id"
-            genres={sigilData.genres.length > 0 ? sigilData.genres : undefined}
-            artists={sigilData.artists.length > 0 ? sigilData.artists : undefined}
+            compact
+            handle={user.handle}
+            genres={sigilData.genres.length > 0 ? sigilData.genres : []}
+            artists={sigilData.artists.length > 0 ? sigilData.artists : []}
             loading={sigilData.genres.length === 0 && sigilData.artists.length === 0}
           />
         </Box>
@@ -332,7 +336,7 @@ export default function ProfilePage() {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: friendsPreview.length > 0 ? 1.25 : 0 }}>
             <span style={{ ...lbl, color: 'var(--accent)' }}>⚔ FRIENDS</span>
             <span
-              style={{ ...lbl, fontSize: '0.5rem', cursor: 'pointer', color: 'var(--muted)' }}
+              style={{ ...lbl, fontSize: '0.625rem', cursor: 'pointer', color: 'var(--muted)' }}
               onClick={() => router.push('/friends')}
             >
               VIEW ALL →
@@ -365,13 +369,13 @@ export default function ProfilePage() {
                     )}
                   </Box>
                   <span
-                    style={{ ...lbl, flex: 1, color: 'var(--ink)', fontSize: '0.5625rem', cursor: 'pointer', letterSpacing: '0.1em' }}
+                    style={{ ...lbl, flex: 1, color: 'var(--ink)', fontSize: '0.6875rem', cursor: 'pointer', letterSpacing: '0.1em' }}
                     onClick={() => router.push(`/profile/${friend.id}`)}
                   >
                     {friend.handle}
                   </span>
                   <span
-                    style={{ ...lbl, fontSize: '0.4375rem', color: msgLoading === friend.id ? 'rgba(216,207,184,0.25)' : 'var(--muted)', letterSpacing: '0.1em', cursor: 'pointer' }}
+                    style={{ ...lbl, fontSize: '0.5625rem', color: msgLoading === friend.id ? 'rgba(216,207,184,0.25)' : 'var(--muted)', letterSpacing: '0.1em', cursor: 'pointer' }}
                     onClick={() => handleMessage(friend.id)}
                   >
                     {msgLoading === friend.id ? '…' : 'MSG'}

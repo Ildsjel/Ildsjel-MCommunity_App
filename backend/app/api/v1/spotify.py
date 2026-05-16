@@ -457,6 +457,39 @@ async def get_listening_stats(
     return stats
 
 
+@router.get("/top/artists/{user_id}")
+async def get_user_top_artists(
+    user_id: str,
+    limit: int = 20,
+    session = Depends(get_neo4j_session),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get any user's top artists (authenticated endpoint for profile comparison)"""
+    result = session.run(
+        """
+        MATCH (u:User {id: $uid})-[r:TOP_ARTIST]->(a:Artist)
+        WITH a, MIN(r.rank) as best_rank
+        ORDER BY best_rank ASC
+        LIMIT $limit
+        RETURN a.name AS name, a.spotify_id AS spotify_id,
+               a.genres AS genres, a.spotify_image_url AS image_url,
+               best_rank AS rank
+        """,
+        uid=user_id, limit=limit
+    )
+    artists = [
+        {
+            "name": r["name"],
+            "spotify_id": r["spotify_id"],
+            "genres": r["genres"] or [],
+            "image_url": r["image_url"],
+            "rank": r["rank"],
+        }
+        for r in result
+    ]
+    return {"artists": artists}
+
+
 @router.get("/top/artists")
 async def get_top_artists(
     limit: int = 10,

@@ -97,7 +97,7 @@ export default function MusicProfile({ userId, isOwnProfile }: MusicProfileProps
               >
                 <span style={{
                   ...mono,
-                  fontSize: '0.5rem',
+                  fontSize: '0.625rem',
                   letterSpacing: '0.12em',
                   color: isActive ? 'var(--ink, #ece5d3)' : 'var(--muted, #7A756D)',
                 }}>
@@ -123,7 +123,7 @@ export default function MusicProfile({ userId, isOwnProfile }: MusicProfileProps
       {/* Visibility settings panel */}
       {isOwnProfile && showVisSettings && (
         <Box sx={{ mb: 2, border: '1px solid rgba(216,207,184,0.1)', borderRadius: '3px', p: '10px 12px', backgroundColor: '#0d0b12' }}>
-          <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 10 }}>
+          <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 10 }}>
             Visitor visibility
           </span>
           {TABS.map((tab) => {
@@ -151,7 +151,7 @@ export default function MusicProfile({ userId, isOwnProfile }: MusicProfileProps
                     transition: 'left 0.15s, background-color 0.15s',
                   }} />
                 </Box>
-                <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', color: on ? 'var(--ink)' : 'var(--muted)' }}>
+                <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.1em', color: on ? 'var(--ink)' : 'var(--muted)' }}>
                   {tab}
                 </span>
               </Box>

@@ -1,280 +1,231 @@
 """
 Image Upload and Processing Service
+
+Storage strategy:
+  - R2 configured (production): images are uploaded directly to Cloudflare R2
+    and URLs are returned as fully-qualified https://... paths.
+  - R2 not configured (local dev): images are saved to UPLOADS_DIR on disk
+    and URLs are returned as relative /uploads/... paths served by FastAPI's
+    StaticFiles mount.
 """
+import io
 import uuid
 from pathlib import Path
 from typing import Tuple, Optional
+
 from PIL import Image
-import io
 from fastapi import UploadFile, HTTPException
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _to_rgb(image: Image.Image) -> Image.Image:
+    if image.mode in ('RGBA', 'LA', 'P'):
+        bg = Image.new('RGB', image.size, (255, 255, 255))
+        if image.mode == 'P':
+            image = image.convert('RGBA')
+        mask = image.split()[-1] if image.mode in ('RGBA', 'LA') else None
+        bg.paste(image, mask=mask)
+        return bg
+    if image.mode != 'RGB':
+        return image.convert('RGB')
+    return image
+
+
+def _resize_and_crop(image: Image.Image, size: Tuple[int, int]) -> Image.Image:
+    """Centre-crop then resize to exact (w, h)."""
+    img_ratio = image.width / image.height
+    target_ratio = size[0] / size[1]
+    if img_ratio > target_ratio:
+        new_w = int(image.height * target_ratio)
+        left = (image.width - new_w) // 2
+        image = image.crop((left, 0, left + new_w, image.height))
+    else:
+        new_h = int(image.width / target_ratio)
+        top = (image.height - new_h) // 2
+        image = image.crop((0, top, image.width, top + new_h))
+    return image.resize(size, Image.Resampling.LANCZOS)
+
+
+def _resize_keep_aspect(image: Image.Image, max_size: Tuple[int, int]) -> Image.Image:
+    image.thumbnail(max_size, Image.Resampling.LANCZOS)
+    return image
+
+
+# ---------------------------------------------------------------------------
+# Service
+# ---------------------------------------------------------------------------
+
 class ImageService:
-    """Service for handling image uploads and processing"""
-    
-    # Allowed image types
     ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
     ALLOWED_MIME_TYPES = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
-    
-    # Size limits
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-    AVATAR_SIZE = (400, 400)
-    GALLERY_SIZE = (1200, 1200)
-    THUMBNAIL_SIZE = (300, 300)
-    BAND_PHOTO_SIZE = (1200, 675)   # 16:9 banner
-    BAND_LOGO_SIZE = (400, 400)     # square
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+    AVATAR_SIZE     = (400, 400)
+    GALLERY_SIZE    = (1200, 1200)
+    THUMBNAIL_SIZE  = (300, 300)
+    BAND_PHOTO_SIZE = (1200, 675)
+    BAND_LOGO_SIZE  = (400, 400)
 
     def __init__(self, upload_dir: str = None):
-        """Initialize image service with upload directory.
+        from app.config.settings import settings
 
-        Reads from app settings so the save path always matches the path
-        that main.py mounts for static-file serving. Both use settings.UPLOADS_DIR
-        which reads UPLOADS_DIR from .env.
+        # ── Local disk (dev fallback) ──────────────────────────────────────
+        ud = Path(upload_dir or settings.UPLOADS_DIR)
+        self.upload_dir    = ud
+        self.avatar_dir    = ud / "avatars"
+        self.gallery_dir   = ud / "gallery"
+        self.thumbnail_dir = ud / "thumbnails"
+        self.band_photo_dir = ud / "bands" / "photos"
+        self.band_logo_dir  = ud / "bands" / "logos"
+        for d in (self.avatar_dir, self.gallery_dir, self.thumbnail_dir,
+                  self.band_photo_dir, self.band_logo_dir):
+            d.mkdir(parents=True, exist_ok=True)
 
-        Local dev (.env): UPLOADS_DIR=/tmp/grimr_uploads
-        Docker:           UPLOADS_DIR=/app/uploads  (named volume mount)
-
-        The previous hardcoded /tmp/grimr_uploads vs /app/uploads mismatch in
-        main.py caused every uploaded image to be saved somewhere it was never
-        served from, returning 404 on all image URLs.
-        """
-        if upload_dir is None:
-            from app.config.settings import settings
-            upload_dir = settings.UPLOADS_DIR
-        self.upload_dir = Path(upload_dir)
-        self.avatar_dir = self.upload_dir / "avatars"
-        self.gallery_dir = self.upload_dir / "gallery"
-        self.thumbnail_dir = self.upload_dir / "thumbnails"
-        self.band_photo_dir = self.upload_dir / "bands" / "photos"
-        self.band_logo_dir = self.upload_dir / "bands" / "logos"
-
-        # Create directories if they don't exist
-        self.avatar_dir.mkdir(parents=True, exist_ok=True)
-        self.gallery_dir.mkdir(parents=True, exist_ok=True)
-        self.thumbnail_dir.mkdir(parents=True, exist_ok=True)
-        self.band_photo_dir.mkdir(parents=True, exist_ok=True)
-        self.band_logo_dir.mkdir(parents=True, exist_ok=True)
-    
-    def validate_image(self, file: UploadFile) -> None:
-        """Validate image file"""
-        # Check file extension
-        file_ext = Path(file.filename or "").suffix.lower()
-        if file_ext not in self.ALLOWED_EXTENSIONS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid file type. Allowed: {', '.join(self.ALLOWED_EXTENSIONS)}"
+        # ── Cloudflare R2 ──────────────────────────────────────────────────
+        self.r2_enabled = bool(
+            settings.R2_ACCOUNT_ID and settings.R2_ACCESS_KEY_ID
+            and settings.R2_SECRET_ACCESS_KEY and settings.R2_BUCKET_NAME
+        )
+        if self.r2_enabled:
+            import boto3
+            from botocore.config import Config
+            self._s3 = boto3.client(
+                "s3",
+                endpoint_url=f"https://{settings.R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
+                aws_access_key_id=settings.R2_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.R2_SECRET_ACCESS_KEY,
+                config=Config(signature_version="s3v4"),
+                region_name="auto",
             )
-        
-        # Check MIME type
-        if file.content_type not in self.ALLOWED_MIME_TYPES:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid content type: {file.content_type}"
-            )
-    
-    async def process_avatar(
-        self, 
-        file: UploadFile, 
-        user_id: str
-    ) -> Tuple[str, str]:
-        """
-        Process and save avatar image
-        Returns: (image_url, file_path)
-        """
-        self.validate_image(file)
-        
-        # Read file content
-        content = await file.read()
-        if len(content) > self.MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=400,
-                detail=f"File too large. Max size: {self.MAX_FILE_SIZE / 1024 / 1024}MB"
-            )
-        
-        # Open and process image
-        try:
-            image = Image.open(io.BytesIO(content))
-            
-            # Convert to RGB if necessary
-            if image.mode in ('RGBA', 'LA', 'P'):
-                background = Image.new('RGB', image.size, (255, 255, 255))
-                if image.mode == 'P':
-                    image = image.convert('RGBA')
-                background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
-                image = background
-            elif image.mode != 'RGB':
-                image = image.convert('RGB')
-            
-            # Resize to avatar size (square crop)
-            image = self._resize_and_crop(image, self.AVATAR_SIZE)
-            
-            # Generate unique filename
-            file_ext = Path(file.filename or "image.jpg").suffix.lower()
-            filename = f"{user_id}_avatar_{uuid.uuid4().hex[:8]}{file_ext}"
-            file_path = self.avatar_dir / filename
-            
-            # Save image
-            image.save(file_path, quality=85, optimize=True)
-            
-            # Return URL (relative path for serving)
-            image_url = f"/uploads/avatars/{filename}"
-            return image_url, str(file_path)
-            
-        except Exception as e:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to process image: {str(e)}"
-            )
-    
-    async def process_gallery_image(
-        self, 
-        file: UploadFile, 
-        user_id: str
-    ) -> Tuple[str, str, str]:
-        """
-        Process and save gallery image with thumbnail
-        Returns: (image_url, thumbnail_url, file_path)
-        """
-        self.validate_image(file)
-        
-        # Read file content
-        content = await file.read()
-        if len(content) > self.MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=400,
-                detail=f"File too large. Max size: {self.MAX_FILE_SIZE / 1024 / 1024}MB"
-            )
-        
-        # Open and process image
-        try:
-            image = Image.open(io.BytesIO(content))
-            
-            # Convert to RGB if necessary
-            if image.mode in ('RGBA', 'LA', 'P'):
-                background = Image.new('RGB', image.size, (255, 255, 255))
-                if image.mode == 'P':
-                    image = image.convert('RGBA')
-                background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
-                image = background
-            elif image.mode != 'RGB':
-                image = image.convert('RGB')
-            
-            # Generate unique filename
-            file_ext = Path(file.filename or "image.jpg").suffix.lower()
-            base_filename = f"{user_id}_gallery_{uuid.uuid4().hex[:12]}"
-            
-            # Process main image
-            main_image = self._resize_keep_aspect(image, self.GALLERY_SIZE)
-            main_filename = f"{base_filename}{file_ext}"
-            main_path = self.gallery_dir / main_filename
-            main_image.save(main_path, quality=90, optimize=True)
-            
-            # Process thumbnail
-            thumbnail = self._resize_and_crop(image, self.THUMBNAIL_SIZE)
-            thumb_filename = f"{base_filename}_thumb{file_ext}"
-            thumb_path = self.thumbnail_dir / thumb_filename
-            thumbnail.save(thumb_path, quality=80, optimize=True)
-            
-            # Return URLs
-            image_url = f"/uploads/gallery/{main_filename}"
-            thumbnail_url = f"/uploads/thumbnails/{thumb_filename}"
-            return image_url, thumbnail_url, str(main_path)
-            
-        except Exception as e:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to process image: {str(e)}"
-            )
-    
-    def _resize_and_crop(self, image: Image.Image, size: Tuple[int, int]) -> Image.Image:
-        """Resize and center crop image to exact size"""
-        # Calculate aspect ratios
-        img_ratio = image.width / image.height
-        target_ratio = size[0] / size[1]
-        
-        if img_ratio > target_ratio:
-            # Image is wider, crop width
-            new_width = int(image.height * target_ratio)
-            left = (image.width - new_width) // 2
-            image = image.crop((left, 0, left + new_width, image.height))
+            self._bucket     = settings.R2_BUCKET_NAME
+            self._public_url = settings.R2_PUBLIC_URL.rstrip("/")
         else:
-            # Image is taller, crop height
-            new_height = int(image.width / target_ratio)
-            top = (image.height - new_height) // 2
-            image = image.crop((0, top, image.width, top + new_height))
-        
-        # Resize to target size
-        return image.resize(size, Image.Resampling.LANCZOS)
-    
-    def _resize_keep_aspect(self, image: Image.Image, max_size: Tuple[int, int]) -> Image.Image:
-        """Resize image keeping aspect ratio, fitting within max_size"""
-        image.thumbnail(max_size, Image.Resampling.LANCZOS)
-        return image
-    
-    async def process_band_photo(self, file: UploadFile, band_id: str) -> Tuple[str, str]:
-        """Process and save a band photo (16:9). Returns (image_url, file_path)."""
-        self.validate_image(file)
+            self._s3 = None
+
+    # ── Internal helpers ──────────────────────────────────────────────────
+
+    def _save(self, image: Image.Image, key: str, quality: int = 85) -> str:
+        """
+        Save a PIL image. If R2 is enabled, upload to R2 and return the public URL.
+        Otherwise write to local disk and return the /uploads/... path.
+        key examples: 'avatars/abc_avatar_12345678.jpg'
+                      'bands/photos/xyz_photo_abcd.jpg'
+        """
+        ext = Path(key).suffix.lower()
+        fmt = "JPEG" if ext in (".jpg", ".jpeg") else "PNG"
+        content_type = "image/jpeg" if fmt == "JPEG" else "image/png"
+
+        if self.r2_enabled:
+            buf = io.BytesIO()
+            image.save(buf, format=fmt, quality=quality, optimize=True)
+            buf.seek(0)
+            self._s3.upload_fileobj(
+                buf, self._bucket, key,
+                ExtraArgs={"ContentType": content_type, "CacheControl": "public, max-age=31536000"},
+            )
+            return f"{self._public_url}/{key}"
+        else:
+            path = self.upload_dir / key
+            path.parent.mkdir(parents=True, exist_ok=True)
+            image.save(path, quality=quality, optimize=True)
+            return f"/uploads/{key}"
+
+    def _save_raw(self, data: bytes, key: str, content_type: str) -> str:
+        """Upload raw bytes (used by the migration script)."""
+        if self.r2_enabled:
+            self._s3.upload_fileobj(
+                io.BytesIO(data), self._bucket, key,
+                ExtraArgs={"ContentType": content_type, "CacheControl": "public, max-age=31536000"},
+            )
+            return f"{self._public_url}/{key}"
+        else:
+            path = self.upload_dir / key
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+            return f"/uploads/{key}"
+
+    def validate_image(self, file: UploadFile) -> None:
+        ext = Path(file.filename or "").suffix.lower()
+        if ext not in self.ALLOWED_EXTENSIONS:
+            raise HTTPException(400, f"Invalid file type. Allowed: {', '.join(self.ALLOWED_EXTENSIONS)}")
+        if file.content_type not in self.ALLOWED_MIME_TYPES:
+            raise HTTPException(400, f"Invalid content type: {file.content_type}")
+
+    async def _read_and_open(self, file: UploadFile) -> Tuple[bytes, Image.Image]:
         content = await file.read()
         if len(content) > self.MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail=f"File too large. Max size: {self.MAX_FILE_SIZE // 1024 // 1024}MB")
+            raise HTTPException(400, f"File too large. Max: {self.MAX_FILE_SIZE // 1024 // 1024} MB")
         try:
-            image = Image.open(io.BytesIO(content))
-            image = self._to_rgb(image)
-            image = self._resize_and_crop(image, self.BAND_PHOTO_SIZE)
-            file_ext = Path(file.filename or "image.jpg").suffix.lower()
-            filename = f"{band_id}_photo_{uuid.uuid4().hex[:8]}{file_ext}"
-            file_path = self.band_photo_dir / filename
-            image.save(file_path, quality=88, optimize=True)
-            return f"/uploads/bands/photos/{filename}", str(file_path)
-        except HTTPException:
-            raise
+            return content, Image.open(io.BytesIO(content))
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to process image: {str(e)}")
+            raise HTTPException(400, f"Failed to open image: {e}")
+
+    # ── Public API ─────────────────────────────────────────────────────────
+
+    async def process_avatar(self, file: UploadFile, user_id: str) -> Tuple[str, str]:
+        """Returns (image_url, key)."""
+        self.validate_image(file)
+        _, image = await self._read_and_open(file)
+        image = _to_rgb(image)
+        image = _resize_and_crop(image, self.AVATAR_SIZE)
+        ext = Path(file.filename or "image.jpg").suffix.lower()
+        key = f"avatars/{user_id}_avatar_{uuid.uuid4().hex[:8]}{ext}"
+        url = self._save(image, key, quality=85)
+        return url, key
+
+    async def process_gallery_image(self, file: UploadFile, user_id: str) -> Tuple[str, str, str]:
+        """Returns (image_url, thumbnail_url, key)."""
+        self.validate_image(file)
+        _, image = await self._read_and_open(file)
+        image = _to_rgb(image)
+        ext = Path(file.filename or "image.jpg").suffix.lower()
+        base = f"{user_id}_gallery_{uuid.uuid4().hex[:12]}"
+
+        main_key  = f"gallery/{base}{ext}"
+        thumb_key = f"thumbnails/{base}_thumb{ext}"
+
+        main_url  = self._save(_resize_keep_aspect(image.copy(), self.GALLERY_SIZE),  main_key,  quality=90)
+        thumb_url = self._save(_resize_and_crop(image.copy(),    self.THUMBNAIL_SIZE), thumb_key, quality=80)
+        return main_url, thumb_url, main_key
+
+    async def process_band_photo(self, file: UploadFile, band_id: str) -> Tuple[str, str]:
+        """Returns (image_url, key)."""
+        self.validate_image(file)
+        _, image = await self._read_and_open(file)
+        image = _to_rgb(image)
+        image = _resize_and_crop(image, self.BAND_PHOTO_SIZE)
+        ext = Path(file.filename or "image.jpg").suffix.lower()
+        key = f"bands/photos/{band_id}_photo_{uuid.uuid4().hex[:8]}{ext}"
+        url = self._save(image, key, quality=88)
+        return url, key
 
     async def process_band_logo(self, file: UploadFile, band_id: str) -> Tuple[str, str]:
-        """Process and save a band logo (square). Returns (image_url, file_path)."""
+        """Returns (image_url, key)."""
         self.validate_image(file)
-        content = await file.read()
-        if len(content) > self.MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail=f"File too large. Max size: {self.MAX_FILE_SIZE // 1024 // 1024}MB")
-        try:
-            image = Image.open(io.BytesIO(content))
-            image = self._to_rgb(image)
-            image = self._resize_and_crop(image, self.BAND_LOGO_SIZE)
-            file_ext = Path(file.filename or "image.jpg").suffix.lower()
-            filename = f"{band_id}_logo_{uuid.uuid4().hex[:8]}{file_ext}"
-            file_path = self.band_logo_dir / filename
-            image.save(file_path, quality=88, optimize=True)
-            return f"/uploads/bands/logos/{filename}", str(file_path)
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to process image: {str(e)}")
-
-    def _to_rgb(self, image: Image.Image) -> Image.Image:
-        if image.mode in ('RGBA', 'LA', 'P'):
-            background = Image.new('RGB', image.size, (255, 255, 255))
-            if image.mode == 'P':
-                image = image.convert('RGBA')
-            background.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
-            return background
-        elif image.mode != 'RGB':
-            return image.convert('RGB')
-        return image
+        _, image = await self._read_and_open(file)
+        image = _to_rgb(image)
+        image = _resize_and_crop(image, self.BAND_LOGO_SIZE)
+        ext = Path(file.filename or "image.jpg").suffix.lower()
+        key = f"bands/logos/{band_id}_logo_{uuid.uuid4().hex[:8]}{ext}"
+        url = self._save(image, key, quality=88)
+        return url, key
 
     def delete_image(self, file_path: str) -> bool:
-        """Delete an image file"""
+        """Delete from local disk (R2 objects are not deleted for now)."""
+        if self.r2_enabled:
+            return True  # no-op; old R2 objects can expire via lifecycle rule
         try:
-            path = Path(file_path)
-            if path.exists():
-                path.unlink()
+            p = Path(file_path)
+            if p.exists():
+                p.unlink()
                 return True
-            return False
         except Exception as e:
             print(f"Failed to delete image {file_path}: {e}")
-            return False
+        return False
 
 
-# Global instance
+# Global singleton
 image_service = ImageService()
-

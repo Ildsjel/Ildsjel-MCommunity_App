@@ -49,7 +49,7 @@ export default function AvatarGroup({
       {label && (
         <Typography sx={{
           fontFamily: 'var(--font-mono)',
-          fontSize: '0.375rem',
+          fontSize: '0.625rem',
           letterSpacing: '0.08em',
           color: 'var(--muted)',
           textTransform: 'uppercase',

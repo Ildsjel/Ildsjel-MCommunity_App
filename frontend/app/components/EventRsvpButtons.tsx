@@ -88,7 +88,7 @@ export default function EventRsvpButtons({ myRsvp, loading = false, onRsvp }: Pr
               component="span"
               sx={{
                 ...mono,
-                fontSize: '0.4375rem',
+                fontSize: '0.5625rem',
                 color: isActive ? btn.activeColor : 'var(--muted)',
                 transition: 'color 0.15s',
               }}

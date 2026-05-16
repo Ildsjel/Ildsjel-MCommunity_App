@@ -148,7 +148,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
       {/* ── Artists + Grimr bands ───────────────────────────────────────── */}
       {(artists.length > 0 || bands.length > 0) && (
         <Box sx={{ mb: albums.length > 0 ? 2 : 0 }}>
-          <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
+          <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
             Artists
           </span>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
@@ -242,7 +242,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
       {/* ── Albums ─────────────────────────────────────────────────────── */}
       {albums.length > 0 && (
         <Box sx={{ mb: 0 }}>
-          <span style={{ ...mono, fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
+          <span style={{ ...mono, fontSize: '0.5625rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', display: 'block', marginBottom: 8 }}>
             Albums
           </span>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -268,7 +268,7 @@ export default function Favourites({ isOwnProfile }: FavouritesProps) {
                   }}>
                     {a.name}
                   </Typography>
-                  <span style={{ ...mono, fontSize: '0.4375rem', color: 'var(--muted)', letterSpacing: '0.06em' }}>
+                  <span style={{ ...mono, fontSize: '0.5625rem', color: 'var(--muted)', letterSpacing: '0.06em' }}>
                     {a.artist_name}
                   </span>
                 </Box>

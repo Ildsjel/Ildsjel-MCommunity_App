@@ -89,6 +89,9 @@ class UserUpdate(BaseModel):
     longitude: Optional[float] = None
     profile_image_url: Optional[str] = None
     about_me: Optional[str] = Field(None, max_length=1500)
+    city_visible: Optional[str] = Field(None, pattern=r'^(city|region|hidden)$')
+    discoverable_by_name: Optional[bool] = None
+    discoverable_by_music: Optional[bool] = None
 
 
 class TokenResponse(BaseModel):

@@ -72,6 +72,9 @@ export const adminAPI = {
   listUsers: () => req<AdminUser[]>('GET', '/admin/users'),
   setUserRole: (userId: string, role: string) =>
     req<AdminMessageResponse>('PATCH', `/admin/users/${userId}/role`, { role }),
+  setUserOnboarding: (userId: string, onboarding_complete: boolean) =>
+    req<{ onboarding_complete: boolean }>('PATCH', `/admin/users/${userId}/onboarding`, { onboarding_complete }),
+  deleteUser: (userId: string) => req<void>('DELETE', `/admin/users/${userId}`),
 
   // Bands
   listBands: (params?: { status?: string; q?: string; skip?: number; limit?: number }) => {

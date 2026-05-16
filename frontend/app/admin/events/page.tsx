@@ -8,7 +8,7 @@ import AdminGuard from '@/app/components/AdminGuard'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
-  fontSize: '0.5rem',
+  fontSize: '0.625rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted)',
@@ -116,7 +116,7 @@ export default function AdminEventsPage() {
   const inputStyle: React.CSSProperties = {
     background: '#0a0810', border: '1px solid rgba(216,207,184,0.15)',
     borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)',
-    fontSize: '0.5rem', padding: '5px 9px', outline: 'none', width: '100%',
+    fontSize: '0.625rem', padding: '5px 9px', outline: 'none', width: '100%',
     boxSizing: 'border-box',
   }
 
@@ -138,7 +138,7 @@ export default function AdminEventsPage() {
               Events
             </Typography>
           </Box>
-          <Typography sx={{ ...lbl, fontSize: '0.4375rem' }}>{total} total</Typography>
+          <Typography sx={{ ...lbl, fontSize: '0.5625rem' }}>{total} total</Typography>
         </Box>
 
         {/* Sync panel */}
@@ -146,19 +146,19 @@ export default function AdminEventsPage() {
           border: '1px solid rgba(216,207,184,0.15)', borderRadius: '4px',
           backgroundColor: '#0d0b14', p: '14px 16px', mb: 2,
         }}>
-          <span style={{ ...lbl, color: 'var(--ink)', fontSize: '0.5rem', display: 'block', marginBottom: 6 }}>
+          <span style={{ ...lbl, color: 'var(--ink)', fontSize: '0.625rem', display: 'block', marginBottom: 6 }}>
             ⟳ TICKETMASTER SYNC
           </span>
           <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--muted)', mb: 1.5 }}>
             Pulls upcoming events for every active band from the Ticketmaster Discovery API (free, 5 000 calls/day).
-            Requires <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--ink)' }}>TICKETMASTER_API_KEY</code> in{' '}
-            <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--ink)' }}>.env</code>.{' '}
+            Requires <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--ink)' }}>TICKETMASTER_API_KEY</code> in{' '}
+            <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--ink)' }}>.env</code>.{' '}
             Get one free at{' '}
             <a
               href="https://developer.ticketmaster.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '0.5rem' }}
+              style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '0.625rem' }}
             >
               developer.ticketmaster.com
             </a>
@@ -172,7 +172,7 @@ export default function AdminEventsPage() {
               sx={{
                 border: '1px solid rgba(216,207,184,0.3)', borderRadius: '3px',
                 px: 1.5, height: 30, background: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
                 letterSpacing: '0.1em', textTransform: 'uppercase',
                 color: syncing ? 'var(--muted)' : 'var(--ink)',
                 display: 'flex', alignItems: 'center', gap: 0.75,
@@ -182,7 +182,7 @@ export default function AdminEventsPage() {
               {syncing && <CircularProgress size={10} sx={{ color: 'var(--muted)' }} />}
               {syncing ? 'RUNNING…' : '⟳ RUN SYNC'}
             </Box>
-            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: 'rgba(216,207,184,0.3)', letterSpacing: '0.08em' }}>
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'rgba(216,207,184,0.3)', letterSpacing: '0.08em' }}>
               {syncing ? 'running in background · checking every 3s…' : 'next 180 days · all published bands'}
             </Typography>
           </Box>
@@ -214,7 +214,7 @@ export default function AdminEventsPage() {
 
           {syncError && (
             <Box sx={{ mt: 1.25, p: '8px 12px', border: '1px solid rgba(196,58,42,0.3)', borderRadius: '3px', backgroundColor: 'rgba(196,58,42,0.07)' }}>
-              <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--accent)', letterSpacing: '0.08em' }}>
+              <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--accent)', letterSpacing: '0.08em' }}>
                 ⚠ {syncError}
               </Typography>
             </Box>
@@ -258,7 +258,7 @@ export default function AdminEventsPage() {
                   }}
                 >
                   {/* Date */}
-                  <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--muted)', flexShrink: 0, width: 70 }}>
+                  <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--muted)', flexShrink: 0, width: 70 }}>
                     {ev.date}
                   </Typography>
 
@@ -286,7 +286,7 @@ export default function AdminEventsPage() {
                       href={ev.ticket_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: 'var(--accent)', flexShrink: 0, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                      sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--accent)', flexShrink: 0, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                     >
                       ↗
                     </Box>
@@ -300,7 +300,7 @@ export default function AdminEventsPage() {
                     sx={{
                       border: '1px solid rgba(196,58,42,0.2)', borderRadius: '2px',
                       px: 0.5, height: 18, background: 'none', cursor: 'pointer',
-                      fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: 'var(--accent)',
+                      fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--accent)',
                       flexShrink: 0,
                       '&:hover': { borderColor: 'var(--accent)' },
                       '&:disabled': { opacity: 0.4 },

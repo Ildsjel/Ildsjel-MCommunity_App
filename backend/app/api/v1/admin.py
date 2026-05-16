@@ -10,7 +10,7 @@ from app.services.image_service import image_service
 from app.db.repositories.band_repository import BandRepository
 from app.models.admin_models import (
     AdminTokenCreate, AdminTokenResponse, AdminTokenRedeem,
-    UserRoleResponse, UserRoleUpdate,
+    UserRoleResponse, UserRoleUpdate, UserOnboardingUpdate,
 )
 from app.models.band_models import (
     BandCreate, BandUpdate, BandResponse,
@@ -71,8 +71,24 @@ async def list_users(
     current_user: dict = Depends(require_superadmin),
     session=Depends(get_neo4j_session),
 ):
-    svc = AdminService(session)
-    return svc.list_users()
+    records = session.run(
+        """
+        MATCH (u:User)
+        RETURN u.id AS id, u.handle AS handle, u.email AS email,
+               u.role AS role, u.onboarding_complete AS onboarding_complete
+        ORDER BY u.role, u.handle
+        """
+    )
+    return [
+        {
+            "id": r["id"],
+            "handle": r["handle"] or "",
+            "email": r["email"] or "",
+            "role": r["role"] or "user",
+            "onboarding_complete": bool(r["onboarding_complete"]),
+        }
+        for r in records
+    ]
 
 
 @router.patch("/users/{user_id}/role")
@@ -89,6 +105,38 @@ async def set_user_role(
     if not ok:
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": f"Role updated to {body.role}"}
+
+
+@router.delete("/users/{user_id}", status_code=204)
+async def delete_user(
+    user_id: str,
+    current_user: dict = Depends(require_superadmin),
+    session=Depends(get_neo4j_session),
+):
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    result = session.run(
+        "MATCH (u:User {id: $id}) DETACH DELETE u RETURN count(u) AS n",
+        id=user_id,
+    ).single()
+    if not result or result["n"] == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+
+
+@router.patch("/users/{user_id}/onboarding")
+async def set_user_onboarding(
+    user_id: str,
+    body: UserOnboardingUpdate,
+    current_user: dict = Depends(require_superadmin),
+    session=Depends(get_neo4j_session),
+):
+    result = session.run(
+        "MATCH (u:User {id: $id}) SET u.onboarding_complete = $val RETURN u.id",
+        id=user_id, val=body.onboarding_complete,
+    ).single()
+    if not result:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"onboarding_complete": body.onboarding_complete}
 
 
 # ── Bands CRUD (admin) ───────────────────────────────────────────────────────

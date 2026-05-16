@@ -11,7 +11,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -122,7 +122,7 @@ export default function ConversationPage() {
 
         {/* Header */}
         <Box sx={{ px: 2, pt: 2, pb: 1.5, borderBottom: '1.5px solid rgba(216,207,184,0.15)', flexShrink: 0 }}>
-          <Box component="button" onClick={() => router.back()} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 0.5, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+          <Box component="button" onClick={() => router.back()} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 0.5, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
             ← BACK
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
@@ -140,7 +140,7 @@ export default function ConversationPage() {
                     {otherUser.handle}
                   </Box>
                   {otherUser.city && (
-                    <Box sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em', color: 'var(--muted)' }}>
+                    <Box sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.08em', color: 'var(--muted)' }}>
                       {otherUser.city}{otherUser.country ? `, ${otherUser.country}` : ''}
                     </Box>
                   )}
@@ -161,7 +161,7 @@ export default function ConversationPage() {
 
           {!loading && messages.length < total && (
             <Box sx={{ textAlign: 'center', mb: 2 }}>
-              <Box component="button" onClick={loadOlder} disabled={loadingMore} sx={{ background: 'none', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 1.5, py: 0.5, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { borderColor: 'rgba(216,207,184,0.4)' } }}>
+              <Box component="button" onClick={loadOlder} disabled={loadingMore} sx={{ background: 'none', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 1.5, py: 0.5, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { borderColor: 'rgba(216,207,184,0.4)' } }}>
                 {loadingMore ? '…' : '↑ LOAD OLDER'}
               </Box>
             </Box>
@@ -183,7 +183,7 @@ export default function ConversationPage() {
                 {showDivider && (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, my: 1.5 }}>
                     <Box sx={{ flex: 1, height: '1px', borderTop: '1px dashed rgba(216,207,184,0.15)' }} />
-                    <span style={{ ...lbl, fontSize: '0.4375rem', color: 'rgba(216,207,184,0.3)', flexShrink: 0 }}>
+                    <span style={{ ...lbl, fontSize: '0.5625rem', color: 'rgba(216,207,184,0.3)', flexShrink: 0 }}>
                       {formatDateDivider(msg.created_at)}
                     </span>
                     <Box sx={{ flex: 1, height: '1px', borderTop: '1px dashed rgba(216,207,184,0.15)' }} />
@@ -273,7 +273,7 @@ export default function ConversationPage() {
               background: 'none',
               cursor: draft.trim() && !sending ? 'pointer' : 'default',
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.4375rem',
+              fontSize: '0.5625rem',
               letterSpacing: '0.1em',
               color: draft.trim() && !sending ? 'var(--accent)' : 'rgba(196,58,42,0.3)',
               flexShrink: 0,

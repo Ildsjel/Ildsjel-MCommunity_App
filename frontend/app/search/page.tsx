@@ -24,14 +24,6 @@ interface ProfileSearchHit {
 }
 interface SearchResponse { hits: ProfileSearchHit[]; total: number; next_cursor?: string; query_time_ms: number }
 
-type SearchType = 'mixed' | 'name' | 'artist' | 'genre'
-
-const CHIPS: { label: string; value: SearchType | 'all' }[] = [
-  { label: 'ALL', value: 'all' },
-  { label: 'PEOPLE', value: 'name' },
-  { label: 'BANDS', value: 'artist' },
-  { label: 'GENRES', value: 'genre' },
-]
 
 const TRENDING = [
   { badge: 'BAND · +142%', name: 'Chat Pile' },
@@ -42,7 +34,7 @@ const TRENDING = [
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -54,7 +46,6 @@ export default function SearchPage() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const [query, setQuery] = useState(searchParams?.get('q') || '')
-  const [activeChip, setActiveChip] = useState<SearchType | 'all'>('all')
   const [results, setResults] = useState<ProfileSearchHit[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -64,7 +55,7 @@ export default function SearchPage() {
 
   useEffect(() => {
     const q = searchParams?.get('q')
-    if (q) { setQuery(q); performSearch(q, activeChip) }
+    if (q) { setQuery(q); performSearch(q) }
     else loadRandomUsers()
     const stored = localStorage.getItem('grimr_recent_searches')
     if (stored) setRecent(JSON.parse(stored).slice(0, 5))
@@ -89,14 +80,13 @@ export default function SearchPage() {
     } finally { setLoading(false) }
   }
 
-  const performSearch = async (q: string, type: SearchType | 'all') => {
+  const performSearch = async (q: string) => {
     if (q.length < 2) { setError('Enter at least 2 characters'); return }
     setLoading(true); setError(''); setHasSearched(true)
     saveRecent(q)
     try {
       const token = localStorage.getItem('access_token')
-      const searchType = type === 'all' ? 'mixed' : type
-      const params = new URLSearchParams({ q, type: searchType, limit: '20' })
+      const params = new URLSearchParams({ q, type: 'mixed', limit: '20' })
       const res = await axios.get<SearchResponse>(`${API_BASE}/api/v1/search/profiles?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -108,17 +98,12 @@ export default function SearchPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (query.trim()) performSearch(query.trim(), activeChip)
+    if (query.trim()) performSearch(query.trim())
   }
 
   const handleRecentClick = (q: string) => {
     setQuery(q)
-    performSearch(q, activeChip)
-  }
-
-  const handleChipClick = (chip: SearchType | 'all') => {
-    setActiveChip(chip)
-    if (query.trim().length >= 2) performSearch(query.trim(), chip)
+    performSearch(q)
   }
 
   const showIdle = !hasSearched && results.length === 0 && !loading
@@ -171,37 +156,6 @@ export default function SearchPage() {
               ✕
             </span>
           )}
-        </Box>
-
-        {/* Type chips */}
-        <Box sx={{ display: 'flex', gap: 0.75, mb: 2 }}>
-          {CHIPS.map((chip) => {
-            const active = activeChip === chip.value
-            return (
-              <Box
-                key={chip.value}
-                onClick={() => handleChipClick(chip.value)}
-                sx={{
-                  border: '1.5px solid rgba(216,207,184,0.2)',
-                  borderRadius: '3px',
-                  px: 0.75,
-                  height: 24,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  backgroundColor: active ? '#ece5d3' : 'transparent',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.5625rem',
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color: active ? '#120e18' : 'var(--ink)',
-                  transition: 'background 0.1s',
-                }}
-              >
-                {chip.label}
-              </Box>
-            )
-          })}
         </Box>
 
         {/* Error */}

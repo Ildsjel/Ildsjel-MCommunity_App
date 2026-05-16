@@ -27,7 +27,7 @@ Put it on and don't do anything else. Don't reach for your phone. Don't fold lau
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -75,7 +75,7 @@ export default function AlbumPage() {
             </span>
             <Typography sx={{
               fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-              fontSize: '0.5625rem',
+              fontSize: '0.6875rem',
               letterSpacing: '0.12em',
               color: 'var(--accent, #9A1A1A)',
               display: 'block',
@@ -140,7 +140,7 @@ export default function AlbumPage() {
           display: 'flex',
           gap: 2,
           fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-          fontSize: '0.5625rem',
+          fontSize: '0.6875rem',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           alignItems: 'center',

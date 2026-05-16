@@ -9,7 +9,7 @@ import { adminAPI } from '@/lib/adminAPI'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.4375rem',
+  fontSize: '0.5625rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
 }
@@ -78,7 +78,7 @@ function AdminSubNav() {
           <Box sx={{
             border: '1px solid rgba(212,160,16,0.7)', borderRadius: '2px',
             px: 0.5, height: 14, display: 'inline-flex', alignItems: 'center',
-            fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em',
+            fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em',
             color: '#d4a010', lineHeight: 1,
           }}>
             {pendingCount}

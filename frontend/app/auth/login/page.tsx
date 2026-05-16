@@ -36,7 +36,7 @@ export default function LoginPage() {
       const res = await authAPI.login(formData)
       localStorage.setItem('access_token', res.access_token)
       setUser(res.user)
-      router.push('/profile')
+      router.push(res.user.onboarding_complete ? '/feed' : '/onboarding')
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail
       let msg = 'Login failed'
@@ -69,9 +69,9 @@ export default function LoginPage() {
         <Typography
           component={Link}
           href="/"
-          className="grimr-glow grimr-wordmark"
+          className="grimr-glow"
           sx={{
-            fontFamily: 'var(--font-medieval, "UnifrakturCook", serif)',
+            fontFamily: '"Archivo Black", sans-serif',
             fontSize: { xs: '2.8rem', md: '3.5rem' },
             letterSpacing: '0.04em',
             color: 'text.primary',

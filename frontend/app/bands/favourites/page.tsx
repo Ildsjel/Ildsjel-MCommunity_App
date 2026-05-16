@@ -9,7 +9,7 @@ import type { FavouriteBandSummary } from '@/lib/bandFavouritesApi'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -52,14 +52,14 @@ export default function FavouriteBandsPage() {
             onClick={() => router.push('/bands')}
             sx={{
               background: 'none', border: 'none', cursor: 'pointer', p: 0,
-              fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+              fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
               letterSpacing: '0.12em', color: 'var(--muted)',
               '&:hover': { color: 'var(--ink)' }, transition: 'color 0.1s',
             }}
           >
             ← BANDS
           </Box>
-          <span style={{ ...lbl, fontSize: '0.5rem' }}>
+          <span style={{ ...lbl, fontSize: '0.625rem' }}>
             {loading ? '…' : `${bands.length} SAVED`}
           </span>
         </Box>
@@ -94,7 +94,7 @@ export default function FavouriteBandsPage() {
                 background: 'none',
                 border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
                 px: 1.5, height: 26, cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
                 letterSpacing: '0.12em', color: 'var(--muted)',
                 '&:hover': { borderColor: 'rgba(216,207,184,0.4)', color: 'var(--ink)' },
               }}
@@ -158,14 +158,14 @@ export default function FavouriteBandsPage() {
                       <Box key={g.id} sx={{
                         border: '1px solid rgba(216,207,184,0.18)', borderRadius: '2px',
                         px: 0.625, height: 16, display: 'inline-flex', alignItems: 'center',
-                        fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                        fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
                         letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)',
                       }}>
                         {g.name}
                       </Box>
                     ))}
                   </Box>
-                  <span style={{ ...lbl, fontSize: '0.5rem' }}>
+                  <span style={{ ...lbl, fontSize: '0.625rem' }}>
                     {band.country_code} · est. {band.formed}
                   </span>
                 </Box>

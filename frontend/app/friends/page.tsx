@@ -13,7 +13,7 @@ const PAGE_SIZE = 25
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -112,7 +112,7 @@ export default function FriendsPage() {
 
         {/* Header */}
         <Box sx={{ mb: 2.5 }}>
-          <Box component="button" onClick={() => router.back()} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 0.5, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+          <Box component="button" onClick={() => router.back()} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 0.5, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
             ← BACK
           </Box>
           <span style={{ ...lbl, color: 'var(--accent)' }}>⚔ COMRADES</span>
@@ -150,10 +150,10 @@ export default function FriendsPage() {
                     {req.handle}
                   </span>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Box component="button" onClick={() => handleAccept(req.id)} disabled={responding === req.id} sx={{ border: '1px solid rgba(106,154,122,0.5)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: '#6a9a7a', '&:hover': { borderColor: '#6a9a7a' } }}>
+                    <Box component="button" onClick={() => handleAccept(req.id)} disabled={responding === req.id} sx={{ border: '1px solid rgba(106,154,122,0.5)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: '#6a9a7a', '&:hover': { borderColor: '#6a9a7a' } }}>
                       {responding === req.id ? '…' : '✔ ACCEPT'}
                     </Box>
-                    <Box component="button" onClick={() => handleDecline(req.id)} disabled={responding === req.id} sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}>
+                    <Box component="button" onClick={() => handleDecline(req.id)} disabled={responding === req.id} sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}>
                       ✕
                     </Box>
                   </Box>
@@ -169,7 +169,7 @@ export default function FriendsPage() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <span style={{ ...lbl }}>◆ COMRADES ({total})</span>
               {totalPages > 1 && (
-                <span style={{ ...lbl, fontSize: '0.4375rem' }}>
+                <span style={{ ...lbl, fontSize: '0.5625rem' }}>
                   PAGE {page + 1} / {totalPages}
                 </span>
               )}
@@ -201,10 +201,10 @@ export default function FriendsPage() {
                           {friend.handle}
                         </span>
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          <Box component="button" onClick={() => handleMessage(friend.id)} disabled={msgLoading === friend.id} sx={{ border: '1px solid rgba(216,207,184,0.25)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { borderColor: 'rgba(216,207,184,0.5)', color: 'var(--ink)' } }}>
+                          <Box component="button" onClick={() => handleMessage(friend.id)} disabled={msgLoading === friend.id} sx={{ border: '1px solid rgba(216,207,184,0.25)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { borderColor: 'rgba(216,207,184,0.5)', color: 'var(--ink)' } }}>
                             {msgLoading === friend.id ? '…' : 'MSG'}
                           </Box>
-                          <Box component="button" onClick={() => handleUnfriend(friend.id)} sx={{ border: '1px solid rgba(216,207,184,0.15)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--accent)', borderColor: 'rgba(196,58,42,0.3)' } }}>
+                          <Box component="button" onClick={() => handleUnfriend(friend.id)} sx={{ border: '1px solid rgba(216,207,184,0.15)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--accent)', borderColor: 'rgba(196,58,42,0.3)' } }}>
                             REMOVE
                           </Box>
                         </Box>
@@ -220,7 +220,7 @@ export default function FriendsPage() {
                       component="button"
                       onClick={() => loadPage(page - 1)}
                       disabled={page === 0 || pageLoading}
-                      sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 1.25, height: 24, background: 'none', cursor: page === 0 ? 'default' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: page === 0 ? 'rgba(216,207,184,0.2)' : 'var(--muted)', '&:hover:not(:disabled)': { borderColor: 'rgba(216,207,184,0.4)' } }}
+                      sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 1.25, height: 24, background: 'none', cursor: page === 0 ? 'default' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: page === 0 ? 'rgba(216,207,184,0.2)' : 'var(--muted)', '&:hover:not(:disabled)': { borderColor: 'rgba(216,207,184,0.4)' } }}
                     >
                       ← PREV
                     </Box>
@@ -228,7 +228,7 @@ export default function FriendsPage() {
                       component="button"
                       onClick={() => loadPage(page + 1)}
                       disabled={page >= totalPages - 1 || pageLoading}
-                      sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 1.25, height: 24, background: 'none', cursor: page >= totalPages - 1 ? 'default' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: page >= totalPages - 1 ? 'rgba(216,207,184,0.2)' : 'var(--muted)', '&:hover:not(:disabled)': { borderColor: 'rgba(216,207,184,0.4)' } }}
+                      sx={{ border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px', px: 1.25, height: 24, background: 'none', cursor: page >= totalPages - 1 ? 'default' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: page >= totalPages - 1 ? 'rgba(216,207,184,0.2)' : 'var(--muted)', '&:hover:not(:disabled)': { borderColor: 'rgba(216,207,184,0.4)' } }}
                     >
                       NEXT →
                     </Box>

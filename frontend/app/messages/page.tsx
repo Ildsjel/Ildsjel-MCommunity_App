@@ -10,7 +10,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -47,7 +47,7 @@ export default function MessagesPage() {
 
         {/* Header */}
         <Box sx={{ mb: 3 }}>
-          <Box component="button" onClick={() => router.back()} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 0.5, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+          <Box component="button" onClick={() => router.back()} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 0.5, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
             ← BACK
           </Box>
           <Box sx={{ fontFamily: 'var(--font-medieval, "UnifrakturCook", serif)', fontSize: '1.75rem', color: 'var(--ink)', lineHeight: 1.1 }}>
@@ -105,14 +105,14 @@ export default function MessagesPage() {
                       {conv.other_user.handle}
                     </span>
                     {conv.last_message && (
-                      <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--muted)', flexShrink: 0, marginLeft: 8 }}>
+                      <span style={{ ...lbl, fontSize: '0.5625rem', color: 'var(--muted)', flexShrink: 0, marginLeft: 8 }}>
                         {formatTime(conv.last_message.created_at)}
                       </span>
                     )}
                   </Box>
 
                   {conv.other_user.city && (
-                    <Box sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em', color: 'var(--muted)', mb: 0.375 }}>
+                    <Box sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.08em', color: 'var(--muted)', mb: 0.375 }}>
                       {conv.other_user.city}{conv.other_user.country ? `, ${conv.other_user.country}` : ''}
                     </Box>
                   )}
@@ -135,7 +135,7 @@ export default function MessagesPage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontFamily: 'var(--font-mono)',
-                    fontSize: '0.4375rem',
+                    fontSize: '0.5625rem',
                     color: '#ece5d3',
                     px: '4px',
                   }}>

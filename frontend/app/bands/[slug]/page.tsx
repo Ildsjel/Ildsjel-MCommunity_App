@@ -14,7 +14,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -75,7 +75,7 @@ function ReleaseCard({ release, bandSlug, onClick }: { release: Release; bandSlu
           position: 'absolute', top: 8, left: 8,
           border: `1.5px solid ${typeColor}`, borderRadius: '2px',
           px: 0.75, height: 18, display: 'flex', alignItems: 'center',
-          fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em',
+          fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em',
           color: typeColor, backgroundColor: 'rgba(8,6,10,0.8)',
         }}>
           {release.type}
@@ -91,7 +91,7 @@ function ReleaseCard({ release, bandSlug, onClick }: { release: Release; bandSlu
         }}>
           {release.title}
         </Typography>
-        <span style={{ ...lbl, fontSize: '0.5rem' }}>
+        <span style={{ ...lbl, fontSize: '0.625rem' }}>
           {release.year} · {trackCount} track{trackCount !== 1 ? 's' : ''} · {totalMins} min
         </span>
       </Box>
@@ -244,7 +244,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
     lineHeight: 1,
     color: 'inherit',
     opacity: 0.5,
-    fontSize: '0.5rem',
+    fontSize: '0.625rem',
   }
 
   return (
@@ -260,7 +260,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
             sx={{
               background: 'none', border: 'none', cursor: 'pointer', p: 0,
               display: 'flex', alignItems: 'center', gap: 0.75,
-              fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+              fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
               letterSpacing: '0.12em', color: 'var(--muted)',
               '&:hover': { color: 'var(--ink)' }, transition: 'color 0.1s',
             }}
@@ -278,7 +278,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
               px: 1.25, height: 26,
               cursor: favLoading ? 'default' : 'pointer',
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.4375rem',
+              fontSize: '0.5625rem',
               letterSpacing: '0.12em',
               color: isFavourite ? 'var(--accent, #c43a2a)' : 'var(--muted)',
               display: 'flex', alignItems: 'center', gap: 0.5,
@@ -306,7 +306,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
             <span style={{ fontSize: '0.75rem', lineHeight: 1 }}>◈</span>
             <span style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.5rem',
+              fontSize: '0.625rem',
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
               color: 'rgba(236,229,211,0.7)',
@@ -366,7 +366,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
                   sx={{
                     border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px',
                     px: 0.75, height: 18, display: 'inline-flex', alignItems: 'center',
-                    fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
                     letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)',
                   }}
                 >
@@ -390,7 +390,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
                   sx={{
                     border: '1px solid rgba(154,122,191,0.35)', borderRadius: '2px',
                     px: 0.75, height: 18, display: 'inline-flex', alignItems: 'center',
-                    fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
                     letterSpacing: '0.1em', textTransform: 'uppercase',
                     color: 'rgba(154,122,191,0.85)',
                   }}
@@ -420,7 +420,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
               )}
             </Box>
 
-            <span style={{ ...lbl, fontSize: '0.5rem' }}>
+            <span style={{ ...lbl, fontSize: '0.625rem' }}>
               {band.country} · est. {band.formed}
             </span>
           </Box>
@@ -460,7 +460,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
               </Typography>
               <span style={{
                 fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-                fontSize: '0.4375rem', letterSpacing: '0.14em',
+                fontSize: '0.5625rem', letterSpacing: '0.14em',
                 textTransform: 'uppercase', color: 'rgba(236,229,211,0.15)',
                 position: 'relative', zIndex: 1,
               }}>
@@ -491,7 +491,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
           <>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.25 }}>
               <span style={lbl}>◉ FULL-LENGTHS</span>
-              <span style={{ ...lbl, fontSize: '0.5rem' }}>{lps.length} LP{lps.length !== 1 ? 's' : ''}</span>
+              <span style={{ ...lbl, fontSize: '0.625rem' }}>{lps.length} LP{lps.length !== 1 ? 's' : ''}</span>
             </Box>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75, mb: 2.5 }}>
               {lps.map((r) => (
@@ -511,7 +511,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
           <>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.25 }}>
               <span style={lbl}>◈ OTHER RELEASES</span>
-              <span style={{ ...lbl, fontSize: '0.5rem' }}>{other.length}</span>
+              <span style={{ ...lbl, fontSize: '0.625rem' }}>{other.length}</span>
             </Box>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
               {other.map((r) => (
@@ -544,7 +544,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
                   border: '1px solid rgba(216,207,184,0.15)', borderRadius: '2px',
                   px: 1.25, height: 26,
                   cursor: 'pointer',
-                  fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                  fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
                   letterSpacing: '0.12em', color: 'var(--muted)',
                   '&:hover': { borderColor: 'rgba(216,207,184,0.35)', color: 'var(--ink)' },
                   transition: 'border-color 0.15s, color 0.15s',
@@ -563,12 +563,12 @@ export default function BandPage({ params }: { params: { slug: string } }) {
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ ...lbl, fontSize: '0.5rem' }}>SUGGEST AN ALBUM</span>
+                  <span style={{ ...lbl, fontSize: '0.625rem' }}>SUGGEST AN ALBUM</span>
                   <Box
                     component="button"
                     type="button"
                     onClick={() => { setShowSuggest(false); setSuggestStatus('idle'); setSuggestError(null) }}
-                    sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}
+                    sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}
                   >
                     ✕
                   </Box>
@@ -576,7 +576,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
 
                 {suggestStatus === 'success' ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 0.5 }}>
-                    <span style={{ ...lbl, fontSize: '0.5rem', color: '#6a9a7a', letterSpacing: '0.1em' }}>
+                    <span style={{ ...lbl, fontSize: '0.625rem', color: '#6a9a7a', letterSpacing: '0.1em' }}>
                       ✓ SUGGESTION SUBMITTED — THANKS!
                     </span>
                   </Box>
@@ -584,7 +584,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
                   <>
                     {/* Title */}
                     <Box>
-                      <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 4 }}>ALBUM TITLE *</span>
+                      <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block', marginBottom: 4 }}>ALBUM TITLE *</span>
                       <input
                         type="text"
                         value={suggestTitle}
@@ -604,7 +604,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
                     {/* Type + Year row */}
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <Box sx={{ flex: 1 }}>
-                        <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 4 }}>TYPE</span>
+                        <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block', marginBottom: 4 }}>TYPE</span>
                         <select
                           value={suggestType}
                           onChange={(e) => setSuggestType(e.target.value)}
@@ -612,7 +612,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
                             width: '100%',
                             background: '#0a0810', border: '1px solid rgba(216,207,184,0.2)',
                             borderRadius: '3px', color: suggestType ? 'var(--ink)' : 'var(--muted)',
-                            fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.06em',
+                            fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.06em',
                             padding: '7px 8px', outline: 'none',
                           }}
                         >
@@ -621,7 +621,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
                         </select>
                       </Box>
                       <Box sx={{ width: 90 }}>
-                        <span style={{ ...lbl, fontSize: '0.4375rem', display: 'block', marginBottom: 4 }}>YEAR</span>
+                        <span style={{ ...lbl, fontSize: '0.5625rem', display: 'block', marginBottom: 4 }}>YEAR</span>
                         <input
                           type="number"
                           value={suggestYear}
@@ -633,7 +633,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
                             width: '100%', boxSizing: 'border-box',
                             background: '#0a0810', border: '1px solid rgba(216,207,184,0.2)',
                             borderRadius: '3px', color: 'var(--ink)',
-                            fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                            fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
                             padding: '7px 8px', outline: 'none',
                           }}
                         />
@@ -642,7 +642,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
 
                     {/* Error feedback */}
                     {(suggestStatus === 'duplicate' || suggestStatus === 'error') && suggestError && (
-                      <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--accent)', letterSpacing: '0.08em' }}>
+                      <span style={{ ...lbl, fontSize: '0.5625rem', color: 'var(--accent)', letterSpacing: '0.08em' }}>
                         ⚠ {suggestError}
                       </span>
                     )}
@@ -655,7 +655,7 @@ export default function BandPage({ params }: { params: { slug: string } }) {
                       sx={{
                         border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px',
                         py: 0.875, background: 'none', cursor: 'pointer',
-                        fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                        fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
                         letterSpacing: '0.12em', color: 'var(--ink)',
                         '&:disabled': { opacity: 0.4, cursor: 'default' },
                         '&:not(:disabled):hover': { borderColor: 'rgba(216,207,184,0.55)' },

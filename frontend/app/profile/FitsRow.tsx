@@ -6,7 +6,7 @@ import type { FitUser } from '@/lib/profileAPI'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -29,7 +29,7 @@ export default function FitsRow({ fits }: Props) {
     <div style={{ ...cardBox, marginBottom: '16px' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <span style={{ ...lbl, color: 'var(--accent)' }}>✶ FITS</span>
-        <span style={{ ...lbl, fontSize: '0.5rem' }}>MUTUAL</span>
+        <span style={{ ...lbl, fontSize: '0.625rem' }}>MUTUAL</span>
       </Box>
       <Box sx={{ display: 'flex', gap: 1 }}>
         {fits.slice(0, 2).map((fit) => (
@@ -57,7 +57,7 @@ export default function FitsRow({ fits }: Props) {
             <span style={{ ...lbl, color: 'var(--ink)', display: 'block', marginBottom: 2 }}>
               {fit.handle.toUpperCase()}
             </span>
-            <span style={{ ...lbl, color: 'var(--accent)', fontSize: '0.5rem' }}>
+            <span style={{ ...lbl, color: 'var(--accent)', fontSize: '0.625rem' }}>
               {Math.round((fit.compatibility_score ?? 0) * 100)}% COMPAT
             </span>
           </Box>

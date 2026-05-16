@@ -36,7 +36,7 @@ function MatchBadge({ score }: { score: number }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         backgroundColor: `${color}18`,
       }}>
-        <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.04em', color, lineHeight: 1, fontWeight: 700 }}>
+        <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.04em', color, lineHeight: 1, fontWeight: 700 }}>
           {pct}%
         </Typography>
       </Box>
@@ -81,7 +81,7 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
         py: 0.75, backgroundColor: '#0a0810',
       }}>
         <Typography sx={{
-          fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+          fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
           letterSpacing: '0.08em', color: 'var(--muted)', lineHeight: 1.4,
           textAlign: 'center', textTransform: 'uppercase',
         }}>
@@ -111,7 +111,7 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
         {/* Supporting acts */}
         {event.supporting.length > 0 && (
           <Typography sx={{
-            fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+            fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
             letterSpacing: '0.08em', color: 'rgba(216,207,184,0.45)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             maxWidth: 220, mt: 0.25,
@@ -123,22 +123,22 @@ function EventCard({ event, onClick }: { event: Event; onClick: () => void }) {
         {/* Explain chips + RSVP status + avatars */}
         <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center', mt: 0.375 }}>
           {explain.location && (
-            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.08em', color: 'var(--accent)', flexShrink: 0 }}>
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.08em', color: 'var(--accent)', flexShrink: 0 }}>
               ⌖ {explain.location}
             </Typography>
           )}
           {explain.taste && (
-            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.08em', color: '#a0c4a0', flexShrink: 0 }}>
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.08em', color: '#a0c4a0', flexShrink: 0 }}>
               ♪ {explain.taste}
             </Typography>
           )}
           {explain.friends && (
-            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.08em', color: 'rgba(154,122,191,0.85)', flexShrink: 0 }}>
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.08em', color: 'rgba(154,122,191,0.85)', flexShrink: 0 }}>
               ♟ {explain.friends}
             </Typography>
           )}
           {rsvpColor && (
-            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.08em', color: rsvpColor, flexShrink: 0 }}>
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.08em', color: rsvpColor, flexShrink: 0 }}>
               {event.my_rsvp === 'going' ? '✓ going' : '♡ interested'}
             </Typography>
           )}
@@ -183,13 +183,13 @@ function Pagination({
   onPage: (p: number) => void
 }) {
   if (totalPages <= 1) return null
-  const mono: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em' }
+  const mono: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em' }
   const btnStyle = (active: boolean) => ({
     border: active ? '1px solid rgba(216,207,184,0.5)' : '1px solid rgba(216,207,184,0.15)',
     borderRadius: '3px', px: 1, height: 26, minWidth: 26,
     background: active ? 'rgba(216,207,184,0.08)' : 'none',
     cursor: 'pointer', color: active ? 'var(--ink)' : 'var(--muted)',
-    fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.05em',
+    fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.05em',
     '&:disabled': { opacity: 0.3, cursor: 'not-allowed' },
     '&:hover:not(:disabled)': { borderColor: 'rgba(216,207,184,0.4)', color: 'var(--ink)' },
     transition: 'all 0.15s',
@@ -322,7 +322,7 @@ export default function EventsPage() {
 
         {/* Header */}
         <Box sx={{ mb: 2.5 }}>
-          <Typography sx={{ ...mono, fontSize: '0.5rem', color: 'var(--muted)', mb: 0.5 }}>
+          <Typography sx={{ ...mono, fontSize: '0.625rem', color: 'var(--muted)', mb: 0.5 }}>
             ☍ Gather
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5 }}>
@@ -334,14 +334,14 @@ export default function EventsPage() {
               Events
             </Typography>
             {result && (
-              <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--muted)', letterSpacing: '0.08em' }}>
+              <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--muted)', letterSpacing: '0.08em' }}>
                 {result.total} upcoming
               </Typography>
             )}
           </Box>
 
           {/* Location status */}
-          <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.08em', color: 'var(--muted)', mt: 0.5 }}>
+          <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.08em', color: 'var(--muted)', mt: 0.5 }}>
             {gpsState === 'granted'
               ? '⌖ ranked by your GPS location'
               : result?.location_source === 'city'
@@ -373,7 +373,7 @@ export default function EventsPage() {
                 border: filter === t.value ? '1px solid rgba(216,207,184,0.4)' : '1px solid rgba(216,207,184,0.12)',
                 borderRadius: '3px', px: 1.25, height: 26, background: 'none',
                 cursor: 'pointer', fontFamily: 'var(--font-mono)',
-                fontSize: '0.4375rem', letterSpacing: '0.1em', textTransform: 'uppercase',
+                fontSize: '0.5625rem', letterSpacing: '0.1em', textTransform: 'uppercase',
                 color: filter === t.value ? 'var(--ink)' : 'var(--muted)',
                 backgroundColor: filter === t.value ? 'rgba(216,207,184,0.05)' : 'transparent',
                 transition: 'all 0.15s',
@@ -391,7 +391,7 @@ export default function EventsPage() {
           </Box>
         ) : error ? (
           <Box sx={{ border: '1px solid rgba(196,58,42,0.25)', borderRadius: '4px', p: '12px 16px', backgroundColor: 'rgba(196,58,42,0.06)' }}>
-            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--accent)', letterSpacing: '0.1em' }}>
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--accent)', letterSpacing: '0.1em' }}>
               ⚠ {error}
             </Typography>
           </Box>
@@ -406,7 +406,7 @@ export default function EventsPage() {
               <Box component="button" onClick={() => setFilter('all')} sx={{
                 border: '1px dashed rgba(216,207,184,0.2)', borderRadius: '3px',
                 px: 1.5, py: 0.75, background: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
                 letterSpacing: '0.1em', color: 'var(--muted)',
                 '&:hover': { color: 'var(--ink)', borderColor: 'rgba(216,207,184,0.4)' },
               }}>
@@ -445,12 +445,12 @@ export default function EventsPage() {
             ].map(({ color, label }) => (
               <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.625 }}>
                 <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
-                <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', color: 'var(--muted)', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: 'var(--muted)', textTransform: 'uppercase' }}>
                   {label}
                 </Typography>
               </Box>
             ))}
-            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.08em', color: 'rgba(216,207,184,0.3)', ml: 'auto' }}>
+            <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.08em', color: 'rgba(216,207,184,0.3)', ml: 'auto' }}>
               location · taste · friends
             </Typography>
           </Box>

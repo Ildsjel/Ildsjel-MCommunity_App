@@ -16,7 +16,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -35,7 +35,7 @@ const inputSx = {
   '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.2)', borderRadius: '3px' },
   '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.4)' },
   '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.6)', borderWidth: '1.5px' },
-  '& .MuiInputLabel-root': { fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' },
+  '& .MuiInputLabel-root': { fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' },
   '& .MuiInputLabel-root.Mui-focused': { color: 'var(--muted)' },
 }
 
@@ -99,7 +99,7 @@ function ConnectionRow({
         {/* Name + status */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <span style={{ ...lbl, color: 'var(--ink)', fontSize: '0.5625rem' }}>{name}</span>
+            <span style={{ ...lbl, color: 'var(--ink)', fontSize: '0.6875rem' }}>{name}</span>
             {isConnected ? (
               <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#6a9a7a', flexShrink: 0 }} />
             ) : (
@@ -107,10 +107,10 @@ function ConnectionRow({
             )}
           </Box>
           {detail && (
-            <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--muted)' }}>{detail}</span>
+            <span style={{ ...lbl, fontSize: '0.5625rem', color: 'var(--muted)' }}>{detail}</span>
           )}
           {!isConnected && !detail && (
-            <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--muted)' }}>NOT CONNECTED</span>
+            <span style={{ ...lbl, fontSize: '0.5625rem', color: 'var(--muted)' }}>NOT CONNECTED</span>
           )}
         </Box>
 
@@ -123,7 +123,7 @@ function ConnectionRow({
             sx={{
               border: '1.5px solid rgba(196,58,42,0.35)', borderRadius: '3px',
               px: 1, py: 0.4, background: 'none', cursor: 'pointer', flexShrink: 0,
-              fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+              fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
               letterSpacing: '0.1em', color: 'var(--accent)',
               '&:hover': { borderColor: 'var(--accent)' },
               '&:disabled': { opacity: 0.4, cursor: 'default' },
@@ -139,7 +139,7 @@ function ConnectionRow({
             sx={{
               border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px',
               px: 1, py: 0.4, background: 'none', cursor: 'pointer', flexShrink: 0,
-              fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+              fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
               letterSpacing: '0.1em', color: 'var(--ink)',
               '&:hover': { borderColor: 'rgba(216,207,184,0.6)' },
               '&:disabled': { opacity: 0.4, cursor: 'default' },
@@ -153,7 +153,7 @@ function ConnectionRow({
       {/* Disconnect confirmation */}
       {confirming && (
         <Box sx={{ border: '1px solid rgba(196,58,42,0.25)', borderRadius: '3px', p: '8px 10px', background: 'rgba(196,58,42,0.04)' }}>
-          <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--muted)', display: 'block', marginBottom: 6 }}>
+          <span style={{ ...lbl, fontSize: '0.5625rem', color: 'var(--muted)', display: 'block', marginBottom: 6 }}>
             Remove {name} connection? Synced data will be deleted.
           </span>
           <Box sx={{ display: 'flex', gap: 0.75 }}>
@@ -163,7 +163,7 @@ function ConnectionRow({
               sx={{
                 background: 'none', border: '1px solid rgba(196,58,42,0.45)', borderRadius: '3px',
                 px: 1, py: 0.4, cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--accent)',
+                fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--accent)',
               }}
             >
               YES, DISCONNECT
@@ -174,7 +174,7 @@ function ConnectionRow({
               sx={{
                 background: 'none', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px',
                 px: 1, py: 0.4, cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)',
+                fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--muted)',
               }}
             >
               CANCEL
@@ -195,7 +195,7 @@ function SaveButton({ onClick, saving, label = 'SAVE' }: { onClick: () => void; 
       sx={{
         border: '1.5px solid rgba(216,207,184,0.35)', borderRadius: '3px',
         px: 1.5, py: 0.625, background: 'none', cursor: 'pointer',
-        fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em',
+        fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em',
         color: 'var(--ink)',
         '&:hover': { borderColor: 'rgba(216,207,184,0.65)' },
         '&:disabled': { opacity: 0.4, cursor: 'default' },
@@ -211,7 +211,7 @@ function FeedbackMsg({ msg }: { msg: { ok: boolean; text: string } | null }) {
   if (!msg) return null
   return (
     <Typography sx={{
-      fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em',
+      fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em',
       color: msg.ok ? '#6a9a7a' : 'var(--accent)', mt: 1,
     }}>
       {msg.ok ? '✓ ' : '✕ '}{msg.text}
@@ -455,7 +455,7 @@ export default function SettingsPage() {
               size="small" fullWidth sx={inputSx}
               disabled
               helperText="Email changes are not yet supported"
-              FormHelperTextProps={{ sx: { fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--muted)', ml: 0 } }}
+              FormHelperTextProps={{ sx: { fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--muted)', ml: 0 } }}
             />
             <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
               <SaveButton onClick={handleSaveAccount} saving={accountSaving} />
@@ -484,7 +484,7 @@ export default function SettingsPage() {
               size="small" fullWidth sx={inputSx}
               autoComplete="new-password"
               helperText="Minimum 8 characters"
-              FormHelperTextProps={{ sx: { fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--muted)', ml: 0 } }}
+              FormHelperTextProps={{ sx: { fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--muted)', ml: 0 } }}
             />
             <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
               <SaveButton onClick={handleChangePassword} saving={pwSaving} label="CHANGE PASSWORD" />
@@ -526,7 +526,7 @@ export default function SettingsPage() {
                   ['LON',     location.longitude ? location.longitude.toFixed(4) : '—'],
                 ].map(([k, v]) => (
                   <Box key={k} sx={{ display: 'flex', gap: 0.75, alignItems: 'baseline' }}>
-                    <span style={{ ...lbl, fontSize: '0.375rem', color: 'var(--muted)', flexShrink: 0, width: 44 }}>{k}</span>
+                    <span style={{ ...lbl, fontSize: '0.625rem', color: 'var(--muted)', flexShrink: 0, width: 44 }}>{k}</span>
                     <span style={{ fontFamily: 'var(--font-serif)', fontSize: '0.75rem', color: 'var(--ink)' }}>{v}</span>
                   </Box>
                 ))}
@@ -606,7 +606,7 @@ export default function SettingsPage() {
                 sx={{
                   border: '1.5px solid rgba(216,207,184,0.3)', borderRadius: '3px',
                   px: 1.25, background: 'none', cursor: 'pointer', flexShrink: 0,
-                  fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--ink)',
+                  fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--ink)',
                   '&:disabled': { opacity: 0.4 },
                 }}
               >
@@ -636,7 +636,7 @@ export default function SettingsPage() {
                 sx={{
                   border: '1.5px solid rgba(196,58,42,0.45)', borderRadius: '3px',
                   px: 1.5, py: 0.625, background: 'none', cursor: 'pointer',
-                  fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em',
+                  fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em',
                   color: 'var(--accent)',
                   '&:hover': { borderColor: 'var(--accent)', backgroundColor: 'rgba(196,58,42,0.06)' },
                   transition: 'all 0.1s',
@@ -649,7 +649,7 @@ export default function SettingsPage() {
 
           {(deletePhase === 'confirm' || deletePhase === 'deleting') && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-              <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.1em', color: 'var(--accent)' }}>
+              <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: 'var(--accent)' }}>
                 Enter your password to confirm deletion. All your data will be permanently erased.
               </Typography>
               <TextField
@@ -673,7 +673,7 @@ export default function SettingsPage() {
                   sx={{
                     flex: 1, border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
                     py: 0.625, background: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--muted)',
                     '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
                     '&:disabled': { opacity: 0.4, cursor: 'default' },
                   }}
@@ -687,7 +687,7 @@ export default function SettingsPage() {
                   sx={{
                     flex: 1, border: '1.5px solid var(--accent)', borderRadius: '3px',
                     py: 0.625, background: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--accent)',
+                    fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--accent)',
                     '&:hover': { backgroundColor: 'rgba(196,58,42,0.08)' },
                     '&:disabled': { opacity: 0.4, cursor: 'default' },
                   }}

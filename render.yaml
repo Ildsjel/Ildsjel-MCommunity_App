@@ -73,6 +73,19 @@ services:
       - key: SUPERADMIN_EMAIL
         sync: false
 
-      # ── File uploads — ephemeral on free tier; ok for MVP ─────────────────
+      # ── File uploads — local fallback (unused when R2 is configured) ────────
       - key: UPLOADS_DIR
         value: /tmp/grimr_uploads
+
+      # ── Cloudflare R2 persistent image storage ────────────────────────────
+      # Create a free R2 bucket at dash.cloudflare.com → R2, then fill these in.
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_PUBLIC_URL
+        sync: false

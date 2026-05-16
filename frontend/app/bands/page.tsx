@@ -13,7 +13,7 @@ const PAGE_SIZE = 25
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -140,14 +140,14 @@ export default function BandsPage() {
               onClick={() => router.push('/bands/favourites')}
               sx={{
                 background: 'none', border: 'none', cursor: 'pointer', p: 0,
-                fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
                 letterSpacing: '0.12em', color: 'var(--muted)',
                 '&:hover': { color: 'var(--accent, #c43a2a)' }, transition: 'color 0.1s',
               }}
             >
               ♥ MY BANDS
             </Box>
-            <span style={{ ...lbl, fontSize: '0.5rem' }}>
+            <span style={{ ...lbl, fontSize: '0.625rem' }}>
               {bandsLoading ? '…' : `${total} IN CATALOGUE`}
             </span>
           </Box>
@@ -185,7 +185,7 @@ export default function BandsPage() {
               sx={{
                 position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+                fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
                 color: 'var(--muted)', p: 0,
               }}
             >
@@ -277,14 +277,14 @@ export default function BandsPage() {
                         <Box key={g.id ?? g} sx={{
                           border: '1px solid rgba(216,207,184,0.18)', borderRadius: '2px',
                           px: 0.625, height: 16, display: 'inline-flex', alignItems: 'center',
-                          fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                          fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
                           letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)',
                         }}>
                           {g.name ?? g}
                         </Box>
                       ))}
                     </Box>
-                    <span style={{ ...lbl, fontSize: '0.5rem' }}>
+                    <span style={{ ...lbl, fontSize: '0.625rem' }}>
                       {band.country_code} · est. {band.formed} · {(band.releases || []).length} releases
                     </span>
                   </Box>
@@ -295,12 +295,12 @@ export default function BandsPage() {
                       <Box sx={{
                         border: `1px solid ${TYPE_COLORS[latestRelease.type] || 'rgba(216,207,184,0.2)'}`,
                         borderRadius: '2px', px: 0.75, height: 18, display: 'inline-flex', alignItems: 'center',
-                        fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em',
+                        fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em',
                         color: TYPE_COLORS[latestRelease.type] || 'var(--muted)', mb: 0.5,
                       }}>
                         {latestRelease.type}
                       </Box>
-                      <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--muted)', display: 'block', textAlign: 'right' }}>
+                      <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--muted)', display: 'block', textAlign: 'right' }}>
                         {latestRelease.year}
                       </Typography>
                     </Box>
@@ -341,7 +341,7 @@ export default function BandsPage() {
               sx={{
                 background: 'none', border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
                 px: 1.5, py: 0.75, cursor: page === 0 ? 'default' : 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.1em',
+                fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em',
                 color: page === 0 ? 'rgba(216,207,184,0.25)' : 'var(--ink)',
                 borderColor: page === 0 ? 'rgba(216,207,184,0.1)' : 'rgba(216,207,184,0.2)',
                 '&:hover:not(:disabled)': { borderColor: 'rgba(216,207,184,0.4)' },
@@ -372,7 +372,7 @@ export default function BandsPage() {
                         background: item === page ? 'rgba(216,207,184,0.08)' : 'none',
                         border: `1.5px solid ${item === page ? 'rgba(216,207,184,0.35)' : 'rgba(216,207,184,0.15)'}`,
                         borderRadius: '3px', cursor: 'pointer',
-                        fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.06em',
+                        fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.06em',
                         color: item === page ? 'var(--ink)' : 'var(--muted)',
                         '&:hover': { borderColor: 'rgba(216,207,184,0.4)' },
                       }}
@@ -390,7 +390,7 @@ export default function BandsPage() {
               sx={{
                 background: 'none', border: '1.5px solid rgba(216,207,184,0.2)', borderRadius: '3px',
                 px: 1.5, py: 0.75, cursor: page >= totalPages - 1 ? 'default' : 'pointer',
-                fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.1em',
+                fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em',
                 color: page >= totalPages - 1 ? 'rgba(216,207,184,0.25)' : 'var(--ink)',
                 borderColor: page >= totalPages - 1 ? 'rgba(216,207,184,0.1)' : 'rgba(216,207,184,0.2)',
                 '&:hover:not(:disabled)': { borderColor: 'rgba(216,207,184,0.4)' },
@@ -404,7 +404,7 @@ export default function BandsPage() {
         {/* Page indicator */}
         {!bandsLoading && totalPages > 1 && (
           <Box sx={{ textAlign: 'center', mt: 1.5 }}>
-            <span style={{ ...lbl, fontSize: '0.5rem' }}>
+            <span style={{ ...lbl, fontSize: '0.625rem' }}>
               Page {page + 1} of {totalPages} · {total} bands
             </span>
           </Box>

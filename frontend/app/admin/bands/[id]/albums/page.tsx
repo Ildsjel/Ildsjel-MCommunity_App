@@ -9,7 +9,7 @@ import { getErrorMessage } from '@/lib/types/apiError'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -118,12 +118,12 @@ function SuggestionCard({
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.375, flexWrap: 'wrap' }}>
             {(s.type || s.year) && (
-              <span style={{ ...lbl, fontSize: '0.4375rem' }}>
+              <span style={{ ...lbl, fontSize: '0.5625rem' }}>
                 {[s.type, s.year].filter(Boolean).join(' · ')}
               </span>
             )}
             {s.suggested_by_handle && (
-              <span style={{ ...lbl, fontSize: '0.4375rem' }}>
+              <span style={{ ...lbl, fontSize: '0.5625rem' }}>
                 by {s.suggested_by_handle} · {timeAgo(s.created_at)}
               </span>
             )}
@@ -143,29 +143,29 @@ function SuggestionCard({
 
         {/* Status pill + actions */}
         <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, alignItems: 'flex-start' }}>
-          <Box sx={{ border: `1px solid ${isPending ? 'rgba(212,160,16,0.4)' : isRejected ? 'rgba(196,58,42,0.3)' : 'rgba(106,154,122,0.4)'}`, borderRadius: '2px', px: 0.625, height: 18, display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', color: isPending ? '#d4a010' : isRejected ? 'var(--accent)' : '#6a9a7a' }}>
+          <Box sx={{ border: `1px solid ${isPending ? 'rgba(212,160,16,0.4)' : isRejected ? 'rgba(196,58,42,0.3)' : 'rgba(106,154,122,0.4)'}`, borderRadius: '2px', px: 0.625, height: 18, display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: isPending ? '#d4a010' : isRejected ? 'var(--accent)' : '#6a9a7a' }}>
             {s.status.toUpperCase()}
           </Box>
 
           {isPending && mode === 'idle' && (
             <>
               <Box component="button" onClick={handleApprove} disabled={busy}
-                sx={{ border: '1px solid rgba(106,154,122,0.5)', borderRadius: '2px', px: 0.625, height: 18, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: '#6a9a7a', '&:hover': { borderColor: '#6a9a7a' }, '&:disabled': { opacity: 0.4 } }}>
+                sx={{ border: '1px solid rgba(106,154,122,0.5)', borderRadius: '2px', px: 0.625, height: 18, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: '#6a9a7a', '&:hover': { borderColor: '#6a9a7a' }, '&:disabled': { opacity: 0.4 } }}>
                 {busy ? '…' : '✓'}
               </Box>
               <Box component="button" onClick={() => setMode('edit')}
-                sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.625, height: 18, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+                sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.625, height: 18, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
                 ✎
               </Box>
               <Box component="button" onClick={() => setMode('reject')}
-                sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '2px', px: 0.625, height: 18, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}>
+                sx={{ border: '1px solid rgba(196,58,42,0.3)', borderRadius: '2px', px: 0.625, height: 18, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--accent)', '&:hover': { borderColor: 'var(--accent)' } }}>
                 ✕
               </Box>
             </>
           )}
           {(mode === 'edit' || mode === 'reject') && (
             <Box component="button" onClick={() => setMode('idle')}
-              sx={{ border: '1px solid rgba(216,207,184,0.15)', borderRadius: '2px', px: 0.625, height: 18, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', color: 'var(--muted)' }}>
+              sx={{ border: '1px solid rgba(216,207,184,0.15)', borderRadius: '2px', px: 0.625, height: 18, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--muted)' }}>
               ✕
             </Box>
           )}
@@ -182,19 +182,19 @@ function SuggestionCard({
           />
           <Box sx={{ display: 'flex', gap: 0.75 }}>
             <select value={eType} onChange={(e) => setEType(e.target.value)}
-              style={{ flex: 1, background: '#0a0810', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: eType ? 'var(--ink)' : 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', padding: '5px 8px', outline: 'none' }}>
+              style={{ flex: 1, background: '#0a0810', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: eType ? 'var(--ink)' : 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', padding: '5px 8px', outline: 'none' }}>
               <option value="">— type —</option>
               {RELEASE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
             <input type="number" value={eYear} onChange={(e) => setEYear(e.target.value)} placeholder="year" min={1960} max={2100}
-              style={{ width: 72, boxSizing: 'border-box', background: '#0a0810', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', padding: '5px 8px', outline: 'none' }} />
+              style={{ width: 72, boxSizing: 'border-box', background: '#0a0810', border: '1px solid rgba(216,207,184,0.2)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', padding: '5px 8px', outline: 'none' }} />
           </Box>
           <textarea value={eNote} onChange={(e) => setENote(e.target.value)} placeholder="Reviewer note (internal)…" rows={2}
             style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', background: '#0a0810', border: '1px solid rgba(216,207,184,0.15)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.75rem', padding: '5px 8px', outline: 'none' }} />
-          {err && <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--accent)' }}>⚠ {err}</span>}
+          {err && <span style={{ ...lbl, fontSize: '0.5625rem', color: 'var(--accent)' }}>⚠ {err}</span>}
           <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-            <Box component="button" onClick={() => setMode('idle')} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--muted)' }}>CANCEL</Box>
-            <Box component="button" onClick={handleSaveEdit} disabled={busy} sx={{ border: '1px solid rgba(216,207,184,0.4)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>{busy ? '…' : 'SAVE'}</Box>
+            <Box component="button" onClick={() => setMode('idle')} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--muted)' }}>CANCEL</Box>
+            <Box component="button" onClick={handleSaveEdit} disabled={busy} sx={{ border: '1px solid rgba(216,207,184,0.4)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--ink)', '&:disabled': { opacity: 0.4 } }}>{busy ? '…' : 'SAVE'}</Box>
           </Box>
         </Box>
       )}
@@ -204,10 +204,10 @@ function SuggestionCard({
         <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
           <input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Rejection reason (optional)…"
             style={{ width: '100%', boxSizing: 'border-box', background: '#0a0810', border: '1px solid rgba(196,58,42,0.25)', borderRadius: '3px', color: 'var(--ink)', fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.75rem', padding: '5px 8px', outline: 'none' }} />
-          {err && <span style={{ ...lbl, fontSize: '0.4375rem', color: 'var(--accent)' }}>⚠ {err}</span>}
+          {err && <span style={{ ...lbl, fontSize: '0.5625rem', color: 'var(--accent)' }}>⚠ {err}</span>}
           <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-            <Box component="button" onClick={() => setMode('idle')} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--muted)' }}>CANCEL</Box>
-            <Box component="button" onClick={handleConfirmReject} disabled={busy} sx={{ border: '1px solid rgba(196,58,42,0.5)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--accent)', '&:disabled': { opacity: 0.4 } }}>{busy ? '…' : 'CONFIRM REJECT'}</Box>
+            <Box component="button" onClick={() => setMode('idle')} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--muted)' }}>CANCEL</Box>
+            <Box component="button" onClick={handleConfirmReject} disabled={busy} sx={{ border: '1px solid rgba(196,58,42,0.5)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--accent)', '&:disabled': { opacity: 0.4 } }}>{busy ? '…' : 'CONFIRM REJECT'}</Box>
           </Box>
         </Box>
       )}
@@ -294,11 +294,11 @@ export default function BandAlbumsPage({ params }: { params: { id: string } }) {
 
       {/* Back nav */}
       <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
-        <Box component="button" onClick={() => router.push('/admin/bands')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+        <Box component="button" onClick={() => router.push('/admin/bands')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
           ← BANDS
         </Box>
-        <span style={{ ...lbl, fontSize: '0.5rem', color: 'rgba(216,207,184,0.3)' }}>›</span>
-        <span style={{ ...lbl, fontSize: '0.5rem', color: 'var(--ink)' }}>{band.name}</span>
+        <span style={{ ...lbl, fontSize: '0.625rem', color: 'rgba(216,207,184,0.3)' }}>›</span>
+        <span style={{ ...lbl, fontSize: '0.625rem', color: 'var(--ink)' }}>{band.name}</span>
       </Box>
 
       {/* Band header */}
@@ -308,16 +308,16 @@ export default function BandAlbumsPage({ params }: { params: { id: string } }) {
             {band.name}
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.875, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ ...lbl, fontSize: '0.5rem' }}>{band.country_code} · est. {band.formed}</span>
-            <span style={{ ...lbl, fontSize: '0.5rem' }}>{band.releases?.length ?? 0} releases</span>
+            <span style={{ ...lbl, fontSize: '0.625rem' }}>{band.country_code} · est. {band.formed}</span>
+            <span style={{ ...lbl, fontSize: '0.625rem' }}>{band.releases?.length ?? 0} releases</span>
             {pending.length > 0 && (
-              <Box sx={{ border: '1px solid rgba(212,160,16,0.5)', borderRadius: '2px', px: 0.625, height: 16, display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', color: '#d4a010' }}>
+              <Box sx={{ border: '1px solid rgba(212,160,16,0.5)', borderRadius: '2px', px: 0.625, height: 16, display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: '#d4a010' }}>
                 {pending.length} PENDING
               </Box>
             )}
           </Box>
         </Box>
-        <Box component="button" onClick={() => router.push(`/admin/bands/${id}/edit`)} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+        <Box component="button" onClick={() => router.push(`/admin/bands/${id}/edit`)} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.875, height: 22, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
           EDIT BAND
         </Box>
       </Box>
@@ -325,7 +325,7 @@ export default function BandAlbumsPage({ params }: { params: { id: string } }) {
       {/* Flash */}
       {flash && (
         <Box sx={{ border: '1px solid rgba(106,154,122,0.35)', borderRadius: '3px', backgroundColor: 'rgba(106,154,122,0.06)', px: 1.25, py: 0.75, mb: 1.5 }}>
-          <span style={{ ...lbl, fontSize: '0.5rem', color: '#6a9a7a' }}>{flash}</span>
+          <span style={{ ...lbl, fontSize: '0.625rem', color: '#6a9a7a' }}>{flash}</span>
         </Box>
       )}
 
@@ -353,14 +353,14 @@ export default function BandAlbumsPage({ params }: { params: { id: string } }) {
       <Box sx={{ mb: 2.5 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <span style={lbl}>◈ DISCOGRAPHY ({band.releases?.length ?? 0})</span>
-          <Box component="button" onClick={() => router.push(`/admin/bands/${id}/edit`)} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+          <Box component="button" onClick={() => router.push(`/admin/bands/${id}/edit`)} sx={{ border: '1px solid rgba(216,207,184,0.2)', borderRadius: '2px', px: 0.75, height: 20, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
             + ADD RELEASE
           </Box>
         </Box>
 
         {(!band.releases || band.releases.length === 0) ? (
           <Box sx={{ border: '1px solid rgba(216,207,184,0.1)', borderRadius: '3px', px: 1.25, py: 1.5, textAlign: 'center' }}>
-            <span style={{ ...lbl, fontSize: '0.5rem', color: 'var(--muted)' }}>No releases yet</span>
+            <span style={{ ...lbl, fontSize: '0.625rem', color: 'var(--muted)' }}>No releases yet</span>
           </Box>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -370,9 +370,9 @@ export default function BandAlbumsPage({ params }: { params: { id: string } }) {
                   <Typography sx={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '0.8125rem', color: 'var(--ink)', lineHeight: 1.2 }}>
                     {r.title}
                   </Typography>
-                  <span style={{ ...lbl, fontSize: '0.4375rem' }}>{r.type} · {r.year}</span>
+                  <span style={{ ...lbl, fontSize: '0.5625rem' }}>{r.type} · {r.year}</span>
                 </Box>
-                <Box sx={{ border: '1px solid rgba(106,154,122,0.35)', borderRadius: '2px', px: 0.625, height: 16, display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.375rem', letterSpacing: '0.1em', color: '#6a9a7a', flexShrink: 0 }}>
+                <Box sx={{ border: '1px solid rgba(106,154,122,0.35)', borderRadius: '2px', px: 0.625, height: 16, display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.1em', color: '#6a9a7a', flexShrink: 0 }}>
                   APPROVED
                 </Box>
               </Box>

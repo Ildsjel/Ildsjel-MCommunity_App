@@ -8,7 +8,7 @@ import { getErrorMessage } from '@/lib/types/apiError'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -19,7 +19,7 @@ const inputSx = {
   '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.2)', borderRadius: '3px' },
   '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.4)' },
   '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(216,207,184,0.6)' },
-  '& .MuiInputLabel-root': { fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' },
+  '& .MuiInputLabel-root': { fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' },
   '& .MuiInputLabel-root.Mui-focused': { color: 'var(--muted)' },
 }
 
@@ -61,14 +61,14 @@ export default function NewBandPage() {
 
   return (
     <Box sx={{ maxWidth: 480, mx: 'auto', px: 2, pt: 2, pb: 10 }}>
-      <Box component="button" onClick={() => router.push('/admin/bands')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 2, fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
+      <Box component="button" onClick={() => router.push('/admin/bands')} sx={{ background: 'none', border: 'none', cursor: 'pointer', p: 0, mb: 2, fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--muted)', '&:hover': { color: 'var(--ink)' } }}>
         ← BANDS
       </Box>
       <span style={{ ...lbl, color: 'var(--accent)', display: 'block', marginBottom: 20 }}>+ NEW BAND</span>
 
       <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         <TextField label="Band Name" value={form.name} onChange={set('name')} onBlur={autoSlug} required fullWidth size="small" sx={inputSx} />
-        <TextField label="Slug (url-safe, auto-generated)" value={form.slug} onChange={set('slug')} required fullWidth size="small" sx={inputSx} inputProps={{ pattern: '[a-z0-9-]+' }} helperText="e.g. bell-witch" FormHelperTextProps={{ sx: { fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', color: 'var(--muted)' } }} />
+        <TextField label="Slug (url-safe, auto-generated)" value={form.slug} onChange={set('slug')} required fullWidth size="small" sx={inputSx} inputProps={{ pattern: '[a-z0-9-]+' }} helperText="e.g. bell-witch" FormHelperTextProps={{ sx: { fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', color: 'var(--muted)' } }} />
         <Box sx={{ display: 'flex', gap: 1 }}>
           <TextField label="Country" value={form.country} onChange={set('country')} required fullWidth size="small" sx={inputSx} />
           <TextField label="Code" value={form.country_code} onChange={set('country_code')} required size="small" sx={{ ...inputSx, width: 90 }} inputProps={{ maxLength: 4 }} />
@@ -77,13 +77,13 @@ export default function NewBandPage() {
         <TextField label="Bio" value={form.bio} onChange={set('bio')} multiline rows={4} fullWidth size="small" sx={inputSx} />
 
         {error && (
-          <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--accent)', letterSpacing: '0.1em' }}>
+          <Typography sx={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--accent)', letterSpacing: '0.1em' }}>
             {error}
           </Typography>
         )}
 
         <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-          <Box component="button" type="submit" disabled={saving} sx={{ flex: 1, border: '1.5px solid rgba(216,207,184,0.4)', borderRadius: '3px', py: 0.875, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.5rem', letterSpacing: '0.12em', color: 'var(--ink)', '&:hover': { borderColor: 'rgba(216,207,184,0.7)' }, '&:disabled': { opacity: 0.4 } }}>
+          <Box component="button" type="submit" disabled={saving} sx={{ flex: 1, border: '1.5px solid rgba(216,207,184,0.4)', borderRadius: '3px', py: 0.875, background: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.625rem', letterSpacing: '0.12em', color: 'var(--ink)', '&:hover': { borderColor: 'rgba(216,207,184,0.7)' }, '&:disabled': { opacity: 0.4 } }}>
             {saving ? 'SAVING…' : 'CREATE BAND'}
           </Box>
         </Box>

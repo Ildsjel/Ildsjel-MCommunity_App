@@ -56,7 +56,7 @@ function slugify(name: string): string {
 
 const mono: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.4375rem',
+  fontSize: '0.5625rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
 }
@@ -229,22 +229,22 @@ export default function TagPicker({
       >
         <span style={{
           ...mono,
-          fontSize: '0.375rem',
+          fontSize: '0.625rem',
           color: item.kind === 'genre' ? 'var(--accent, #c43a2a)' : 'rgba(154,122,191,0.9)',
           flexShrink: 0,
         }}>
           {item.kind === 'genre' ? '◉' : '◈'}
         </span>
-        <span style={{ ...mono, color: 'rgba(236,229,211,0.8)', fontSize: '0.4375rem' }}>
+        <span style={{ ...mono, color: 'rgba(236,229,211,0.8)', fontSize: '0.5625rem' }}>
           {item.name}
         </span>
         {item.category && item.kind === 'tag' && (
-          <span style={{ ...mono, fontSize: '0.375rem', color: 'var(--muted, #7A756D)', marginLeft: 'auto' }}>
+          <span style={{ ...mono, fontSize: '0.625rem', color: 'var(--muted, #7A756D)', marginLeft: 'auto' }}>
             {item.category}
           </span>
         )}
         {isBusy && (
-          <span style={{ ...mono, fontSize: '0.375rem', color: 'var(--muted)', marginLeft: 'auto' }}>…</span>
+          <span style={{ ...mono, fontSize: '0.625rem', color: 'var(--muted)', marginLeft: 'auto' }}>…</span>
         )}
       </Box>
     )
@@ -321,7 +321,7 @@ export default function TagPicker({
             {!loadingOntology && genres.length > 0 && (
               <>
                 <Box sx={{ px: 1.25, pt: 0.5, pb: 0.25 }}>
-                  <span style={{ ...mono, fontSize: '0.375rem', color: 'var(--muted)' }}>GENRES</span>
+                  <span style={{ ...mono, fontSize: '0.625rem', color: 'var(--muted)' }}>GENRES</span>
                 </Box>
                 {genres.map((item) => <Row key={item.id} item={item} />)}
               </>
@@ -330,7 +330,7 @@ export default function TagPicker({
             {!loadingOntology && tags.length > 0 && (
               <>
                 <Box sx={{ px: 1.25, pt: 0.75, pb: 0.25 }}>
-                  <span style={{ ...mono, fontSize: '0.375rem', color: 'var(--muted)' }}>TAGS</span>
+                  <span style={{ ...mono, fontSize: '0.625rem', color: 'var(--muted)' }}>TAGS</span>
                 </Box>
                 {tags.map((item) => <Row key={item.id} item={item} />)}
               </>
@@ -346,7 +346,7 @@ export default function TagPicker({
 
             {applyError && (
               <Box sx={{ px: 1.25, py: 0.625, borderTop: '1px solid rgba(196,58,42,0.3)' }}>
-                <span style={{ ...mono, fontSize: '0.375rem', color: 'var(--accent, #c43a2a)' }}>
+                <span style={{ ...mono, fontSize: '0.625rem', color: 'var(--accent, #c43a2a)' }}>
                   ⚠ {applyError}
                 </span>
               </Box>
@@ -372,8 +372,8 @@ export default function TagPicker({
                   '&:hover:not(:disabled)': { backgroundColor: 'rgba(216,207,184,0.06)' },
                 }}
               >
-                <span style={{ ...mono, fontSize: '0.375rem', color: 'rgba(154,122,191,0.9)' }}>＋</span>
-                <span style={{ ...mono, fontSize: '0.4375rem', color: 'rgba(154,122,191,0.9)' }}>
+                <span style={{ ...mono, fontSize: '0.625rem', color: 'rgba(154,122,191,0.9)' }}>＋</span>
+                <span style={{ ...mono, fontSize: '0.5625rem', color: 'rgba(154,122,191,0.9)' }}>
                   {applying === '__create__' ? 'creating…' : `Create "${query.trim()}"`}
                 </span>
               </Box>

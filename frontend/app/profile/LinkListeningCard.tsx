@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -38,7 +38,7 @@ function ServiceTile({ label, connected, onClick }: ServiceTileProps) {
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink)' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink)' }}>
           {label}
         </span>
         <Box sx={{
@@ -50,7 +50,7 @@ function ServiceTile({ label, connected, onClick }: ServiceTileProps) {
           } : {}),
         }} />
       </Box>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.4375rem', letterSpacing: '0.08em', color: connected ? '#6a9a7a' : 'var(--muted)', textTransform: 'uppercase' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.5625rem', letterSpacing: '0.08em', color: connected ? '#6a9a7a' : 'var(--muted)', textTransform: 'uppercase' }}>
         {connected ? 'Connected' : 'Not connected'}
       </span>
     </Box>

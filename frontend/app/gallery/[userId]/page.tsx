@@ -11,7 +11,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const lbl: React.CSSProperties = {
   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-  fontSize: '0.5625rem',
+  fontSize: '0.6875rem',
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color: 'var(--muted, #7A756D)',
@@ -86,7 +86,7 @@ export default function UserGalleryPage() {
               py: 0.5,
               cursor: 'pointer',
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.5rem',
+              fontSize: '0.625rem',
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               color: 'var(--ink)',

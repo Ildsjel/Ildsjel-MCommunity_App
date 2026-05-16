@@ -84,7 +84,7 @@ function AttendeeRow({
         border: '1px solid rgba(216,207,184,0.1)',
       }}>
         {!src && (
-          <Typography sx={{ ...mono, fontSize: '0.5rem', color: 'rgba(216,207,184,0.5)' }}>
+          <Typography sx={{ ...mono, fontSize: '0.625rem', color: 'rgba(216,207,184,0.5)' }}>
             {initials}
           </Typography>
         )}
@@ -92,7 +92,7 @@ function AttendeeRow({
 
       {/* Handle */}
       <Typography sx={{
-        fontFamily: 'var(--font-mono)', fontSize: '0.5rem',
+        fontFamily: 'var(--font-mono)', fontSize: '0.625rem',
         letterSpacing: '0.06em', color: 'var(--ink)', flex: 1, minWidth: 0,
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
       }}>
@@ -132,7 +132,7 @@ function AttendeeRow({
         </Box>
       ) : null}
 
-      <Typography sx={{ ...mono, fontSize: '0.375rem', color: 'var(--muted)', flexShrink: 0 }}>
+      <Typography sx={{ ...mono, fontSize: '0.625rem', color: 'var(--muted)', flexShrink: 0 }}>
         →
       </Typography>
     </Box>
@@ -263,7 +263,7 @@ export default function AttendeesModal({
                   borderRadius: '3px', px: 1.25, height: 28,
                   background: active ? 'rgba(216,207,184,0.05)' : 'none',
                   cursor: 'pointer', mr: 0.75,
-                  fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+                  fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
                   letterSpacing: '0.1em', textTransform: 'uppercase',
                   color: active ? 'var(--ink)' : 'var(--muted)',
                   transition: 'all 0.15s',
@@ -325,7 +325,7 @@ export default function AttendeesModal({
             sx={{
               width: '100%', border: '1px solid rgba(216,207,184,0.15)',
               borderRadius: '3px', py: 0.875, background: 'none', cursor: 'pointer',
-              fontFamily: 'var(--font-mono)', fontSize: '0.4375rem',
+              fontFamily: 'var(--font-mono)', fontSize: '0.5625rem',
               letterSpacing: '0.1em', textTransform: 'uppercase',
               color: 'var(--muted)',
               '&:hover': { color: 'var(--ink)', borderColor: 'rgba(216,207,184,0.3)' },
