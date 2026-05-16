@@ -70,9 +70,9 @@ export default function RegisterPage() {
         <Typography
           component={Link}
           href="/"
-          className="grimr-glow"
+          className="grimr-wordmark grimr-glow"
           sx={{
-            fontFamily: '"Archivo Black", sans-serif',
+            fontFamily: 'var(--font-medieval, "UnifrakturCook", serif)',
             fontSize: { xs: '2.8rem', md: '3.5rem' },
             letterSpacing: '0.04em',
             color: 'text.primary',
