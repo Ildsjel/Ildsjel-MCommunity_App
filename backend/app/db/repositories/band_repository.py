@@ -136,10 +136,15 @@ class BandRepository:
             {where}
             OPTIONAL MATCH (b)-[:TAGGED_WITH]->(g:Genre)
             OPTIONAL MATCH (b)-[:TAGGED_WITH]->(tag:Tag)
-            RETURN b,
-                   [] AS releases,
-                   collect(DISTINCT {{id: g.id, slug: g.slug, name: g.name}}) AS genres,
-                   collect(DISTINCT {{id: tag.id, slug: tag.slug, name: tag.name, category: tag.category}}) AS tags
+            WITH b,
+                 collect(DISTINCT CASE WHEN g IS NOT NULL THEN {{id: g.id, slug: g.slug, name: g.name}} END) AS genres,
+                 collect(DISTINCT CASE WHEN tag IS NOT NULL THEN {{id: tag.id, slug: tag.slug, name: tag.name, category: tag.category}} END) AS tags
+            OPTIONAL MATCH (b)-[:HAS_RELEASE]->(r:Release)
+            WITH b, genres, tags,
+                 collect(CASE WHEN r IS NOT NULL THEN {{id: r.id, slug: r.slug, title: r.title, type: r.type,
+                                                        year: r.year, label: r.label, status: r.status,
+                                                        band_id: r.band_id}} END) AS releases
+            RETURN b, genres, tags, releases
             ORDER BY
               CASE WHEN b.name =~ '^[a-zA-Z\\xC0-\\xFF].*' THEN 0 ELSE 1 END,
               toLower(b.name)
