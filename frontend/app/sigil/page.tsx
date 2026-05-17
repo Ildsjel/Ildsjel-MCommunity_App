@@ -7,8 +7,9 @@ import Sigil from '@/app/components/Sigil'
 import SigilExplorer, { SigilCluster, SigilFriend, FocusedNode } from '@/app/components/SigilExplorer'
 import BottomNav from '@/app/components/BottomNav'
 import { useUser } from '@/app/context/UserContext'
-import { API_BASE_URL as API_BASE } from '@/lib/api'
 import axios from 'axios'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 // ── Design tokens (Sigil dark palette) ───────────────────────────────────────
 const INK1  = '#14101D'
